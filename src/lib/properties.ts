@@ -12,10 +12,28 @@ import {
   limit,
   where,
   deleteDoc,
+  updateDoc,
+  Timestamp,
 } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import type { Property } from '@/models/property';
+
+// Helper function to clean data for Firestore
+const cleanData = (data: any) => {
+    const cleanedData: { [key: string]: any } = {};
+    for (const key in data) {
+        if (data[key] !== '' && data[key] !== undefined && data[key] !== null) {
+            if(typeof data[key] === 'object' && !Array.isArray(data[key]) && data[key] !== null) {
+                cleanedData[key] = cleanData(data[key]);
+            } else {
+                cleanedData[key] = data[key];
+            }
+        }
+    }
+    return cleanedData;
+};
+
 
 // Function to create a new property
 export async function createProperty(data: Omit<Property, 'id' | 'images' | 'createdAt' | 'updatedAt'>, images: File[]) {
@@ -27,13 +45,15 @@ export async function createProperty(data: Omit<Property, 'id' | 'images' | 'cre
             const url = await getDownloadURL(imageRef);
             imageUrls.push({ url });
         }
-
-        const docRef = await addDoc(collection(db, 'properties'), {
-            ...data,
+        
+        const propertyData = {
+            ...cleanData(data),
             images: imageUrls,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        });
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now(),
+        }
+
+        const docRef = await addDoc(collection(db, 'properties'), propertyData);
         return { id: docRef.id };
     } catch (error) {
         console.error("Error creating property: ", error);
@@ -41,8 +61,26 @@ export async function createProperty(data: Omit<Property, 'id' | 'images' | 'cre
     }
 }
 
+// Function to update an existing property
+export async function updateProperty(id: string, data: Partial<Property>) {
+    try {
+        const docRef = doc(db, 'properties', id);
+        const propertyData = {
+            ...cleanData(data),
+            updatedAt: Timestamp.now(),
+        };
+        // Note: Image update logic is not included in this simple update.
+        // A more complex flow would be needed to handle image replacement.
+        await updateDoc(docRef, propertyData);
+    } catch (error) {
+        console.error("Error updating property: ", error);
+        throw new Error("Failed to update property.");
+    }
+}
+
+
 // Function to get all properties
-export async function getProperties() {
+export async function getProperties(): Promise<Property[]> {
   const propertiesCol = collection(db, 'properties');
   const q = query(propertiesCol, orderBy('createdAt', 'desc'));
   const snapshot = await getDocs(q);
@@ -50,7 +88,7 @@ export async function getProperties() {
 }
 
 // Function to get featured properties
-export async function getFeaturedProperties() {
+export async function getFeaturedProperties(): Promise<Property[]> {
     const propertiesCol = collection(db, 'properties');
     const q = query(propertiesCol, where('featured', '==', true), orderBy('createdAt', 'desc'), limit(4));
     const snapshot = await getDocs(q);
@@ -58,7 +96,7 @@ export async function getFeaturedProperties() {
 }
 
 // Function to get a single property by its ID
-export async function getPropertyById(id: string) {
+export async function getPropertyById(id: string): Promise<Property | null> {
     const docRef = doc(db, 'properties', id);
     const docSnap = await getDoc(docRef);
 
@@ -73,10 +111,27 @@ export async function getPropertyById(id: string) {
 export async function deleteProperty(id: string): Promise<void> {
     try {
         const docRef = doc(db, 'properties', id);
+        // Optionally, get the document first to delete images from storage
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            const property = docSnap.data() as Property;
+            if (property.images && property.images.length > 0) {
+                for (const image of property.images) {
+                    try {
+                        const imageRef = ref(storage, image.url);
+                        await deleteObject(imageRef);
+                    } catch (storageError) {
+                        // Log error but don't block deletion if an image fails to delete
+                        console.error(`Failed to delete image ${image.url} from storage:`, storageError);
+                    }
+                }
+            }
+        }
         await deleteDoc(docRef);
-        // Note: Deleting images from storage should be handled by a Cloud Function trigger
     } catch (error) {
         console.error("Error deleting property: ", error);
         throw new Error("Failed to delete property.");
     }
 }
+
+    

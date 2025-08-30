@@ -204,8 +204,12 @@ export default function AdminDashboard() {
                                       <TableCell>{getStatusBadge(prop.active)}</TableCell>
                                       <TableCell className="text-right">
                                         <div className="flex gap-1 justify-end">
-                                          <Button variant="ghost" size="icon"><Eye className="h-4 w-4"/></Button>
-                                          <Button variant="ghost" size="icon"><Pencil className="h-4 w-4"/></Button>
+                                          <Button asChild variant="ghost" size="icon">
+                                            <Link href={`/properties/${prop.id}`} target="_blank"><Eye className="h-4 w-4"/></Link>
+                                          </Button>
+                                          <Button asChild variant="ghost" size="icon">
+                                            <Link href={`/admin/properties/form?id=${prop.id}`}><Pencil className="h-4 w-4"/></Link>
+                                          </Button>
                                           <AlertDialogTrigger asChild>
                                             <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setPropertyToDelete(prop)}>
                                                 <Trash2 className="h-4 w-4"/>
@@ -252,3 +256,5 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
+    
