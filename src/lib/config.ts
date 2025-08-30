@@ -20,14 +20,12 @@ export async function getSiteConfig(): Promise<SiteConfig | null> {
             return null;
         }
     } catch (error) {
-        console.error("Error getting site config (the app will proceed with default values): ", error);
-        // Return null instead of throwing an error to allow the app to run
-        // even if Firestore is not available.
+        console.error("Error getting site config, returning null: ", error);
         return null;
     }
 }
 
-export async function updateSiteConfig(data: Partial<Omit<SiteConfig, 'updatedAt'>>, logoFile?: File): Promise<void> {
+export async function updateSiteConfig(data: Partial<Omit<SiteConfig, 'updatedAt'>>, logoFile?: File, logoPreview?: string | null): Promise<void> {
     try {
         const docRef = doc(db, 'siteConfig', CONFIG_DOC_ID);
         const currentConfig = await getSiteConfig();
@@ -38,7 +36,7 @@ export async function updateSiteConfig(data: Partial<Omit<SiteConfig, 'updatedAt
         };
 
         if (logoFile) {
-            // Delete old logo if it exists
+            // Upload new logo, delete old one if it exists
             if (currentConfig?.logoUrl) {
                 try {
                     const oldImageRef = ref(storage, currentConfig.logoUrl);
@@ -47,22 +45,22 @@ export async function updateSiteConfig(data: Partial<Omit<SiteConfig, 'updatedAt
                     console.error("Failed to delete old logo, continuing with update...", e);
                 }
             }
-            // Upload new logo
             const logoRef = ref(storage, `site/logo_${Date.now()}_${logoFile.name}`);
             await uploadBytes(logoRef, logoFile);
             configData.logoUrl = await getDownloadURL(logoRef);
-        } else if (data.logoUrl === null) {
-            // Logic to remove the logo if requested
-             if (currentConfig?.logoUrl) {
-                try {
-                    const oldImageRef = ref(storage, currentConfig.logoUrl);
-                    await deleteObject(oldImageRef);
-                } catch(e) {
-                    console.error("Failed to delete logo, continuing with update...", e);
-                }
+
+        } else if (!logoPreview && currentConfig?.logoUrl) {
+            // If preview is null/empty and there was a logo, it means we need to delete it.
+            try {
+                const oldImageRef = ref(storage, currentConfig.logoUrl);
+                await deleteObject(oldImageRef);
+            } catch(e) {
+                console.error("Failed to delete logo, continuing with update...", e);
             }
-            configData.logoUrl = '';
+            configData.logoUrl = ''; // Set to empty string to remove from db
         }
+        // If logoFile is null but logoPreview exists, it means we keep the existing logo.
+        // In this case, we don't add logoUrl to configData, so it's not overwritten.
 
         await setDoc(docRef, configData, { merge: true });
     } catch (error) {
