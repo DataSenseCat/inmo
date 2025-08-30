@@ -1,3 +1,4 @@
+
 import { SearchForm } from '@/components/search-form';
 import Image from 'next/image';
 
@@ -16,7 +17,7 @@ export function Hero() {
       <div className="container px-4 md:px-6 text-center text-white">
         <div className="max-w-3xl mx-auto space-y-4">
           <h1 className="text-4xl md:text-6xl font-bold font-headline tracking-tight">
-            Encuentre su propiedad
+            Encontrá la propiedad de tus sueños
           </h1>
         </div>
         <div className="max-w-4xl mx-auto mt-8">

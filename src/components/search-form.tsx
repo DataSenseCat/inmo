@@ -1,10 +1,11 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
+import { Search } from "lucide-react";
 
 const searchFormSchema = z.object({
   type: z.string().optional(),
@@ -31,7 +33,7 @@ const searchFormSchema = z.object({
 
 type SearchFormValues = z.infer<typeof searchFormSchema>;
 
-export function SearchForm() {
+function SearchFormComponent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -44,7 +46,6 @@ export function SearchForm() {
     },
   });
 
-  // Sync form with URL search params
   useEffect(() => {
     form.reset({
       type: searchParams.get('type') || 'any',
@@ -62,23 +63,23 @@ export function SearchForm() {
   }
 
   return (
-    <Form {...form}>
-      <div className="bg-white p-4 rounded-lg shadow-lg">
+    <div className="bg-white p-4 rounded-lg shadow-lg">
+      <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-4 items-end gap-4">
           <FormField
             control={form.control}
             name="type"
             render={({ field }) => (
               <FormItem>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Tipo de propiedad" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="any">Tipo de propiedad</SelectItem>
-                    <SelectItem value="apartment">Apartamento</SelectItem>
+                    <SelectItem value="any">Todos los tipos</SelectItem>
+                    <SelectItem value="apartment">Departamento</SelectItem>
                     <SelectItem value="house">Casa</SelectItem>
                     <SelectItem value="land">Terreno</SelectItem>
                   </SelectContent>
@@ -91,14 +92,14 @@ export function SearchForm() {
             name="operation"
             render={({ field }) => (
               <FormItem>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Operación" />
-                    </SelectTrigger>
+                    </Trigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="any">Operación</SelectItem>
+                    <SelectItem value="any">Cualquier operación</SelectItem>
                     <SelectItem value="rent">Alquiler</SelectItem>
                     <SelectItem value="sale">Venta</SelectItem>
                   </SelectContent>
@@ -110,23 +111,33 @@ export function SearchForm() {
             control={form.control}
             name="location"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="md:col-span-2">
                 <FormControl>
-                  <Input placeholder="Ubicación" {...field} />
+                  <Input placeholder="Ubicación, barrio, o ciudad" {...field} />
                 </FormControl>
               </FormItem>
             )}
           />
-          <Button type="submit" className="w-full">
-            Buscar
+          <Button type="submit" className="w-full md:col-span-4" size="lg">
+            <Search className="mr-2 h-5 w-5"/>
+            Buscar Propiedades
           </Button>
         </form>
-        <div className="text-right mt-2">
-            <Link href="#" className="text-sm text-primary hover:underline">
-                Búsqueda avanzada
-            </Link>
-        </div>
+      </Form>
+      <div className="text-right mt-2">
+          <Link href="#" className="text-sm text-primary hover:underline">
+              Búsqueda avanzada
+          </Link>
       </div>
-    </Form>
+    </div>
   );
+}
+
+
+export function SearchForm() {
+    return (
+        <Suspense fallback={<div>Cargando buscador...</div>}>
+            <SearchFormComponent />
+        </Suspense>
+    )
 }

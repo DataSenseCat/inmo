@@ -1,3 +1,4 @@
+
 import { getPropertyById } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
@@ -53,12 +54,12 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
                 <CardContent>
                     <Separator className='my-4' />
                     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-lg my-6">
-                        <span className="flex items-center gap-2"><BedDouble className="w-6 h-6 text-primary" /> {property.bedrooms} Bedrooms</span>
-                        <span className="flex items-center gap-2"><Bath className="w-6 h-6 text-primary" /> {property.bathrooms} Bathrooms</span>
+                        <span className="flex items-center gap-2"><BedDouble className="w-6 h-6 text-primary" /> {property.bedrooms} Dormitorios</span>
+                        <span className="flex items-center gap-2"><Bath className="w-6 h-6 text-primary" /> {property.bathrooms} Baños</span>
                         <span className="flex items-center gap-2"><AreaChart className="w-6 h-6 text-primary" /> {property.area} m²</span>
                     </div>
                     <Separator className='my-4' />
-                    <h2 className="text-2xl font-bold font-headline mt-8 mb-4">Description</h2>
+                    <h2 className="text-2xl font-bold font-headline mt-8 mb-4">Descripción</h2>
                     <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{property.description}</p>
                 </CardContent>
             </Card>
@@ -67,36 +68,36 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
           <div className="lg:col-span-1 space-y-8">
             <Card className="sticky top-20">
               <CardContent className="p-6 text-center">
-                <p className="text-muted-foreground mb-1">Price</p>
+                <p className="text-muted-foreground mb-1">Precio</p>
                 <p className="text-4xl font-bold text-primary mb-4">
                   ${property.price.toLocaleString()}
-                  {property.operation === 'rent' && <span className="text-lg font-normal text-muted-foreground"> / month</span>}
+                  {property.operation === 'rent' && <span className="text-lg font-normal text-muted-foreground"> / mes</span>}
                 </p>
                 <Badge variant={property.operation === 'sale' ? 'default' : 'secondary'} className='text-sm'>
-                  For {property.operation === 'sale' ? 'Sale' : 'Rent'}
+                  En {property.operation === 'sale' ? 'Venta' : 'Alquiler'}
                 </Badge>
               </CardContent>
               <Separator />
               <CardContent className="p-6">
-                    <h3 className="font-semibold text-xl text-center mb-4 font-headline">Take a Virtual Tour</h3>
-                    <p className="text-sm text-muted-foreground text-center mb-4">Explore this property from the comfort of your home with our AI-powered virtual tour.</p>
+                    <h3 className="font-semibold text-xl text-center mb-4 font-headline">Tour Virtual IA</h3>
+                    <p className="text-sm text-muted-foreground text-center mb-4">Explorá esta propiedad desde la comodidad de tu casa con nuestro tour virtual IA.</p>
                     <VirtualTour property={property} />
               </CardContent>
               <Separator />
               <CardContent className="p-6">
-                <h3 className="font-semibold text-xl text-center mb-4 font-headline">Contact Agent</h3>
+                <h3 className="font-semibold text-xl text-center mb-4 font-headline">Contactar Agente</h3>
                 <div className="space-y-3">
                     <p className="font-medium text-center">{property.contact.name}</p>
                     <Button variant="outline" asChild className="w-full">
                         <a href={`tel:${property.contact.phone}`} className="flex items-center justify-center gap-2">
                             <Phone className="w-4 h-4"/>
-                            <span>Call Agent</span>
+                            <span>Llamar al Agente</span>
                         </a>
                     </Button>
                     <Button variant="outline" asChild className="w-full">
                         <a href={`mailto:${property.contact.email}`} className="flex items-center justify-center gap-2">
                             <Mail className="w-4 h-4"/>
-                            <span>Email Agent</span>
+                            <span>Enviar Email al Agente</span>
                         </a>
                     </Button>
                 </div>

@@ -1,12 +1,14 @@
+
 "use client";
 
 import { useSearchParams } from 'next/navigation';
-import { useMemo } from 'react';
+import { useMemo, Suspense } from 'react';
 import { properties as allProperties } from '@/lib/data';
 import { PropertyCard } from '@/components/property-card';
 import { SearchForm } from '@/components/search-form';
+import { Skeleton } from '@/components/ui/skeleton';
 
-export default function PropertiesPage() {
+function PropertiesList() {
   const searchParams = useSearchParams();
 
   const filteredProperties = useMemo(() => {
@@ -23,15 +25,7 @@ export default function PropertiesPage() {
   }, [searchParams]);
 
   return (
-    <div className="container mx-auto px-4 md:px-6 py-8">
-      <div className="mb-8 p-6 bg-card rounded-lg shadow-md">
-        <h1 className="text-4xl font-bold font-headline mb-2">Our Properties</h1>
-        <p className="text-muted-foreground">Refine your search to find the perfect match.</p>
-        <div className="mt-6">
-          <SearchForm />
-        </div>
-      </div>
-      
+    <>
       {filteredProperties.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProperties.map(property => (
@@ -39,11 +33,57 @@ export default function PropertiesPage() {
           ))}
         </div>
       ) : (
-        <div className="text-center py-16 border-dashed border-2 rounded-lg">
-          <h2 className="text-2xl font-semibold mb-2 font-headline">No Properties Found</h2>
-          <p className="text-muted-foreground">Try adjusting your search filters or check back later.</p>
+        <div className="text-center py-16 border-dashed border-2 rounded-lg col-span-full">
+          <h2 className="text-2xl font-semibold mb-2 font-headline">No se encontraron propiedades</h2>
+          <p className="text-muted-foreground">Intentá ajustar los filtros de búsqueda o volvé a mirar más tarde.</p>
         </div>
       )}
+    </>
+  );
+}
+
+function PropertiesPageContent() {
+  return (
+    <div className="container mx-auto px-4 md:px-6 py-8">
+      <div className="mb-8 p-6 bg-card rounded-lg shadow-md">
+        <h1 className="text-4xl font-bold font-headline mb-2">Nuestras Propiedades</h1>
+        <p className="text-muted-foreground">Refiná tu búsqueda para encontrar la propiedad perfecta.</p>
+        <div className="mt-6">
+          <SearchForm />
+        </div>
+      </div>
+      <Suspense fallback={<PropertiesSkeleton />}>
+        <PropertiesList />
+      </Suspense>
     </div>
   );
+}
+
+function PropertiesSkeleton() {
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+                <div key={i} className="rounded-lg border bg-card text-card-foreground shadow-sm">
+                    <Skeleton className="h-[240px] w-full" />
+                    <div className="p-4 space-y-3">
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                        <Skeleton className="h-10 w-full" />
+                        <div className="flex justify-between items-center pt-2">
+                           <Skeleton className="h-8 w-1/4" />
+                           <Skeleton className="h-8 w-1/4" />
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    )
+}
+
+export default function PropertiesPage() {
+    return (
+        <Suspense fallback={<div>Cargando página...</div>}>
+            <PropertiesPageContent />
+        </Suspense>
+    )
 }
