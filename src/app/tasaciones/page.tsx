@@ -43,6 +43,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { createLead } from "@/lib/leads";
 
 
 const tasacionFormSchema = z.object({
@@ -73,12 +74,37 @@ export default function TasacionesPage() {
     });
   
     async function onSubmit(data: TasacionFormValues) {
-      console.log(data);
-      toast({
-        title: "Solicitud Enviada!",
-        description: "Gracias por solicitar una tasación. Nos pondremos en contacto con usted a la brevedad.",
-      });
-      form.reset();
+      try {
+        const message = `
+          Solicitud de Tasación:
+          - Dirección: ${data.propertyAddress}
+          - Tipo de Propiedad: ${data.propertyType}
+          - Área aprox.: ${data.area || 'No especificada'} m²
+          - Comentarios: ${data.comments || 'Ninguno'}
+        `;
+
+        await createLead({
+          name: data.fullName,
+          email: data.email,
+          phone: data.phone,
+          contactPreference: 'email', 
+          subject: 'Solicitud de Tasación',
+          message: message.trim(),
+        });
+
+        toast({
+          title: "Solicitud Enviada!",
+          description: "Gracias por solicitar una tasación. Nos pondremos en contacto contigo a la brevedad.",
+        });
+        form.reset();
+      } catch (error) {
+         console.error('Failed to send valuation request:', error);
+         toast({
+            variant: 'destructive',
+            title: 'Error al enviar',
+            description: 'No se pudo enviar tu solicitud. Por favor, intentá de nuevo más tarde.',
+         });
+      }
     }
 
   const benefits = [
@@ -183,7 +209,7 @@ export default function TasacionesPage() {
         </section>
 
       {/* Form and Info Section */}
-      <section className="container mx-auto px-4 md:px-6 py-16 lg:py-24">
+      <section id="form" className="container mx-auto px-4 md:px-6 py-16 lg:py-24">
         <div className="grid lg:grid-cols-5 gap-12">
             <div className="lg:col-span-3">
                 <Card className="p-6 sm:p-8">
