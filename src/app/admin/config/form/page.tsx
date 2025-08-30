@@ -5,7 +5,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, Loader2, Save } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Upload, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -24,6 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import type { SiteConfig } from '@/models/site-config';
 import { getSiteConfig, updateSiteConfig } from '@/lib/config';
+import Image from 'next/image';
 
 const configFormSchema = z.object({
   contactPhone: z.string().min(1, 'El teléfono es requerido.'),
@@ -33,6 +34,7 @@ const configFormSchema = z.object({
   facebookUrl: z.string().url().or(z.literal('')),
   instagramUrl: z.string().url().or(z.literal('')),
   twitterUrl: z.string().url().or(z.literal('')),
+  logoUrl: z.string().optional().nullable(),
 });
 
 type ConfigFormValues = z.infer<typeof configFormSchema>;
@@ -42,6 +44,8 @@ function ConfigForm() {
   const { toast } = useToast();
   
   const [loading, setLoading] = useState(true);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   
   const form = useForm<ConfigFormValues>({
     resolver: zodResolver(configFormSchema),
@@ -53,6 +57,7 @@ function ConfigForm() {
       facebookUrl: '',
       instagramUrl: '',
       twitterUrl: '',
+      logoUrl: '',
     },
   });
 
@@ -69,15 +74,33 @@ function ConfigForm() {
                 facebookUrl: data.socials?.facebook || '',
                 instagramUrl: data.socials?.instagram || '',
                 twitterUrl: data.socials?.twitter || '',
+                logoUrl: data.logoUrl || '',
             });
+            if(data.logoUrl) {
+                setLogoPreview(data.logoUrl);
+            }
         }
       })
       .finally(() => setLoading(false));
    }, [form]);
 
+   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if(e.target.files && e.target.files[0]) {
+          const file = e.target.files[0];
+          setLogoFile(file);
+          setLogoPreview(URL.createObjectURL(file));
+      }
+  }
+
+  const removeLogo = () => {
+      setLogoFile(null);
+      setLogoPreview(null);
+      form.setValue('logoUrl', null);
+  }
+
   async function onSubmit(data: ConfigFormValues) {
     try {
-        const payload: SiteConfig = {
+        const payload: Omit<SiteConfig, 'updatedAt' | 'logoUrl'> = {
             contactPhone: data.contactPhone,
             contactEmail: data.contactEmail,
             address: data.address,
@@ -86,10 +109,14 @@ function ConfigForm() {
                 facebook: data.facebookUrl,
                 instagram: data.instagramUrl,
                 twitter: data.twitterUrl,
-            }
+            },
         };
 
-        await updateSiteConfig(payload);
+        if (data.logoUrl === null) {
+            (payload as any).logoUrl = null;
+        }
+
+        await updateSiteConfig(payload, logoFile || undefined);
         toast({ title: 'Configuración Actualizada', description: 'Los cambios se guardaron correctamente.' });
         router.push('/admin?tab=config');
         router.refresh();
@@ -122,6 +149,33 @@ function ConfigForm() {
       
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <Card>
+                <CardHeader><CardTitle>Logo de la Empresa</CardTitle></CardHeader>
+                <CardContent className="flex flex-col items-center gap-6">
+                    {logoPreview && (
+                        <div className="bg-muted p-4 rounded-lg">
+                           <Image src={logoPreview} alt="Vista previa del logo" width={200} height={100} className="object-contain" />
+                        </div>
+                    )}
+                     <div className="w-full max-w-sm">
+                        <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full py-4 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                            <div className="flex flex-col items-center justify-center">
+                                <Upload className="w-8 h-8 mb-2 text-gray-500" />
+                                <p className="text-sm text-gray-500 text-center"><span className="font-semibold">Click para subir logo</span></p>
+                                <p className="text-xs text-gray-500">PNG o JPG</p>
+                            </div>
+                            <input id="dropzone-file" type="file" className="hidden" onChange={handleLogoChange} accept="image/png, image/jpeg" />
+                        </label>
+                    </div> 
+                    {logoPreview && (
+                        <Button variant="destructive" type="button" onClick={removeLogo}>
+                            <Trash2 className="h-4 w-4 mr-2"/>
+                            Quitar Logo
+                        </Button>
+                    )}
+                </CardContent>
+            </Card>
+
             <Card>
                 <CardHeader><CardTitle>Información de Contacto</CardTitle></CardHeader>
                 <CardContent className="space-y-6">
