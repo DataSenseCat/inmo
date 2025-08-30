@@ -27,7 +27,7 @@ export async function getSiteConfig(): Promise<SiteConfig | null> {
     }
 }
 
-export async function updateSiteConfig(data: Omit<SiteConfig, 'updatedAt' | 'logoUrl'>, logoFile?: File): Promise<void> {
+export async function updateSiteConfig(data: Partial<Omit<SiteConfig, 'updatedAt'>>, logoFile?: File): Promise<void> {
     try {
         const docRef = doc(db, 'siteConfig', CONFIG_DOC_ID);
         const currentConfig = await getSiteConfig();
@@ -51,7 +51,7 @@ export async function updateSiteConfig(data: Omit<SiteConfig, 'updatedAt' | 'log
             const logoRef = ref(storage, `site/logo_${Date.now()}_${logoFile.name}`);
             await uploadBytes(logoRef, logoFile);
             configData.logoUrl = await getDownloadURL(logoRef);
-        } else if ((data as any).logoUrl === null) {
+        } else if (data.logoUrl === null) {
             // Logic to remove the logo if requested
              if (currentConfig?.logoUrl) {
                 try {
