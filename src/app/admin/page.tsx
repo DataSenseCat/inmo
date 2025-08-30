@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Building, DollarSign, Filter, Layers, Search, Trash2, Users, CheckCircle, RefreshCw, Plus, Upload, Pencil, Eye, AlertTriangle, Mail, User } from 'lucide-react';
+import { Building, DollarSign, Filter, Layers, Search, Trash2, Users, CheckCircle, RefreshCw, Plus, Upload, Pencil, Eye, AlertTriangle, Mail, User, Settings, ExternalLink } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -438,6 +438,33 @@ export default function AdminDashboard() {
                               </TableBody>
                            </Table>
                         </div>
+                    </TabsContent>
+
+                     <TabsContent value="config" className="p-6">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-bold font-headline">Configuración del Sitio</h3>
+                            <Button asChild>
+                                <Link href="/admin/config/form">
+                                    <Pencil className="mr-2 h-4 w-4" /> Editar Configuración
+                                </Link>
+                            </Button>
+                        </div>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Información de Contacto Principal</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className='text-muted-foreground'>
+                                    Estos son los datos que se mostrarán en el pie de página y otras áreas de contacto.
+                                </p>
+                                <div className='mt-4 text-sm space-y-2'>
+                                    <p><strong>Teléfono:</strong> +54 383 490-1545</p>
+                                    <p><strong>Email:</strong> info@inmobiliariacatamarca.com</p>
+                                    <p><strong>Dirección:</strong> Av. Belgrano 1250, San Fernando del Valle de Catamarca</p>
+                                    <p><strong>Horarios:</strong> Lun - Vie: 9:00 - 18:00, Sáb: 9:00 - 13:00</p>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </TabsContent>
                 </Tabs>
             </CardContent>
