@@ -97,20 +97,30 @@ export async function updateDevelopment(id: string, data: Partial<Development>, 
 
 // Function to get all developments
 export async function getDevelopments(): Promise<Development[]> {
-  const developmentsCol = collection(db, 'developments');
-  const q = query(developmentsCol, orderBy('createdAt', 'desc'));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Development));
+  try {
+    const developmentsCol = collection(db, 'developments');
+    const q = query(developmentsCol, orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Development));
+  } catch (error) {
+    console.error("Error getting developments (the app will proceed with an empty list): ", error);
+    return [];
+  }
 }
 
 // Function to get a single development by its ID
 export async function getDevelopmentById(id: string): Promise<Development | null> {
-    const docRef = doc(db, 'developments', id);
-    const docSnap = await getDoc(docRef);
+    try {
+        const docRef = doc(db, 'developments', id);
+        const docSnap = await getDoc(docRef);
 
-    if (docSnap.exists()) {
-        return { id: docSnap.id, ...docSnap.data() } as Development;
-    } else {
+        if (docSnap.exists()) {
+            return { id: docSnap.id, ...docSnap.data() } as Development;
+        } else {
+            return null;
+        }
+    } catch (error) {
+        console.error(`Error getting development by ID ${id}: `, error);
         return null;
     }
 }
@@ -138,5 +148,3 @@ export async function deleteDevelopment(id: string): Promise<void> {
         throw new Error("Failed to delete development.");
     }
 }
-
-    

@@ -5,7 +5,7 @@ import Image from 'next/image';
 
 const benefits = [
   {
-    icon: CheckCircle,
+    icon: Users,
     title: "Más de 15 años de experiencia",
     description: "Conocemos el mercado inmobiliario catamarqueño como nadie."
   },
@@ -15,7 +15,7 @@ const benefits = [
     description: "Te acompañamos en cada paso del proceso de compra o venta."
   },
   {
-    icon: CheckCircle,
+    icon: Heart,
     title: "Tasaciones gratuitas",
     description: "Conoce el valor real de tu propiedad sin costo alguno."
   }

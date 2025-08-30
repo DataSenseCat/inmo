@@ -1,9 +1,10 @@
 
+
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Building, DollarSign, Filter, Layers, Search, Trash2, Users, CheckCircle, RefreshCw, Plus, Upload, Pencil, Eye, AlertTriangle, Mail, User } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Building, DollarSign, Filter, Layers, Search, Trash2, Users, CheckCircle, RefreshCw, Plus, Upload, Pencil, Eye, AlertTriangle, Mail, User, Settings, ExternalLink } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +23,8 @@ import { getAgents, deleteAgent } from '@/lib/agents';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import type { SiteConfig } from '@/models/site-config';
+import { getSiteConfig } from '@/lib/config';
 
 
 export default function AdminDashboard() {
@@ -33,6 +36,7 @@ export default function AdminDashboard() {
   const [developments, setDevelopments] = useState<Development[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [siteConfig, setSiteConfig] = useState<SiteConfig | null>(null);
   const [loading, setLoading] = useState(true);
   
   const [propertyToDelete, setPropertyToDelete] = useState<Property | null>(null);
@@ -42,16 +46,18 @@ export default function AdminDashboard() {
   async function loadData() {
       try {
           setLoading(true);
-          const [props, devs, leadData, agentData] = await Promise.all([
+          const [props, devs, leadData, agentData, configData] = await Promise.all([
             getProperties(), 
             getDevelopments(),
             getLeads(),
-            getAgents()
+            getAgents(),
+            getSiteConfig()
           ]);
           setProperties(props);
           setDevelopments(devs);
           setLeads(leadData);
           setAgents(agentData);
+          setSiteConfig(configData);
       } catch (error) {
           console.error("Failed to load data:", error);
           toast({
@@ -439,6 +445,39 @@ export default function AdminDashboard() {
                            </Table>
                         </div>
                     </TabsContent>
+
+                     <TabsContent value="config" className="p-6">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-bold font-headline">Configuración del Sitio</h3>
+                            <Button asChild>
+                                <Link href="/admin/config/form">
+                                    <Pencil className="mr-2 h-4 w-4" /> Editar Configuración
+                                </Link>
+                            </Button>
+                        </div>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Información de Contacto Principal</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className='text-muted-foreground'>
+                                    Estos son los datos que se mostrarán en el pie de página y otras áreas de contacto.
+                                </p>
+                                {loading ? (
+                                    <p className='mt-4'>Cargando configuración...</p>
+                                ) : siteConfig ? (
+                                    <div className='mt-4 text-sm space-y-2'>
+                                        <p><strong>Teléfono:</strong> {siteConfig.contactPhone}</p>
+                                        <p><strong>Email:</strong> {siteConfig.contactEmail}</p>
+                                        <p><strong>Dirección:</strong> {siteConfig.address}</p>
+                                        <p><strong>Horarios:</strong> {siteConfig.officeHours}</p>
+                                    </div>
+                                ) : (
+                                    <p className='mt-4'>No se encontró configuración. Por favor, edítala para añadirla.</p>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
                 </Tabs>
             </CardContent>
         </Card>
@@ -491,5 +530,3 @@ export default function AdminDashboard() {
     </div>
   );
 }
-
-    

@@ -1,8 +1,11 @@
 
 import Link from 'next/link';
 import { Facebook, Instagram, Twitter } from 'lucide-react';
+import { getSiteConfig } from '@/lib/config';
 
-export function Footer() {
+export async function Footer() {
+  const config = await getSiteConfig();
+
   return (
     <footer className="bg-[#0f172a] text-white">
         <div className="container mx-auto py-12 px-4 md:px-6">
@@ -13,9 +16,9 @@ export function Footer() {
                         Más de 15 años conectando personas con sus hogares ideales en el corazón de Argentina.
                     </p>
                     <div className="flex space-x-4 mt-4">
-                        <Link href="#" aria-label="Facebook"><Facebook className="h-5 w-5 text-gray-400 hover:text-white" /></Link>
-                        <Link href="#" aria-label="Instagram"><Instagram className="h-5 w-5 text-gray-400 hover:text-white" /></Link>
-                        <Link href="#" aria-label="Twitter"><Twitter className="h-5 w-5 text-gray-400 hover:text-white" /></Link>
+                        <Link href={config?.socials?.facebook || '#'} aria-label="Facebook"><Facebook className="h-5 w-5 text-gray-400 hover:text-white" /></Link>
+                        <Link href={config?.socials?.instagram || '#'} aria-label="Instagram"><Instagram className="h-5 w-5 text-gray-400 hover:text-white" /></Link>
+                        <Link href={config?.socials?.twitter || '#'} aria-label="Twitter"><Twitter className="h-5 w-5 text-gray-400 hover:text-white" /></Link>
                     </div>
                 </div>
 
@@ -44,15 +47,13 @@ export function Footer() {
                 <div>
                     <h4 className="font-semibold mb-3 font-headline">Contacto</h4>
                     <address className="not-italic text-sm space-y-2 text-gray-400">
-                        <p>Av. Belgrano 1250<br/>San Fernando del Valle de Catamarca<br/>Catamarca, Argentina</p>
-                        <p><a href="tel:+543834901545" className="hover:underline hover:text-white">+54 383 490-1545</a></p>
-                        <p><a href="mailto:info@inmobiliariacatamarca.com" className="hover:underline hover:text-white">info@inmobiliariacatamarca.com</a></p>
+                        <p>{config?.address || 'Dirección no configurada'}</p>
+                        <p><a href={`tel:${config?.contactPhone}`} className="hover:underline hover:text-white">{config?.contactPhone || 'Teléfono no configurado'}</a></p>
+                        <p><a href={`mailto:${config?.contactEmail}`} className="hover:underline hover:text-white">{config?.contactEmail || 'Email no configurado'}</a></p>
                     </address>
                     <div className='mt-2 text-sm text-gray-400'>
                         <h5 className='font-semibold text-white'>Horarios</h5>
-                        <p>Lun - Vie: 9:00 - 18:00</p>
-                        <p>Sábados: 9:00 - 13:00</p>
-                        <p>Domingos: Cerrado</p>
+                        <p>{config?.officeHours || 'Horarios no configurados'}</p>
                     </div>
                 </div>
             </div>

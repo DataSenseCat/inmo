@@ -84,28 +84,43 @@ export async function updateProperty(id: string, data: Partial<Property>) {
 
 // Function to get all properties
 export async function getProperties(): Promise<Property[]> {
-  const propertiesCol = collection(db, 'properties');
-  const q = query(propertiesCol, orderBy('createdAt', 'desc'));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Property));
+  try {
+    const propertiesCol = collection(db, 'properties');
+    const q = query(propertiesCol, orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Property));
+  } catch (error) {
+    console.error("Error getting properties (the app will proceed with an empty list): ", error);
+    return [];
+  }
 }
 
 // Function to get featured properties
 export async function getFeaturedProperties(): Promise<Property[]> {
-    const propertiesCol = collection(db, 'properties');
-    const q = query(propertiesCol, where('featured', '==', true), orderBy('createdAt', 'desc'), limit(4));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Property));
+    try {
+        const propertiesCol = collection(db, 'properties');
+        const q = query(propertiesCol, where('featured', '==', true), orderBy('createdAt', 'desc'), limit(4));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Property));
+    } catch (error) {
+        console.error("Error getting featured properties (the app will proceed with an empty list): ", error);
+        return [];
+    }
 }
 
 // Function to get a single property by its ID
 export async function getPropertyById(id: string): Promise<Property | null> {
-    const docRef = doc(db, 'properties', id);
-    const docSnap = await getDoc(docRef);
+    try {
+        const docRef = doc(db, 'properties', id);
+        const docSnap = await getDoc(docRef);
 
-    if (docSnap.exists()) {
-        return { id: docSnap.id, ...docSnap.data() } as Property;
-    } else {
+        if (docSnap.exists()) {
+            return { id: docSnap.id, ...docSnap.data() } as Property;
+        } else {
+            return null;
+        }
+    } catch (error) {
+        console.error(`Error getting property by ID ${id}: `, error);
         return null;
     }
 }
@@ -136,5 +151,3 @@ export async function deleteProperty(id: string): Promise<void> {
         throw new Error("Failed to delete property.");
     }
 }
-
-    

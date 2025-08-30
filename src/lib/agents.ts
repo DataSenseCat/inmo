@@ -81,6 +81,10 @@ export async function updateAgent(id: string, data: Partial<Agent>, photoFile?: 
             agentData.photoUrl = photoUrl;
         }
 
+        if ((data as any).bio === null) {
+            agentData.bio = '';
+        }
+
         await updateDoc(docRef, agentData);
     } catch (error) {
         console.error("Error updating agent: ", error);
@@ -89,19 +93,29 @@ export async function updateAgent(id: string, data: Partial<Agent>, photoFile?: 
 }
 
 export async function getAgents(): Promise<Agent[]> {
-  const agentsCol = collection(db, 'agents');
-  const q = query(agentsCol, orderBy('createdAt', 'desc'));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Agent));
+  try {
+    const agentsCol = collection(db, 'agents');
+    const q = query(agentsCol, orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Agent));
+  } catch (error) {
+      console.error("Error getting agents (the app will proceed with an empty list): ", error);
+      return [];
+  }
 }
 
 export async function getAgentById(id: string): Promise<Agent | null> {
-    const docRef = doc(db, 'agents', id);
-    const docSnap = await getDoc(docRef);
+    try {
+        const docRef = doc(db, 'agents', id);
+        const docSnap = await getDoc(docRef);
 
-    if (docSnap.exists()) {
-        return { id: docSnap.id, ...docSnap.data() } as Agent;
-    } else {
+        if (docSnap.exists()) {
+            return { id: docSnap.id, ...docSnap.data() } as Agent;
+        } else {
+            return null;
+        }
+    } catch (error) {
+        console.error(`Error getting agent by ID ${id}: `, error);
         return null;
     }
 }

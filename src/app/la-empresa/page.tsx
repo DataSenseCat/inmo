@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getAgents } from "@/lib/agents";
+import { getSiteConfig } from "@/lib/config";
 import { Award, Briefcase, Check, Handshake, Heart, Home, KeyRound, Landmark, Library, Mail, Phone, Scale, Search, ShieldCheck, Smile, Star, Users, FileText } from "lucide-react";
 import Image from "next/image";
 import Link from 'next/link';
@@ -82,6 +83,7 @@ const certifications = [
 export default async function AboutUsPage() {
     const agents = await getAgents();
     const activeAgents = agents.filter(a => a.active);
+    const config = await getSiteConfig();
 
     return (
         <div className="bg-gray-50/50">
@@ -270,11 +272,11 @@ export default async function AboutUsPage() {
                                     <Mail className="mr-2"/> Contactar Ahora
                                 </Link>
                             </Button>
-                            <a href="tel:+543834901545" className="flex items-center justify-center gap-2 text-sm">
-                                <Phone size={14} /> <span>+54 383 490-1545</span>
+                            <a href={`tel:${config?.contactPhone}`} className="flex items-center justify-center gap-2 text-sm">
+                                <Phone size={14} /> <span>{config?.contactPhone}</span>
                             </a>
-                            <a href="mailto:info@inmobiliariacatamarca.com" className="flex items-center justify-center gap-2 text-sm">
-                                <Mail size={14} /> <span>info@inmobiliariacatamarca.com</span>
+                            <a href={`mailto:${config?.contactEmail}`} className="flex items-center justify-center gap-2 text-sm">
+                                <Mail size={14} /> <span>{config?.contactEmail}</span>
                             </a>
                          </div>
                     </div>

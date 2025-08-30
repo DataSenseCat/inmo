@@ -43,6 +43,10 @@ import {
   Calendar,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { createLead } from "@/lib/leads";
+import type { SiteConfig } from "@/models/site-config";
+import { useEffect, useState } from "react";
+import { getSiteConfig } from "@/lib/config";
 
 
 const tasacionFormSchema = z.object({
@@ -59,6 +63,12 @@ type TasacionFormValues = z.infer<typeof tasacionFormSchema>;
 
 export default function TasacionesPage() {
     const { toast } = useToast();
+    const [config, setConfig] = useState<SiteConfig | null>(null);
+
+    useEffect(() => {
+        getSiteConfig().then(setConfig);
+    }, []);
+
     const form = useForm<TasacionFormValues>({
       resolver: zodResolver(tasacionFormSchema),
       defaultValues: {
@@ -73,12 +83,37 @@ export default function TasacionesPage() {
     });
   
     async function onSubmit(data: TasacionFormValues) {
-      console.log(data);
-      toast({
-        title: "Solicitud Enviada!",
-        description: "Gracias por solicitar una tasación. Nos pondremos en contacto con usted a la brevedad.",
-      });
-      form.reset();
+      try {
+        const message = `
+          Solicitud de Tasación:
+          - Dirección: ${data.propertyAddress}
+          - Tipo de Propiedad: ${data.propertyType}
+          - Área aprox.: ${data.area || 'No especificada'} m²
+          - Comentarios: ${data.comments || 'Ninguno'}
+        `;
+
+        await createLead({
+          name: data.fullName,
+          email: data.email,
+          phone: data.phone,
+          contactPreference: 'email', 
+          subject: 'Solicitud de Tasación',
+          message: message.trim(),
+        });
+
+        toast({
+          title: "Solicitud Enviada!",
+          description: "Gracias por solicitar una tasación. Nos pondremos en contacto contigo a la brevedad.",
+        });
+        form.reset();
+      } catch (error) {
+         console.error('Failed to send valuation request:', error);
+         toast({
+            variant: 'destructive',
+            title: 'Error al enviar',
+            description: 'No se pudo enviar tu solicitud. Por favor, intentá de nuevo más tarde.',
+         });
+      }
     }
 
   const benefits = [
@@ -183,7 +218,7 @@ export default function TasacionesPage() {
         </section>
 
       {/* Form and Info Section */}
-      <section className="container mx-auto px-4 md:px-6 py-16 lg:py-24">
+      <section id="form" className="container mx-auto px-4 md:px-6 py-16 lg:py-24">
         <div className="grid lg:grid-cols-5 gap-12">
             <div className="lg:col-span-3">
                 <Card className="p-6 sm:p-8">
@@ -339,22 +374,22 @@ export default function TasacionesPage() {
                         <CardTitle className="font-headline text-xl">¿Preferís contactarnos directamente?</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <a href="https://wa.me/543834901545" target="_blank" className="flex items-center gap-4 group">
+                        <a href={`https://wa.me/${config?.contactPhone?.replace(/\s|-/g, '')}`} target="_blank" className="flex items-center gap-4 group">
                            <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
                                 <MessageCircle className="h-5 w-5 text-green-600"/>
                            </div>
                            <div>
                                 <h3 className="font-semibold group-hover:underline">WhatsApp</h3>
-                                <p className="text-sm text-muted-foreground">+54 383 490-1545</p>
+                                <p className="text-sm text-muted-foreground">{config?.contactPhone || 'Cargando...'}</p>
                            </div>
                         </a>
-                         <a href="mailto:info@inmobiliariacatamarca.com" className="flex items-center gap-4 group">
+                         <a href={`mailto:${config?.contactEmail}`} className="flex items-center gap-4 group">
                            <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                                 <Mail className="h-5 w-5 text-blue-600"/>
                            </div>
                            <div>
                                 <h3 className="font-semibold group-hover:underline">Email</h3>
-                                <p className="text-sm text-muted-foreground">info@inmobiliariacatamarca.com</p>
+                                <p className="text-sm text-muted-foreground">{config?.contactEmail || 'Cargando...'}</p>
                            </div>
                         </a>
                     </CardContent>

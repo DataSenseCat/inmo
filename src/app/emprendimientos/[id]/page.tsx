@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { getSiteConfig } from '@/lib/config';
 
 const statusConfig = {
     planning: { label: "En Planificación", icon: Clock, className: "bg-blue-100 text-blue-800 border-blue-200" },
@@ -26,6 +27,7 @@ const DetailItem = ({ icon: Icon, label, value }: { icon: React.ElementType, lab
 
 export default async function DevelopmentDetailPage({ params }: { params: { id: string } }) {
   const development = await getDevelopmentById(params.id);
+  const config = await getSiteConfig();
 
   if (!development) {
     notFound();
@@ -95,12 +97,12 @@ export default async function DevelopmentDetailPage({ params }: { params: { id: 
                     </Button>
                      <div className='flex gap-2 justify-center pt-2'>
                         <Button variant="outline" asChild size="sm">
-                            <a href="mailto:info@inmobiliariacatamarca.com">
+                            <a href={`mailto:${config?.contactEmail}`}>
                                 <Mail className="mr-2"/> Email
                             </a>
                         </Button>
                          <Button variant="outline" asChild size="sm">
-                            <a href="tel:+543834901545">
+                            <a href={`tel:${config?.contactPhone}`}>
                                 <Phone className="mr-2"/> Llamar
                             </a>
                         </Button>

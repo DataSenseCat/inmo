@@ -28,8 +28,13 @@ export async function createLead(data: Omit<Lead, 'id' | 'createdAt'>) {
 
 // Function to get all leads
 export async function getLeads(): Promise<Lead[]> {
-  const leadsCol = collection(db, 'leads');
-  const q = query(leadsCol, orderBy('createdAt', 'desc'));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead));
+  try {
+    const leadsCol = collection(db, 'leads');
+    const q = query(leadsCol, orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead));
+  } catch (error) {
+    console.error("Error getting leads (the app will proceed with an empty list): ", error);
+    return [];
+  }
 }
