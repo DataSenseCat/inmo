@@ -14,7 +14,7 @@ import type { Development } from '@/models/development';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { deleteProperty, getProperties } from '@/lib/properties';
-import { getDevelopments } from '@/lib/developments';
+import { deleteDevelopment, getDevelopments } from '@/lib/developments';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 
@@ -23,17 +23,18 @@ export default function AdminDashboard() {
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
   
-  const [recentProperties, setRecentProperties] = useState<Property[]>([]);
+  const [properties, setProperties] = useState<Property[]>([]);
   const [developments, setDevelopments] = useState<Development[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [propertyToDelete, setPropertyToDelete] = useState<Property | null>(null);
+  const [developmentToDelete, setDevelopmentToDelete] = useState<Development | null>(null);
 
   async function loadData() {
       try {
           setLoading(true);
           const [props, devs] = await Promise.all([getProperties(), getDevelopments()]);
-          setRecentProperties(props.slice(0, 5));
+          setProperties(props);
           setDevelopments(devs);
       } catch (error) {
           console.error("Failed to load data:", error);
@@ -55,9 +56,9 @@ export default function AdminDashboard() {
     } else {
         loadData();
     }
-  }, [router]);
+  }, [router, toast]);
 
-  const handleDelete = async () => {
+  const handleDeleteProperty = async () => {
     if (!propertyToDelete) return;
     try {
       await deleteProperty(propertyToDelete.id);
@@ -77,12 +78,32 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDeleteDevelopment = async () => {
+    if (!developmentToDelete) return;
+    try {
+      await deleteDevelopment(developmentToDelete.id);
+      toast({
+        title: "Emprendimiento Eliminado",
+        description: `El emprendimiento "${developmentToDelete.title}" ha sido eliminado.`,
+      });
+      setDevelopmentToDelete(null);
+      loadData(); // Recargar todos los datos
+    } catch (error) {
+       console.error("Failed to delete development:", error);
+       toast({
+          variant: "destructive",
+          title: "Error al eliminar",
+          description: "No se pudo eliminar el emprendimiento. Inténtalo de nuevo.",
+       });
+    }
+  };
+
   if (!isClient) {
     return null; // O un loading spinner
   }
 
   const stats = [
-    { title: "Propiedades Totales", value: recentProperties.length, subValue: `${recentProperties.filter(p => p.active).length} activas`, icon: Layers },
+    { title: "Propiedades Totales", value: properties.length, subValue: `${properties.filter(p => p.active).length} activas`, icon: Layers },
     { title: "Emprendimientos", value: developments.length, subValue: `${developments.filter(d => d.status !== 'finished').length} en curso`, icon: Building },
     { title: "Leads Totales", value: "3", subValue: "1 hoy", icon: Users },
     { title: "Ingresos Totales", value: "$2.500.000", subValue: "+12% vs mes anterior", icon: DollarSign },
@@ -178,8 +199,8 @@ export default function AdminDashboard() {
                                     <TableRow>
                                         <TableCell colSpan={7} className="text-center py-8">Cargando propiedades...</TableCell>
                                     </TableRow>
-                                  ) : recentProperties.length > 0 ? (
-                                    recentProperties.map(prop => (
+                                  ) : properties.length > 0 ? (
+                                    properties.map(prop => (
                                     <TableRow key={prop.id}>
                                       <TableCell className="font-medium">{prop.title}</TableCell>
                                       <TableCell className="capitalize">{prop.type}</TableCell>
@@ -258,9 +279,11 @@ export default function AdminDashboard() {
                                           <Button asChild variant="ghost" size="icon">
                                             <Link href={`/admin/developments/form?id=${dev.id}`}><Pencil className="h-4 w-4"/></Link>
                                           </Button>
-                                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                                                <Trash2 className="h-4 w-4"/>
-                                          </Button>
+                                          <AlertDialogTrigger asChild>
+                                              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setDevelopmentToDelete(dev)}>
+                                                  <Trash2 className="h-4 w-4"/>
+                                              </Button>
+                                          </AlertDialogTrigger>
                                         </div>
                                       </TableCell>
                                     </TableRow>
@@ -293,10 +316,27 @@ export default function AdminDashboard() {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel onClick={() => setPropertyToDelete(null)}>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+                    <AlertDialogAction onClick={handleDeleteProperty} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={!!developmentToDelete} onOpenChange={(open) => !open && setDevelopmentToDelete(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>¿Estás seguro de que deseas eliminar este emprendimiento?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Esta acción no se puede deshacer. Esto eliminará permanentemente el emprendimiento <span className="font-semibold">"{developmentToDelete?.title}"</span> de la base de datos y su imagen asociada.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setDevelopmentToDelete(null)}>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteDevelopment} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
     </div>
   );
 }
+
+    

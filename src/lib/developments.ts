@@ -1,3 +1,4 @@
+
 'use server';
 
 import {
@@ -78,11 +79,14 @@ export async function updateDevelopment(id: string, data: Partial<Development>, 
             imageUrl = await getDownloadURL(imageRef);
         }
 
-        const developmentData = {
+        const developmentData: any = {
             ...cleanData(data),
-            ...(imageUrl && { image: imageUrl }), // Add image url if it exists or was updated
             updatedAt: Timestamp.now(),
         };
+
+        if (imageUrl) {
+            developmentData.image = imageUrl;
+        }
 
         await updateDoc(docRef, developmentData);
     } catch (error) {
@@ -134,3 +138,5 @@ export async function deleteDevelopment(id: string): Promise<void> {
         throw new Error("Failed to delete development.");
     }
 }
+
+    

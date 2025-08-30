@@ -32,7 +32,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import type { Development } from '@/models/development';
-import { createDevelopment } from '@/lib/developments';
+import { createDevelopment, getDevelopmentById, updateDevelopment } from '@/lib/developments';
 
 const developmentFormSchema = z.object({
   title: z.string().min(1, 'El título es requerido.'),
@@ -48,10 +48,14 @@ const developmentFormSchema = z.object({
       max: z.coerce.number().min(0, "Debe ser un número positivo.").optional().or(z.literal('')),
   }),
   deliveryDate: z.string().min(1, 'La fecha de entrega es requerida.'),
-}).refine(data => data.availableUnits <= data.totalUnits, {
+}).refine(data => {
+    if (data.availableUnits === undefined || data.totalUnits === undefined) return true;
+    return data.availableUnits <= data.totalUnits;
+}, {
     message: "Las unidades disponibles no pueden ser mayores a las totales.",
     path: ["availableUnits"],
 });
+
 
 type DevelopmentFormValues = z.infer<typeof developmentFormSchema>;
 
@@ -84,6 +88,34 @@ function DevelopmentForm() {
     },
   });
 
+  useEffect(() => {
+    if (isEditing && !devData) {
+      setLoading(true);
+      getDevelopmentById(developmentId)
+        .then(data => {
+          if (data) {
+            setDevData(data);
+            const values = {
+                ...data,
+                priceFrom: data.priceFrom || '',
+                priceRange: {
+                    min: data.priceRange?.min || '',
+                    max: data.priceRange?.max || '',
+                }
+            }
+            form.reset(values);
+            if(data.image){
+                setImagePreview(data.image);
+            }
+          } else {
+            toast({ variant: 'destructive', title: 'Error', description: 'Emprendimiento no encontrado.' });
+            router.push('/admin');
+          }
+        })
+        .finally(() => setLoading(false));
+    }
+   }, [isEditing, developmentId, form, router, toast, devData]);
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       if(e.target.files && e.target.files[0]) {
           const file = e.target.files[0];
@@ -100,7 +132,7 @@ function DevelopmentForm() {
   async function onSubmit(data: DevelopmentFormValues) {
     try {
         if(isEditing) {
-            // await updateDevelopment(developmentId, data, imageFile);
+            await updateDevelopment(developmentId, data, imageFile || undefined);
             toast({ title: 'Emprendimiento Actualizado', description: 'Los cambios se guardaron correctamente.' });
         } else {
             if (!imageFile) {
@@ -118,7 +150,7 @@ function DevelopmentForm() {
     }
   }
 
-  if (loading) {
+  if (loading && isEditing) {
       return (
           <div className="flex justify-center items-center h-[calc(100vh-200px)]">
               <Loader2 className="h-10 w-10 animate-spin" />
@@ -299,3 +331,5 @@ export default function DevelopmentFormPage() {
         </Suspense>
     )
 }
+
+    
