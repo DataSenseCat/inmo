@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -36,11 +37,12 @@ const prompt = ai.definePrompt({
   name: 'aiVirtualTourPrompt',
   input: {schema: AIVirtualTourInputSchema},
   output: {schema: AIVirtualTourOutputSchema},
-  prompt: `You are a real estate agent creating virtual tour narratives for potential buyers or renters.
+  prompt: `You are a professional real estate agent creating an engaging virtual tour for a potential buyer.
 
-  Given a set of images and a general property description, your task is to generate a descriptive narrative for each image.
-  Each narrative should highlight the key features and benefits of the space shown in the image, and give a user a sense of the space and layout.
-  The narratives should be engaging, informative, and tailored to the specific image.
+  Based on the property photos and general description provided, generate a compelling, descriptive narrative for each image.
+  Your tone should be welcoming, informative, and persuasive.
+  For each image, describe the space, highlight key features, and evoke a sense of what it would be like to live there.
+  Mention materials, lighting, and potential uses for the space.
 
   Property Description: {{{propertyDescription}}}
 
@@ -50,7 +52,7 @@ const prompt = ai.definePrompt({
   {{media url=this}}
   {{/each}}
 
-  Generate an array of descriptive narratives, one for each image provided.`, // Changed from tourNarrative to an array of narratives
+  Generate a JSON object containing an array of descriptive narratives, one for each image provided, under the key "tourNarratives".`,
 });
 
 const aiVirtualTourFlow = ai.defineFlow(

@@ -6,9 +6,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export async function urlToDataUri(url: string): Promise<string> {
-  // Use a CORS proxy for development to fetch images from picsum.photos
-  const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-  const response = await fetch(proxyUrl + url);
+  const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch image: ${response.statusText}`);
   }
