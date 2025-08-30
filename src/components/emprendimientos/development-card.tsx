@@ -22,6 +22,7 @@ const statusConfig = {
 export function DevelopmentCard({ development }: DevelopmentCardProps) {
   const status = statusConfig[development.status];
   const StatusIcon = status.icon;
+  const detailUrl = `/emprendimientos/${development.id}`;
 
   return (
     <Card className="overflow-hidden transition-shadow hover:shadow-xl h-full flex flex-col group border rounded-lg">
@@ -44,7 +45,7 @@ export function DevelopmentCard({ development }: DevelopmentCardProps) {
       <CardContent className="p-6 flex flex-col flex-grow">
         <div>
           <h3 className="font-semibold text-xl font-headline mb-2 leading-tight">
-            <Link href="#" className="hover:text-primary transition-colors">
+            <Link href={detailUrl} className="hover:text-primary transition-colors">
                 {development.title}
             </Link>
           </h3>
@@ -94,12 +95,12 @@ export function DevelopmentCard({ development }: DevelopmentCardProps) {
         </div>
         <div className="mt-auto pt-6 flex gap-3">
             <Button asChild variant="outline" className='w-full'>
-                <Link href="#">
+                <Link href={detailUrl}>
                     Ver Detalles
                 </Link>
             </Button>
             <Button asChild className='w-full bg-green-600 hover:bg-green-700'>
-                <Link href={`/contact?propertyId=${development.id}`}>
+                <Link href={`/contact?subject=consulta-emprendimiento&propertyId=${development.id}`}>
                     Consultar
                 </Link>
             </Button>

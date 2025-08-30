@@ -11,7 +11,20 @@ export default async function EmprendimientosPage() {
 
   const filteredDevelopments = (status: 'planning' | 'construction' | 'finished' | null) => {
     if (!status) return developments;
-    return developments.filter(dev => dev.status === status);
+    const filtered = developments.filter(dev => dev.status === status);
+    return filtered.length > 0 ? filtered : null;
+  };
+  
+  const renderDevelopments = (devs: Development[] | null) => {
+    if (!devs || devs.length === 0) {
+      return (
+        <div className="col-span-full text-center py-16 border-dashed border-2 rounded-lg">
+            <h2 className="text-2xl font-semibold mb-2 font-headline">No se encontraron emprendimientos</h2>
+            <p className="text-muted-foreground">No hay emprendimientos en esta categoría por el momento.</p>
+        </div>
+      )
+    }
+    return devs.map((dev) => <DevelopmentCard key={dev.id} development={dev} />);
   }
 
   return (
@@ -34,22 +47,22 @@ export default async function EmprendimientosPage() {
           
           <TabsContent value="all">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {developments.map((dev) => <DevelopmentCard key={dev.id} development={dev} />)}
+              {renderDevelopments(developments)}
             </div>
           </TabsContent>
           <TabsContent value="planning">
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {filteredDevelopments('planning').map((dev) => <DevelopmentCard key={dev.id} development={dev} />)}
+                {renderDevelopments(filteredDevelopments('planning'))}
             </div>
           </TabsContent>
           <TabsContent value="construction">
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {filteredDevelopments('construction').map((dev) => <DevelopmentCard key={dev.id} development={dev} />)}
+                {renderDevelopments(filteredDevelopments('construction'))}
             </div>
           </TabsContent>
           <TabsContent value="finished">
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {filteredDevelopments('finished').map((dev) => <DevelopmentCard key={dev.id} development={dev} />)}
+                {renderDevelopments(filteredDevelopments('finished'))}
             </div>
           </TabsContent>
         </Tabs>
