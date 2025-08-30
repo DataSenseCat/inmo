@@ -100,7 +100,7 @@ function ConfigForm() {
 
   async function onSubmit(data: ConfigFormValues) {
     try {
-        const payload: Omit<SiteConfig, 'updatedAt' | 'logoUrl'> & { logoUrl?: string | null } = {
+        const payload: Omit<SiteConfig, 'updatedAt' | 'logoUrl'> = {
             contactPhone: data.contactPhone,
             contactEmail: data.contactEmail,
             address: data.address,
@@ -112,13 +112,7 @@ function ConfigForm() {
             },
         };
 
-        // This is the key change: we explicitly tell the update function
-        // that the logo should be removed if the preview is gone.
-        if (!logoPreview) {
-            payload.logoUrl = null;
-        }
-
-        await updateSiteConfig(payload, logoFile || undefined);
+        await updateSiteConfig(payload, logoFile || undefined, logoPreview);
         toast({ title: 'Configuración Actualizada', description: 'Los cambios se guardaron correctamente.' });
         router.push('/admin?tab=config');
         router.refresh();
