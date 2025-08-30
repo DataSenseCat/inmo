@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { getAgents } from "@/lib/agents";
 import { Award, Briefcase, Check, Handshake, Heart, Home, KeyRound, Landmark, Library, Mail, Phone, Scale, Search, ShieldCheck, Smile, Star, Users, FileText } from "lucide-react";
 import Image from "next/image";
 import Link from 'next/link';
@@ -53,33 +54,6 @@ const services = [
     },
 ];
 
-const teamMembers = [
-    {
-      name: "Roberto Fernández",
-      role: "Director / CEO - Corredor Inmobiliario",
-      bio: "Más de 20 años de experiencia en el sector inmobiliario. Especialista en grandes desarrollos y ventas corporativas.",
-      image: "https://picsum.photos/seed/team1/200/200",
-    },
-    {
-      name: "Maria Rodríguez",
-      role: "Gerente Comercial - Corredora Inmobiliaria",
-      bio: "Apasionada por las ventas y las relaciones con clientes. Experta en marketing y negociación.",
-      image: "https://picsum.photos/seed/team2/200/200",
-    },
-    {
-      name: "Carlos Gómez",
-      role: "Tasador Certificado - Ingeniero Civil",
-      bio: "Titulado, certificado y con una vasta experiencia en valuar correctamente inmuebles y terrenos.",
-      image: "https://picsum.photos/seed/team3/200/200",
-    },
-    {
-      name: "Ana Gonzalez",
-      role: "Coordinadora Administrativa",
-      bio: "Encargada de que todas las operaciones fluyan correctamente. Contacto clave con escribanías y bancos.",
-      image: "https://picsum.photos/seed/team4/200/200",
-    },
-];
-
 const testimonials = [
     {
       text: "La tasación fue muy profesional y me ayudó a establecer un precio justo para mi casa. ¡Vendimos en menos de un mes!",
@@ -105,7 +79,10 @@ const certifications = [
     { name: "Certificación ISO 9001", icon: ShieldCheck },
 ];
 
-export default function AboutUsPage() {
+export default async function AboutUsPage() {
+    const agents = await getAgents();
+    const activeAgents = agents.filter(a => a.active);
+
     return (
         <div className="bg-gray-50/50">
             {/* Hero Section */}
@@ -216,15 +193,15 @@ export default function AboutUsPage() {
                         </p>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {teamMembers.map((member, index) => (
-                            <Card key={index} className="text-center p-6 hover:shadow-lg transition-shadow">
+                        {activeAgents.map((agent) => (
+                            <Card key={agent.id} className="text-center p-6 hover:shadow-lg transition-shadow">
                                 <Avatar className="h-24 w-24 mx-auto mb-4 ring-4 ring-primary/20">
-                                    <AvatarImage src={member.image} alt={member.name} data-ai-hint="person photo" />
-                                    <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                                    <AvatarImage src={agent.photoUrl} alt={agent.name} data-ai-hint="person photo" />
+                                    <AvatarFallback>{agent.name.charAt(0)}</AvatarFallback>
                                 </Avatar>
-                                <h3 className="font-semibold text-lg">{member.name}</h3>
-                                <p className="text-primary text-sm font-medium">{member.role}</p>
-                                <p className="text-muted-foreground text-xs mt-3 border-t pt-3">{member.bio}</p>
+                                <h3 className="font-semibold text-lg">{agent.name}</h3>
+                                <p className="text-primary text-sm font-medium">Agente Inmobiliario</p>
+                                {agent.bio && <p className="text-muted-foreground text-xs mt-3 border-t pt-3">{agent.bio}</p>}
                             </Card>
                         ))}
                     </div>
@@ -307,5 +284,3 @@ export default function AboutUsPage() {
         </div>
     );
 }
-
-    

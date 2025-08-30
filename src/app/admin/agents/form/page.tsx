@@ -5,7 +5,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, User, Mail, Phone, Image as ImageIcon, Upload, Trash2, Loader2 } from 'lucide-react';
+import { ArrowLeft, User, Mail, Phone, Image as ImageIcon, Upload, Trash2, Loader2, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -26,6 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { Agent } from '@/models/agent';
 import { createAgent, getAgentById, updateAgent } from '@/lib/agents';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Textarea } from '@/components/ui/textarea';
 
 
 const agentFormSchema = z.object({
@@ -33,6 +34,7 @@ const agentFormSchema = z.object({
   email: z.string().email('Por favor, ingrese un email válido.'),
   phone: z.string().min(1, 'El teléfono es requerido.'),
   active: z.boolean().default(true),
+  bio: z.string().optional(),
 });
 
 type AgentFormValues = z.infer<typeof agentFormSchema>;
@@ -57,6 +59,7 @@ function AgentForm() {
       email: '',
       phone: '',
       active: true,
+      bio: '',
     },
   });
 
@@ -67,7 +70,10 @@ function AgentForm() {
         .then(data => {
           if (data) {
             setAgentData(data);
-            form.reset(data);
+            form.reset({
+                ...data,
+                bio: data.bio || '',
+            });
             if(data.photoUrl){
                 setImagePreview(data.photoUrl);
             }
@@ -158,6 +164,14 @@ function AgentForm() {
                                 <FormMessage />
                             </FormItem>
                         )}/>
+                        <FormField control={form.control} name="bio" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Biografía</FormLabel>
+                                <FormControl><Textarea placeholder="Una breve descripción sobre el agente, su experiencia, etc." {...field} /></FormControl>
+                                <FormDescription>Esta biografía se mostrará en la página "La Empresa".</FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )}/>
                         <FormField control={form.control} name="active" render={({ field }) => (
                             <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
                                 <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
@@ -224,5 +238,3 @@ export default function AgentFormPage() {
         </Suspense>
     )
 }
-
-    
