@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import { Facebook, Instagram, Twitter } from 'lucide-react';
 
@@ -22,9 +23,9 @@ export function Footer() {
                     <h4 className="font-semibold mb-3 font-headline">Enlaces Rápidos</h4>
                     <ul className="space-y-2 text-sm">
                         <li><Link href="/properties" className="hover:underline text-gray-400 hover:text-white">Propiedades</Link></li>
-                        <li><Link href="#" className="hover:underline text-gray-400 hover:text-white">Emprendimientos</Link></li>
-                        <li><Link href="#" className="hover:underline text-gray-400 hover:text-white">Tasaciones</Link></li>
-                        <li><Link href="#" className="hover:underline text-gray-400 hover:text-white">La Empresa</Link></li>
+                        <li><Link href="/emprendimientos" className="hover:underline text-gray-400 hover:text-white">Emprendimientos</Link></li>
+                        <li><Link href="/tasaciones" className="hover:underline text-gray-400 hover:text-white">Tasaciones</Link></li>
+                        <li><Link href="/la-empresa" className="hover:underline text-gray-400 hover:text-white">La Empresa</Link></li>
                         <li><Link href="/contact" className="hover:underline text-gray-400 hover:text-white">Contacto</Link></li>
                     </ul>
                 </div>
@@ -34,9 +35,9 @@ export function Footer() {
                     <ul className="space-y-2 text-sm">
                         <li><Link href="/properties?operation=sale" className="hover:underline text-gray-400 hover:text-white">Venta de Propiedades</Link></li>
                         <li><Link href="/properties?operation=rent" className="hover:underline text-gray-400 hover:text-white">Alquiler de Propiedades</Link></li>
-                        <li><Link href="#" className="hover:underline text-gray-400 hover:text-white">Tasaciones Gratuitas</Link></li>
-                        <li><Link href="#" className="hover:underline text-gray-400 hover:text-white">Desarrollos Inmobiliarios</Link></li>
-                        <li><Link href="#" className="hover:underline text-gray-400 hover:text-white">Asesoramiento Legal</Link></li>
+                        <li><Link href="/tasaciones" className="hover:underline text-gray-400 hover:text-white">Tasaciones Gratuitas</Link></li>
+                        <li><Link href="/emprendimientos" className="hover:underline text-gray-400 hover:text-white">Desarrollos Inmobiliarios</Link></li>
+                        <li><Link href="/la-empresa" className="hover:underline text-gray-400 hover:text-white">Asesoramiento Legal</Link></li>
                     </ul>
                 </div>
 
@@ -67,3 +68,5 @@ export function Footer() {
     </footer>
   );
 }
+
+    

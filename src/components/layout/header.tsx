@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -48,7 +49,7 @@ export function Header() {
             <Link href="/properties" className="text-gray-600 hover:text-primary">Propiedades</Link>
             <Link href="/emprendimientos" className="text-gray-600 hover:text-primary">Emprendimientos</Link>
             <Link href="/tasaciones" className="text-gray-600 hover:text-primary">Tasaciones</Link>
-            <Link href="#" className="text-gray-600 hover:text-primary">La Empresa</Link>
+            <Link href="/la-empresa" className="text-gray-600 hover:text-primary">La Empresa</Link>
             <Link href="/contact" className="text-gray-600 hover:text-primary">Contacto</Link>
             <Button size="sm" asChild>
               <Link href="#">Admin</Link>
@@ -81,7 +82,7 @@ export function Header() {
                   <Link href="/properties" className="text-muted-foreground hover:text-primary">Propiedades</Link>
                   <Link href="/emprendimientos" className="text-muted-foreground hover:text-primary">Emprendimientos</Link>
                   <Link href="/tasaciones" className="text-muted-foreground hover:text-primary">Tasaciones</Link>
-                  <Link href="#" className="text-muted-foreground hover:text-primary">La Empresa</Link>
+                  <Link href="/la-empresa" className="text-muted-foreground hover:text-primary">La Empresa</Link>
                   <Link href="/contact" className="text-muted-foreground hover:text-primary">Contacto</Link>
                   <Button asChild>
                     <Link href="#">Admin</Link>
@@ -95,3 +96,5 @@ export function Header() {
     </header>
   );
 }
+
+    
