@@ -11,4 +11,6 @@ export type Development = {
     priceRange: { min: number; max: number };
     deliveryDate: string;
     image: string;
+    createdAt: any;
+    updatedAt: any;
   };

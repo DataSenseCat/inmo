@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, Info, Home, ListChecks, DollarSign, Image as ImageIcon, ParkingCircle, Waves, ConciergeBell, Flame, CookingPot, Upload, Trash2 } from 'lucide-react';
+import { ArrowLeft, Info, Home, ListChecks, DollarSign, Image as ImageIcon, ParkingCircle, Waves, ConciergeBell, Flame, CookingPot, Upload, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -28,15 +28,18 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import Image from 'next/image';
+import { createProperty, getPropertyById, updateProperty } from '@/lib/properties';
+import { useToast } from '@/hooks/use-toast';
+import type { Property } from '@/models/property';
 
 // Esquema de validación con Zod para todo el formulario
 const propertyFormSchema = z.object({
   // Información Básica
   title: z.string().min(1, 'El título es requerido.'),
-  city: z.string().min(1, 'La ciudad es requerida.'),
+  location: z.string().min(1, 'La ciudad es requerida.'),
   address: z.string().optional(),
   description: z.string().optional(),
   type: z.enum(['Casa', 'Departamento', 'Local', 'Lote', 'Oficina', 'PH']),
@@ -47,7 +50,7 @@ const propertyFormSchema = z.object({
   // Detalles
   bedrooms: z.coerce.number().min(0, "Debe ser un número positivo.").optional().or(z.literal('')),
   bathrooms: z.coerce.number().min(0, "Debe ser un número positivo.").optional().or(z.literal('')),
-  coveredM2: z.coerce.number().min(0, "Debe ser un número positivo.").optional().or(z.literal('')),
+  area: z.coerce.number().min(0, "Debe ser un número positivo.").optional().or(z.literal('')),
   totalM2: z.coerce.number().min(0, "Debe ser un número positivo.").optional().or(z.literal('')),
 
   // Características
@@ -62,6 +65,12 @@ const propertyFormSchema = z.object({
   // Precios
   priceUSD: z.coerce.number().min(0, "Debe ser un número positivo.").optional().or(z.literal('')),
   priceARS: z.coerce.number().min(0, "Debe ser un número positivo.").optional().or(z.literal('')),
+  
+  contact: z.object({
+      name: z.string().min(1, "El nombre del agente es requerido"),
+      phone: z.string().optional(),
+      email: z.string().email("Email de contacto inválido").optional(),
+  }),
 
   // Imágenes (la lógica de subida se manejará por separado)
   images: z.array(z.any()).default([]),
@@ -78,26 +87,34 @@ const featureOptions = [
 ] as const;
 
 
-export default function PropertyFormPage() {
+function PropertyForm() {
   const router = useRouter();
-  // TODO: Cargar la propiedad si es una edición
-  const isEditing = false; 
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
+  
+  const propertyId = searchParams.get('id');
+  const isEditing = !!propertyId;
+
+  const [loading, setLoading] = useState(isEditing);
+  const [propertyData, setPropertyData] = useState<Property | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  
 
   const form = useForm<PropertyFormValues>({
     resolver: zodResolver(propertyFormSchema),
     defaultValues: {
       title: '',
-      city: 'San Fernando del Valle de Catamarca',
+      location: 'San Fernando del Valle de Catamarca',
       address: '',
       description: '',
       type: 'Casa',
       operation: 'Venta',
       featured: false,
       active: true,
-      bedrooms: '',
-      bathrooms: '',
-      coveredM2: '',
-      totalM2: '',
+      bedrooms: 0,
+      bathrooms: 0,
+      area: 0,
       features: {
         cochera: false,
         piscina: false,
@@ -105,16 +122,88 @@ export default function PropertyFormPage() {
         quincho: false,
         parrillero: false,
       },
-      priceUSD: '',
-      priceARS: '',
+      priceUSD: 0,
+      priceARS: 0,
       images: [],
+      contact: {
+          name: "Roberto Fernández",
+          phone: "+54 383 490-1545",
+          email: "roberto@inmobiliariacatamarca.com"
+      }
     },
   });
 
-  function onSubmit(data: PropertyFormValues) {
-    // Lógica para guardar la propiedad
-    console.log(data);
-    // Mostrar un toast de éxito
+   useEffect(() => {
+    if (isEditing && !propertyData) {
+      setLoading(true);
+      getPropertyById(propertyId)
+        .then(data => {
+          if (data) {
+            setPropertyData(data);
+            const values = {
+                ...data,
+                bedrooms: data.bedrooms || '',
+                bathrooms: data.bathrooms || '',
+                area: data.area || '',
+                priceUSD: data.priceUSD || '',
+                priceARS: data.priceARS || '',
+            }
+            form.reset(values);
+            if(data.images){
+                setImagePreviews(data.images.map(img => img.url));
+            }
+          } else {
+            toast({ variant: 'destructive', title: 'Error', description: 'Propiedad no encontrada.' });
+            router.push('/admin');
+          }
+        })
+        .finally(() => setLoading(false));
+    }
+   }, [isEditing, propertyId, form, router, toast, propertyData]);
+
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if(e.target.files) {
+          const files = Array.from(e.target.files);
+          setImageFiles(files);
+          const newPreviews = files.map(file => URL.createObjectURL(file));
+          setImagePreviews(newPreviews);
+      }
+  }
+
+  const removeImage = (index: number) => {
+      setImageFiles(files => files.filter((_, i) => i !== index));
+      setImagePreviews(previews => previews.filter((_, i) => i !== index));
+  }
+
+
+  async function onSubmit(data: PropertyFormValues) {
+    try {
+        if(isEditing) {
+            await updateProperty(propertyId, data);
+            toast({ title: 'Propiedad Actualizada', description: 'Los cambios se guardaron correctamente.' });
+        } else {
+            if (imageFiles.length === 0) {
+              toast({ variant: 'destructive', title: 'Error', description: 'Debes subir al menos una imagen.' });
+              return;
+            }
+            await createProperty(data, imageFiles);
+            toast({ title: 'Propiedad Creada', description: 'La nueva propiedad se ha guardado.' });
+        }
+        router.push('/admin');
+        router.refresh();
+    } catch (error) {
+        console.error('Failed to save property:', error);
+        toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo guardar la propiedad.' });
+    }
+  }
+
+  if (loading) {
+      return (
+          <div className="flex justify-center items-center h-[calc(100vh-200px)]">
+              <Loader2 className="h-10 w-10 animate-spin" />
+          </div>
+      )
   }
   
   return (
@@ -151,9 +240,9 @@ export default function PropertyFormPage() {
                             <FormMessage />
                         </FormItem>
                     )}/>
-                     <FormField control={form.control} name="city" render={({ field }) => (
+                     <FormField control={form.control} name="location" render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Ciudad*</FormLabel>
+                            <FormLabel>Ciudad/Localidad*</FormLabel>
                             <FormControl><Input {...field} /></FormControl>
                             <FormMessage />
                         </FormItem>
@@ -226,32 +315,25 @@ export default function PropertyFormPage() {
 
             <TabsContent value="details" className="mt-6">
                 <Card><CardContent className="p-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                     <FormField control={form.control} name="bedrooms" render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Número de habitaciones</FormLabel>
+                            <FormLabel>Habitaciones</FormLabel>
                             <FormControl><Input type="number" placeholder="Ej: 3" {...field} /></FormControl>
                             <FormMessage />
                         </FormItem>
                     )}/>
                      <FormField control={form.control} name="bathrooms" render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Número de baños</FormLabel>
+                            <FormLabel>Baños</FormLabel>
                             <FormControl><Input type="number" placeholder="Ej: 2" {...field} /></FormControl>
                             <FormMessage />
                         </FormItem>
                     )}/>
-                     <FormField control={form.control} name="coveredM2" render={({ field }) => (
+                     <FormField control={form.control} name="area" render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Metros cuadrados cubiertos</FormLabel>
+                            <FormLabel>Metros cuadrados</FormLabel>
                             <FormControl><Input type="number" placeholder="Ej: 120" {...field} /></FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}/>
-                     <FormField control={form.control} name="totalM2" render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Metros cuadrados totales</FormLabel>
-                            <FormControl><Input type="number" placeholder="Ej: 300" {...field} /></FormControl>
                             <FormMessage />
                         </FormItem>
                     )}/>
@@ -319,29 +401,40 @@ export default function PropertyFormPage() {
             </TabsContent>
 
             <TabsContent value="images" className="mt-6">
-                <Card><CardContent className="p-6">
-                    <div className="flex items-center justify-center w-full">
-                        <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
-                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                <Upload className="w-10 h-10 mb-4 text-gray-500" />
-                                <p className="mb-2 text-sm text-gray-500"><span className="font-semibold">Click para subir imágenes</span></p>
-                                <p className="text-xs text-gray-500">PNG, JPG hasta 10MB cada una</p>
+                <Card>
+                    <CardContent className="p-6">
+                        <div className="flex items-center justify-center w-full">
+                            <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <Upload className="w-10 h-10 mb-4 text-gray-500" />
+                                    <p className="mb-2 text-sm text-gray-500"><span className="font-semibold">Click para subir o reemplazar imágenes</span></p>
+                                    <p className="text-xs text-gray-500">PNG, JPG hasta 10MB cada una</p>
+                                </div>
+                                <input id="dropzone-file" type="file" className="hidden" multiple onChange={handleImageChange} accept="image/png, image/jpeg" />
+                            </label>
+                        </div> 
+                        <FormDescription className="mt-4 text-sm">
+                            {isEditing 
+                                ? "Subir nuevos archivos reemplazará todas las imágenes existentes. La primera imagen será la portada."
+                                : "Mínimo 1 imagen. La primera imagen será la portada."}
+                        </FormDescription>
+                        
+                        {imagePreviews.length > 0 && (
+                            <div className="mt-6 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                                {imagePreviews.map((src, index) => (
+                                    <div key={index} className="relative group aspect-square">
+                                       <Image src={src} alt={`preview ${index}`} fill className="object-cover rounded-md" data-ai-hint="property image"/>
+                                       <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <Button variant="destructive" size="icon" type="button" onClick={() => removeImage(index)}>
+                                                <Trash2 className="h-4 w-4"/>
+                                            </Button>
+                                       </div>
+                                    </div>
+                                ))}
                             </div>
-                            <input id="dropzone-file" type="file" className="hidden" multiple />
-                        </label>
-                    </div> 
-                    <p className="text-muted-foreground mt-4 text-sm">Mínimo 1 imagen recomendada. La primera imagen será la portada.</p>
-                    {/* Placeholder for uploaded images grid */}
-                    <div className="mt-6 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                        {/* Example of an uploaded image thumbnail */}
-                        <div className="relative group aspect-square">
-                           <Image src="https://picsum.photos/200" alt="thumbnail" fill className="object-cover rounded-md" data-ai-hint="property image"/>
-                           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                <Button variant="destructive" size="icon" type="button"><Trash2 className="h-4 w-4"/></Button>
-                           </div>
-                        </div>
-                    </div>
-                </CardContent></Card>
+                        )}
+                    </CardContent>
+                </Card>
             </TabsContent>
 
           </Tabs>
@@ -351,7 +444,7 @@ export default function PropertyFormPage() {
                     <Button type="button" variant="outline" size="lg" onClick={() => router.back()}>Cancelar</Button>
                     <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
                         {form.formState.isSubmitting 
-                            ? 'Guardando...' 
+                            ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Guardando...</>
                             : (isEditing ? 'Guardar Cambios' : 'Crear Propiedad')}
                     </Button>
                 </div>
@@ -361,3 +454,14 @@ export default function PropertyFormPage() {
     </div>
   );
 }
+
+
+export default function PropertyFormPage() {
+    return (
+        <Suspense fallback={<div>Cargando formulario...</div>}>
+            <PropertyForm />
+        </Suspense>
+    )
+}
+
+    
