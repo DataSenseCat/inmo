@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Building, DollarSign, Filter, Layers, Search, Trash2, Users, CheckCircle, RefreshCw, Plus, Upload, Pencil, Eye, AlertTriangle, Mail } from 'lucide-react';
+import { Building, DollarSign, Filter, Layers, Search, Trash2, Users, CheckCircle, RefreshCw, Plus, Upload, Pencil, Eye, AlertTriangle, Mail, User } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,13 +12,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import type { Property } from '@/models/property';
 import type { Development } from '@/models/development';
 import type { Lead } from '@/models/lead';
+import type { Agent } from '@/models/agent';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { deleteProperty, getProperties } from '@/lib/properties';
 import { deleteDevelopment, getDevelopments } from '@/lib/developments';
 import { getLeads } from '@/lib/leads';
+import { getAgents, deleteAgent } from '@/lib/agents';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -28,22 +32,26 @@ export default function AdminDashboard() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [developments, setDevelopments] = useState<Development[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [propertyToDelete, setPropertyToDelete] = useState<Property | null>(null);
   const [developmentToDelete, setDevelopmentToDelete] = useState<Development | null>(null);
+  const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
 
   async function loadData() {
       try {
           setLoading(true);
-          const [props, devs, leadData] = await Promise.all([
+          const [props, devs, leadData, agentData] = await Promise.all([
             getProperties(), 
             getDevelopments(),
-            getLeads()
+            getLeads(),
+            getAgents()
           ]);
           setProperties(props);
           setDevelopments(devs);
           setLeads(leadData);
+          setAgents(agentData);
       } catch (error) {
           console.error("Failed to load data:", error);
           toast({
@@ -75,7 +83,7 @@ export default function AdminDashboard() {
         description: `La propiedad "${propertyToDelete.title}" ha sido eliminada.`,
       });
       setPropertyToDelete(null);
-      loadData(); // Recargar todos los datos
+      loadData(); 
     } catch (error) {
        console.error("Failed to delete property:", error);
        toast({
@@ -95,7 +103,7 @@ export default function AdminDashboard() {
         description: `El emprendimiento "${developmentToDelete.title}" ha sido eliminado.`,
       });
       setDevelopmentToDelete(null);
-      loadData(); // Recargar todos los datos
+      loadData();
     } catch (error) {
        console.error("Failed to delete development:", error);
        toast({
@@ -106,15 +114,35 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDeleteAgent = async () => {
+    if (!agentToDelete) return;
+    try {
+      await deleteAgent(agentToDelete.id);
+      toast({
+        title: "Agente Eliminado",
+        description: `El agente "${agentToDelete.name}" ha sido eliminado.`,
+      });
+      setAgentToDelete(null);
+      loadData();
+    } catch (error) {
+       console.error("Failed to delete agent:", error);
+       toast({
+          variant: "destructive",
+          title: "Error al eliminar",
+          description: "No se pudo eliminar el agente. Inténtalo de nuevo.",
+       });
+    }
+  };
+
   if (!isClient) {
-    return null; // O un loading spinner
+    return null; 
   }
 
   const stats = [
     { title: "Propiedades Totales", value: properties.length, subValue: `${properties.filter(p => p.active).length} activas`, icon: Layers },
     { title: "Emprendimientos", value: developments.length, subValue: `${developments.filter(d => d.status !== 'finished').length} en curso`, icon: Building },
+    { title: "Agentes", value: agents.length, subValue: `${agents.filter(a => a.active).length} activos`, icon: User },
     { title: "Leads Totales", value: leads.length, subValue: "Gestiona tus contactos", icon: Users },
-    { title: "Ingresos Totales", value: "$2.500.000", subValue: "+12% vs mes anterior", icon: DollarSign },
   ];
 
   const getStatusBadge = (status: boolean) => (
@@ -173,6 +201,7 @@ export default function AdminDashboard() {
                       <TabsList>
                           <TabsTrigger value="properties">Propiedades</TabsTrigger>
                           <TabsTrigger value="developments">Emprendimientos</TabsTrigger>
+                          <TabsTrigger value="agents">Agentes</TabsTrigger>
                           <TabsTrigger value="leads">Leads</TabsTrigger>
                           <TabsTrigger value="config">Configuración</TabsTrigger>
                       </TabsList>
@@ -304,6 +333,67 @@ export default function AdminDashboard() {
                            </Table>
                         </div>
                     </TabsContent>
+                    
+                    <TabsContent value="agents" className="p-6">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-bold font-headline">Agentes Inmobiliarios</h3>
+                             <Button asChild>
+                                <Link href="/admin/agents/form">
+                                    <Plus className="mr-2 h-4 w-4" /> Nuevo Agente
+                                </Link>
+                            </Button>
+                        </div>
+                        <div className="border rounded-lg">
+                           <Table>
+                              <TableHeader>
+                                  <TableRow>
+                                      <TableHead>Agente</TableHead>
+                                      <TableHead>Email</TableHead>
+                                      <TableHead>Teléfono</TableHead>
+                                      <TableHead>Estado</TableHead>
+                                      <TableHead className="text-right">Acciones</TableHead>
+                                  </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                 {loading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="text-center py-8">Cargando agentes...</TableCell>
+                                    </TableRow>
+                                  ) : agents.length > 0 ? (
+                                    agents.map(agent => (
+                                    <TableRow key={agent.id}>
+                                      <TableCell className="font-medium flex items-center gap-3">
+                                          <Avatar>
+                                              <AvatarImage src={agent.photoUrl} alt={agent.name} />
+                                              <AvatarFallback>{agent.name.charAt(0)}</AvatarFallback>
+                                          </Avatar>
+                                          {agent.name}
+                                      </TableCell>
+                                      <TableCell>{agent.email}</TableCell>
+                                      <TableCell>{agent.phone}</TableCell>
+                                      <TableCell>{getStatusBadge(agent.active)}</TableCell>
+                                      <TableCell className="text-right">
+                                        <div className="flex gap-1 justify-end">
+                                          <Button asChild variant="ghost" size="icon">
+                                            <Link href={`/admin/agents/form?id=${agent.id}`}><Pencil className="h-4 w-4"/></Link>
+                                          </Button>
+                                          <AlertDialogTrigger asChild>
+                                              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setAgentToDelete(agent)}>
+                                                  <Trash2 className="h-4 w-4"/>
+                                              </Button>
+                                          </AlertDialogTrigger>
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))) : (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="text-center py-8">No hay agentes creados.</TableCell>
+                                    </TableRow>
+                                  )}
+                              </TableBody>
+                           </Table>
+                        </div>
+                    </TabsContent>
 
                     <TabsContent value="leads" className="p-6">
                         <h3 className="text-xl font-bold font-headline mb-4">Leads Recibidos</h3>
@@ -380,6 +470,21 @@ export default function AdminDashboard() {
                 <AlertDialogFooter>
                     <AlertDialogCancel onClick={() => setDevelopmentToDelete(null)}>Cancelar</AlertDialogCancel>
                     <AlertDialogAction onClick={handleDeleteDevelopment} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={!!agentToDelete} onOpenChange={(open) => !open && setAgentToDelete(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>¿Estás seguro de que deseas eliminar a este agente?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Esta acción no se puede deshacer. Esto eliminará permanentemente al agente <span className="font-semibold">"{agentToDelete?.name}"</span> de la base de datos.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setAgentToDelete(null)}>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteAgent} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
