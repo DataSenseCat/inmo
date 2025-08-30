@@ -2,14 +2,27 @@
 "use client";
 
 import { useSearchParams } from 'next/navigation';
-import { useMemo, Suspense } from 'react';
-import { properties as allProperties } from '@/lib/data';
+import { useMemo, Suspense, useState, useEffect } from 'react';
+import type { Property } from '@/models/property';
+import { getProperties } from '@/services/properties';
 import { PropertyCard } from '@/components/property-card';
 import { SearchForm } from '@/components/search-form';
 import { Skeleton } from '@/components/ui/skeleton';
 
 function PropertiesList() {
   const searchParams = useSearchParams();
+  const [allProperties, setAllProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadProperties() {
+      setLoading(true);
+      const props = await getProperties();
+      setAllProperties(props);
+      setLoading(false);
+    }
+    loadProperties();
+  }, []);
 
   const filteredProperties = useMemo(() => {
     const type = searchParams.get('type');
@@ -22,7 +35,11 @@ function PropertiesList() {
       if (location && !property.location.toLowerCase().includes(location)) return false;
       return true;
     });
-  }, [searchParams]);
+  }, [searchParams, allProperties]);
+
+  if (loading) {
+    return <PropertiesSkeleton />;
+  }
 
   return (
     <>
@@ -52,9 +69,7 @@ function PropertiesPageContent() {
           <SearchForm />
         </div>
       </div>
-      <Suspense fallback={<PropertiesSkeleton />}>
-        <PropertiesList />
-      </Suspense>
+      <PropertiesList />
     </div>
   );
 }

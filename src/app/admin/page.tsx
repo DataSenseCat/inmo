@@ -9,14 +9,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { properties } from '@/lib/data';
-import type { Property } from '@/lib/data';
+import type { Property } from '@/models/property';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
+import { getProperties } from '@/services/properties';
 
 export default function AdminDashboard() {
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
+  const [recentProperties, setRecentProperties] = useState<Property[]>([]);
 
   useEffect(() => {
     setIsClient(true);
@@ -24,13 +25,18 @@ export default function AdminDashboard() {
     if (!isAuthenticated) {
       router.replace('/admin/login');
     }
+
+    async function loadProperties() {
+        const props = await getProperties();
+        setRecentProperties(props.slice(0, 5));
+    }
+    loadProperties();
+
   }, [router]);
 
   if (!isClient) {
     return null; // Or a loading spinner
   }
-
-  const recentProperties = properties.slice(0, 5);
 
   const stats = [
     { title: "Propiedades Totales", value: "5", subValue: "5 activas", icon: Layers, trend: "+12%" },
