@@ -1,6 +1,6 @@
 "use client";
 
-import type { Development } from '@/lib/data';
+import type { Development } from '@/models/development';
 import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import Link from "next/link";

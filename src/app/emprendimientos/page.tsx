@@ -1,6 +1,6 @@
 
 import { DevelopmentCard } from '@/components/emprendimientos/development-card';
-import { getDevelopments } from '@/services/developments';
+import { getDevelopments } from '@/lib/developments';
 import type { Development } from '@/models/development';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';

@@ -1,5 +1,5 @@
 
-import { getPropertyById } from '@/lib/data';
+import { getPropertyById } from '@/lib/properties';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { BedDouble, Bath, AreaChart, MapPin, Phone, Mail } from 'lucide-react';
@@ -34,7 +34,7 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
                     {property.images.map((img, index) => (
                       <CarouselItem key={index}>
                         <div className="aspect-[16/10] relative bg-muted">
-                          <Image src={img} alt={`${property.title} - Image ${index + 1}`} fill className="object-cover" data-ai-hint="property interior" priority={index === 0} />
+                          <Image src={img.url} alt={`${property.title} - Image ${index + 1}`} fill className="object-cover" data-ai-hint="property interior" priority={index === 0} />
                         </div>
                       </CarouselItem>
                     ))}
@@ -71,7 +71,7 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
               <CardContent className="p-6 text-center">
                 <p className="text-muted-foreground mb-1">Precio</p>
                 <p className="text-4xl font-bold text-primary mb-4">
-                  ${property.price.toLocaleString()}
+                  ${property.priceUSD.toLocaleString()}
                   {property.operation === 'rent' && <span className="text-lg font-normal text-muted-foreground"> / mes</span>}
                 </p>
                 <Badge variant={property.operation === 'sale' ? 'default' : 'secondary'} className='text-sm'>
