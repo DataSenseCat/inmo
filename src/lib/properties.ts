@@ -22,12 +22,15 @@ import type { Property } from '@/models/property';
 // Helper function to clean data for Firestore
 const cleanData = (data: any) => {
     const cleanedData: { [key: string]: any } = {};
-    for (const key in data) {
-        if (data[key] !== '' && data[key] !== undefined && data[key] !== null) {
-            if(typeof data[key] === 'object' && !Array.isArray(data[key]) && data[key] !== null) {
-                cleanedData[key] = cleanData(data[key]);
+    const dataToClean = { ...data };
+    delete dataToClean.agentId; // Don't store agentId directly
+    
+    for (const key in dataToClean) {
+        if (dataToClean[key] !== '' && dataToClean[key] !== undefined && dataToClean[key] !== null) {
+            if(typeof dataToClean[key] === 'object' && !Array.isArray(dataToClean[key]) && dataToClean[key] !== null) {
+                cleanedData[key] = cleanData(dataToClean[key]);
             } else {
-                cleanedData[key] = data[key];
+                cleanedData[key] = dataToClean[key];
             }
         }
     }
