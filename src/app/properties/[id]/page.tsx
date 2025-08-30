@@ -12,6 +12,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import { Button } from '@/components/ui/button';
 import { VirtualTour } from './virtual-tour';
 import { Separator } from '@/components/ui/separator';
 
