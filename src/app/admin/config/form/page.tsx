@@ -29,6 +29,7 @@ import Image from 'next/image';
 const configFormSchema = z.object({
   contactPhone: z.string().min(1, 'El teléfono es requerido.'),
   contactEmail: z.string().email('Por favor, ingrese un email válido.'),
+  leadNotificationEmail: z.string().email('Por favor, ingrese un email válido.').optional().or(z.literal('')),
   address: z.string().min(1, 'La dirección es requerida.'),
   officeHours: z.string().min(1, 'El horario es requerido.'),
   facebookUrl: z.string().url().or(z.literal('')),
@@ -52,6 +53,7 @@ function ConfigForm() {
     defaultValues: {
       contactPhone: '',
       contactEmail: '',
+      leadNotificationEmail: '',
       address: '',
       officeHours: '',
       facebookUrl: '',
@@ -69,6 +71,7 @@ function ConfigForm() {
             form.reset({
                 contactPhone: data.contactPhone || '',
                 contactEmail: data.contactEmail || '',
+                leadNotificationEmail: data.leadNotificationEmail || '',
                 address: data.address || '',
                 officeHours: data.officeHours || '',
                 facebookUrl: data.socials?.facebook || '',
@@ -100,15 +103,16 @@ function ConfigForm() {
 
   async function onSubmit(data: ConfigFormValues) {
     try {
-        const payload: Omit<SiteConfig, 'updatedAt' | 'logoUrl'> = {
+        const payload: Partial<SiteConfig> = {
             contactPhone: data.contactPhone,
             contactEmail: data.contactEmail,
+            leadNotificationEmail: data.leadNotificationEmail,
             address: data.address,
             officeHours: data.officeHours,
             socials: {
-                facebook: data.facebookUrl,
-                instagram: data.instagramUrl,
-                twitter: data.twitterUrl,
+                facebook: data.facebookUrl || '',
+                instagram: data.instagramUrl || '',
+                twitter: data.twitterUrl || '',
             },
         };
 
@@ -188,6 +192,14 @@ function ConfigForm() {
                             <FormLabel>Email Principal*</FormLabel>
                             <FormControl><Input type="email" placeholder="info@email.com" {...field} /></FormControl>
                             <FormDescription>El email de contacto general de la empresa.</FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    )}/>
+                     <FormField control={form.control} name="leadNotificationEmail" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Email de Notificación de Leads</FormLabel>
+                            <FormControl><Input type="email" placeholder="leads@email.com" {...field} /></FormControl>
+                            <FormDescription>La dirección de email donde se recibirán las notificaciones de nuevos contactos.</FormDescription>
                             <FormMessage />
                         </FormItem>
                     )}/>
