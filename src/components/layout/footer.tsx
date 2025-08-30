@@ -61,12 +61,10 @@ export function Footer() {
                 <div className='space-x-4'>
                     <Link href="#" className="hover:underline">Politica de Privacidad</Link>
                     <Link href="#" className="hover:underline">Términos de Uso</Link>
-                    <Link href="#" className="hover:underline">Panel Admin</Link>
+                    <Link href="/admin" className="hover:underline">Panel Admin</Link>
                 </div>
             </div>
         </div>
     </footer>
   );
 }
-
-    

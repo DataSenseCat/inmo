@@ -27,9 +27,9 @@ export function Header() {
               <Heart size={14} />
               <span>Favoritos</span>
             </Link>
-            <Link href="#" className="flex items-center gap-1.5 hover:text-primary">
+            <Link href="/admin/login" className="flex items-center gap-1.5 hover:text-primary">
               <User size={14} />
-              <span>Salir</span>
+              <span>Admin</span>
             </Link>
           </div>
         </div>
@@ -52,7 +52,7 @@ export function Header() {
             <Link href="/la-empresa" className="text-gray-600 hover:text-primary">La Empresa</Link>
             <Link href="/contact" className="text-gray-600 hover:text-primary">Contacto</Link>
             <Button size="sm" asChild>
-              <Link href="#">Admin</Link>
+              <Link href="/admin">Admin</Link>
             </Button>
           </nav>
 
@@ -85,7 +85,7 @@ export function Header() {
                   <Link href="/la-empresa" className="text-muted-foreground hover:text-primary">La Empresa</Link>
                   <Link href="/contact" className="text-muted-foreground hover:text-primary">Contacto</Link>
                   <Button asChild>
-                    <Link href="#">Admin</Link>
+                    <Link href="/admin">Admin</Link>
                   </Button>
                 </nav>
               </SheetContent>
@@ -96,5 +96,3 @@ export function Header() {
     </header>
   );
 }
-
-    
