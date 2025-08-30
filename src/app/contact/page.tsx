@@ -69,9 +69,13 @@ const faqs = [
 export default function ContactPage() {
   const { toast } = useToast();
   const [config, setConfig] = useState<SiteConfig | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getSiteConfig().then(setConfig);
+    getSiteConfig().then(data => {
+        setConfig(data);
+        setLoading(false);
+    });
   }, []);
 
   const form = useForm<ContactFormValues>({
@@ -108,7 +112,7 @@ export default function ContactPage() {
     {
         icon: Phone,
         title: "Teléfono",
-        info: config?.contactPhone || 'Cargando...',
+        info: config?.contactPhone,
         subInfo: "Lunes a Viernes de 9 a 18hs",
         buttonText: "Llamar",
         href: `tel:${config?.contactPhone}`
@@ -116,7 +120,7 @@ export default function ContactPage() {
     {
         icon: MessageSquare,
         title: "WhatsApp",
-        info: config?.contactPhone || 'Cargando...',
+        info: config?.contactPhone,
         subInfo: "Respuesta inmediata",
         buttonText: "Chatear",
         href: `https://wa.me/${config?.contactPhone?.replace(/\s|-/g, '')}`
@@ -124,7 +128,7 @@ export default function ContactPage() {
     {
         icon: Mail,
         title: "Email",
-        info: config?.contactEmail || 'Cargando...',
+        info: config?.contactEmail,
         subInfo: "Respuesta en 24hs",
         buttonText: "Escribir",
         href: `mailto:${config?.contactEmail}`
@@ -132,12 +136,12 @@ export default function ContactPage() {
     {
         icon: MapPin,
         title: "Oficina",
-        info: config?.address.split(',')[0] || 'Cargando...',
-        subInfo: config?.address.split(',').slice(1).join(',') || '',
+        info: config?.address?.split(',')[0],
+        subInfo: config?.address?.split(',').slice(1).join(','),
         buttonText: "Ver Mapa",
         href: "#map-location"
     },
-];
+  ];
 
   return (
     <div className="bg-gray-50/50">
@@ -167,9 +171,9 @@ export default function ContactPage() {
                                 <Icon className="h-7 w-7"/>
                             </div>
                             <h3 className="font-semibold text-lg">{option.title}</h3>
-                            <p className="text-muted-foreground text-sm">{option.info}</p>
+                            <p className="text-muted-foreground text-sm">{loading ? 'Cargando...' : option.info}</p>
                             <p className="text-muted-foreground text-xs">{option.subInfo}</p>
-                            <Button asChild className="mt-4 w-full">
+                            <Button asChild className="mt-4 w-full" disabled={loading}>
                                 <a href={option.href} target="_blank" rel="noopener noreferrer">{option.buttonText}</a>
                             </Button>
                         </Card>
@@ -268,9 +272,9 @@ export default function ContactPage() {
                              <div className="text-center mt-4 border-t pt-4">
                                 <p className="text-sm text-muted-foreground mb-3">¿Preferís contactarnos directamente?</p>
                                 <div className="flex justify-center gap-3">
-                                    <Button variant="outline" asChild><a href={`https://wa.me/${config?.contactPhone?.replace(/\s|-/g, '')}`} target="_blank"><MessageSquare className="mr-2"/>WhatsApp</a></Button>
-                                    <Button variant="outline" asChild><a href={`mailto:${config?.contactEmail}`}><Mail className="mr-2"/>Email</a></Button>
-                                    <Button variant="outline" asChild><a href={`tel:${config?.contactPhone}`}><Phone className="mr-2"/>Llamar</a></Button>
+                                    <Button variant="outline" asChild disabled={loading}><a href={`https://wa.me/${config?.contactPhone?.replace(/\s|-/g, '')}`} target="_blank"><MessageSquare className="mr-2"/>WhatsApp</a></Button>
+                                    <Button variant="outline" asChild disabled={loading}><a href={`mailto:${config?.contactEmail}`}><Mail className="mr-2"/>Email</a></Button>
+                                    <Button variant="outline" asChild disabled={loading}><a href={`tel:${config?.contactPhone}`}><Phone className="mr-2"/>Llamar</a></Button>
                                 </div>
                             </div>
                         </form>
@@ -286,11 +290,11 @@ export default function ContactPage() {
                 <CardContent className="space-y-4">
                      <div>
                         <h4 className="font-semibold text-muted-foreground text-sm">Dirección</h4>
-                        <p>{config?.address || 'Cargando...'}</p>
+                        <p>{loading ? 'Cargando...' : config?.address}</p>
                      </div>
                      <div>
                         <h4 className="font-semibold text-muted-foreground text-sm">Horarios de Atención</h4>
-                        <p className="flex items-center gap-2"><Clock className="w-4 h-4"/> {config?.officeHours || 'Cargando...'}</p>
+                        <p className="flex items-center gap-2"><Clock className="w-4 h-4"/> {loading ? 'Cargando...' : config?.officeHours}</p>
                      </div>
                      <div>
                         <h4 className="font-semibold text-muted-foreground text-sm">Cómo llegar</h4>
@@ -365,7 +369,7 @@ export default function ContactPage() {
                 <p className="max-w-xl mx-auto mb-6 text-orange-100">
                     Para emergencias relacionadas con propiedades en administración o situaciones urgentes, contactanos por WhatsApp. Respondemos las 24 horas.
                 </p>
-                <Button variant="secondary" size="lg" className="bg-white text-orange-600 hover:bg-gray-100" asChild>
+                <Button variant="secondary" size="lg" className="bg-white text-orange-600 hover:bg-gray-100" asChild disabled={loading}>
                     <a href={`https://wa.me/${config?.contactPhone?.replace(/\s|-/g, '')}`} target="_blank"><MessageSquare className="mr-2"/> WhatsApp 24hs</a>
                 </Button>
             </div>
@@ -375,3 +379,5 @@ export default function ContactPage() {
     </div>
   );
 }
+
+    
