@@ -80,5 +80,3 @@ export async function deleteProperty(id: string): Promise<void> {
         throw new Error("Failed to delete property.");
     }
 }
-
-    
