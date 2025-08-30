@@ -17,6 +17,21 @@ export type Property = {
       email: string;
     };
   };
+
+export type Development = {
+  id: string;
+  title: string;
+  location: string;
+  description: string;
+  status: 'planning' | 'construction' | 'finished';
+  isFeatured: boolean;
+  totalUnits: number;
+  availableUnits: number;
+  priceFrom: number;
+  priceRange: { min: number; max: number };
+  deliveryDate: string;
+  image: string;
+};
   
   export const properties: Property[] = [
     {
@@ -115,6 +130,51 @@ export type Property = {
         contact: { name: 'Juan Perez', phone: '+54 383 412 3456', email: 'juan@catamarcaestates.com' },
     },
   ];
+
+  export const developments: Development[] = [
+    {
+        id: 'dev-1',
+        title: 'Complejo Residencial Las Palmeras',
+        location: 'Av. Siempre Viva 2800, San Fernando del Valle de Catamarca',
+        description: 'Moderno complejo residencial con 48 unidades, amenities y espacios verdes, ubicado en la zona con más expansión de Catamarca.',
+        status: 'construction',
+        isFeatured: true,
+        totalUnits: 48,
+        availableUnits: 12,
+        priceFrom: 85000,
+        priceRange: { min: 65000, max: 150000 },
+        deliveryDate: 'junio de 2025',
+        image: 'https://picsum.photos/seed/dev1/800/600'
+    },
+    {
+        id: 'dev-2',
+        title: 'Torres del Valle',
+        location: 'República 1100, San Fernando del Valle de Catamarca',
+        description: 'Dos torres residenciales de 12 pisos cada una, con vista panorámica a las sierras. Departamentos de 1, 2 y 3 dormitorios.',
+        status: 'planning',
+        isFeatured: true,
+        totalUnits: 120,
+        availableUnits: 73,
+        priceFrom: 95000,
+        priceRange: { min: 80000, max: 180000 },
+        deliveryDate: 'diciembre de 2025',
+        image: 'https://picsum.photos/seed/dev2/800/600'
+    },
+    {
+        id: 'dev-3',
+        title: 'Barrio Cerrado El Mirador',
+        location: 'Ruta 38 Km 15, San Fernando del Valle de Catamarca',
+        description: 'Exclusivo barrio cerrado con 34 lotes de 600 a 800 m². Seguridad 24hs, club house y espacios recreativos.',
+        status: 'finished',
+        isFeatured: false,
+        totalUnits: 34,
+        availableUnits: 5,
+        priceFrom: 45000,
+        priceRange: { min: 45000, max: 75000 },
+        deliveryDate: 'agosto de 2024',
+        image: 'https://picsum.photos/seed/dev3/800/600'
+    }
+];
   
   export async function getProperties(): Promise<Property[]> {
     // Simulate network delay
@@ -134,3 +194,7 @@ export type Property = {
     return properties.find(p => p.id === id);
   }
   
+  export async function getDevelopments(): Promise<Development[]> {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    return developments;
+  }
