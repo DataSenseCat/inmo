@@ -5,11 +5,12 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, Info, Home, ListChecks, DollarSign, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Info, Home, ListChecks, DollarSign, Image as ImageIcon, ParkingCircle, Waves, ConciergeBell, Grill, CookingPot, Upload, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -27,9 +28,12 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Card, CardContent } from '@/components/ui/card';
 
-// Esquema de validación con Zod, por ahora solo para la primera pestaña
+// Esquema de validación con Zod para todo el formulario
 const propertyFormSchema = z.object({
+  // Información Básica
   title: z.string().min(1, 'El título es requerido.'),
   city: z.string().min(1, 'La ciudad es requerida.'),
   address: z.string().optional(),
@@ -38,11 +42,43 @@ const propertyFormSchema = z.object({
   operation: z.enum(['Venta', 'Alquiler']),
   featured: z.boolean().default(false),
   active: z.boolean().default(true),
+
+  // Detalles
+  bedrooms: z.coerce.number().min(0, "Debe ser un número positivo.").optional().or(z.literal('')),
+  bathrooms: z.coerce.number().min(0, "Debe ser un número positivo.").optional().or(z.literal('')),
+  coveredM2: z.coerce.number().min(0, "Debe ser un número positivo.").optional().or(z.literal('')),
+  totalM2: z.coerce.number().min(0, "Debe ser un número positivo.").optional().or(z.literal('')),
+
+  // Características
+  features: z.object({
+    cochera: z.boolean().default(false),
+    piscina: z.boolean().default(false),
+    dptoServicio: z.boolean().default(false),
+    quincho: z.boolean().default(false),
+    parrillero: z.boolean().default(false),
+  }).default({}),
+
+  // Precios
+  priceUSD: z.coerce.number().min(0, "Debe ser un número positivo.").optional().or(z.literal('')),
+  priceARS: z.coerce.number().min(0, "Debe ser un número positivo.").optional().or(z.literal('')),
+
+  // Imágenes (la lógica de subida se manejará por separado)
+  images: z.array(z.any()).default([]),
 });
 
 type PropertyFormValues = z.infer<typeof propertyFormSchema>;
 
+const featureOptions = [
+    { id: 'cochera', label: 'Cochera', icon: ParkingCircle },
+    { id: 'piscina', label: 'Piscina', icon: Waves },
+    { id: 'dptoServicio', label: 'Dpto. Servicio', icon: ConciergeBell },
+    { id: 'quincho', label: 'Quincho', icon: Grill },
+    { id: 'parrillero', label: 'Parrillero', icon: CookingPot },
+] as const;
+
+
 export default function PropertyFormPage() {
+  const router = useRouter();
   // TODO: Cargar la propiedad si es una edición
   const isEditing = false; 
 
@@ -57,6 +93,20 @@ export default function PropertyFormPage() {
       operation: 'Venta',
       featured: false,
       active: true,
+      bedrooms: '',
+      bathrooms: '',
+      coveredM2: '',
+      totalM2: '',
+      features: {
+        cochera: false,
+        piscina: false,
+        dptoServicio: false,
+        quincho: false,
+        parrillero: false,
+      },
+      priceUSD: '',
+      priceARS: '',
+      images: [],
     },
   });
 
@@ -67,7 +117,7 @@ export default function PropertyFormPage() {
   }
   
   return (
-    <div className="container mx-auto px-4 md:px-6 py-8">
+    <div className="container mx-auto px-4 md:px-6 py-8 mb-24">
       <div className="flex items-center mb-6">
         <Button variant="outline" size="icon" asChild>
             <Link href="/admin">
@@ -82,7 +132,7 @@ export default function PropertyFormPage() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <Tabs defaultValue="basic-info" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
               <TabsTrigger value="basic-info"><Info className="mr-2 h-4 w-4" /> Información Básica</TabsTrigger>
               <TabsTrigger value="details"><Home className="mr-2 h-4 w-4" /> Detalles</TabsTrigger>
               <TabsTrigger value="features"><ListChecks className="mr-2 h-4 w-4" /> Características</TabsTrigger>
@@ -91,9 +141,10 @@ export default function PropertyFormPage() {
             </TabsList>
             
             <TabsContent value="basic-info" className="mt-6">
+                <Card><CardContent className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField control={form.control} name="title" render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="md:col-span-2">
                             <FormLabel>Título*</FormLabel>
                             <FormControl><Input placeholder="Ej: Casa en Barrio Norte" {...field} /></FormControl>
                             <FormMessage />
@@ -107,7 +158,7 @@ export default function PropertyFormPage() {
                         </FormItem>
                     )}/>
                     <FormField control={form.control} name="address" render={({ field }) => (
-                        <FormItem className="md:col-span-2">
+                        <FormItem>
                             <FormLabel>Dirección</FormLabel>
                             <FormControl><Input placeholder="Dirección completa" {...field} /></FormControl>
                             <FormMessage />
@@ -150,9 +201,9 @@ export default function PropertyFormPage() {
                             <FormMessage />
                         </FormItem>
                     )}/>
-                    <div className="flex items-center space-x-4">
+                    <div className="md:col-span-2 flex items-center space-x-4">
                         <FormField control={form.control} name="featured" render={({ field }) => (
-                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                            <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
                                 <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                                 <div className="space-y-1 leading-none">
                                     <FormLabel>Propiedad Destacada</FormLabel>
@@ -160,7 +211,7 @@ export default function PropertyFormPage() {
                             </FormItem>
                         )}/>
                         <FormField control={form.control} name="active" render={({ field }) => (
-                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                            <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
                                 <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                                 <div className="space-y-1 leading-none">
                                     <FormLabel>Activa</FormLabel>
@@ -169,19 +220,127 @@ export default function PropertyFormPage() {
                         )}/>
                     </div>
                 </div>
+                </CardContent></Card>
             </TabsContent>
 
-            <TabsContent value="details">
-                <p className="text-muted-foreground">Detalles de la propiedad. En construcción.</p>
+            <TabsContent value="details" className="mt-6">
+                <Card><CardContent className="p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                    <FormField control={form.control} name="bedrooms" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Número de habitaciones</FormLabel>
+                            <FormControl><Input type="number" placeholder="Ej: 3" {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}/>
+                     <FormField control={form.control} name="bathrooms" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Número de baños</FormLabel>
+                            <FormControl><Input type="number" placeholder="Ej: 2" {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}/>
+                     <FormField control={form.control} name="coveredM2" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Metros cuadrados cubiertos</FormLabel>
+                            <FormControl><Input type="number" placeholder="Ej: 120" {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}/>
+                     <FormField control={form.control} name="totalM2" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Metros cuadrados totales</FormLabel>
+                            <FormControl><Input type="number" placeholder="Ej: 300" {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}/>
+                </div>
+                </CardContent></Card>
             </TabsContent>
-            <TabsContent value="features">
-                <p className="text-muted-foreground">Características de la propiedad. En construcción.</p>
+            
+            <TabsContent value="features" className="mt-6">
+                <Card><CardContent className="p-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                    {featureOptions.map((feature) => {
+                        const Icon = feature.icon;
+                        return (
+                        <FormField
+                            key={feature.id}
+                            control={form.control}
+                            name={`features.${feature.id}`}
+                            render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-center space-x-3 space-y-0 rounded-md border p-4 hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground transition-colors">
+                                <FormControl>
+                                    <Checkbox
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                        className="hidden"
+                                    />
+                                </FormControl>
+                                <FormLabel className="font-normal cursor-pointer flex flex-col items-center gap-2 w-full text-center">
+                                    <Icon className="w-6 h-6"/>
+                                    {feature.label}
+                                </FormLabel>
+                            </FormItem>
+                            )}
+                        />
+                        )
+                    })}
+                    </div>
+                </CardContent></Card>
             </TabsContent>
-            <TabsContent value="pricing">
-                <p className="text-muted-foreground">Precios de la propiedad. En construcción.</p>
+
+            <TabsContent value="pricing" className="mt-6">
+                 <Card><CardContent className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                         <FormField control={form.control} name="priceUSD" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Precio en dólares</FormLabel>
+                                <FormControl><Input type="number" placeholder="Ej: 150000" {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}/>
+                         <FormField control={form.control} name="priceARS" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Precio en pesos</FormLabel>
+                                <FormControl><Input type="number" placeholder="Ej: 150000000" {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}/>
+                    </div>
+                    <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800">
+                        <Info className="float-left mr-3 h-5 w-5 mt-0.5" />
+                        <p className="font-semibold">
+                            Puedes especificar el precio en una o ambas monedas. Si no especificas precio, se mostrará "A consultar".
+                        </p>
+                    </div>
+                 </CardContent></Card>
             </TabsContent>
-             <TabsContent value="images">
-                <p className="text-muted-foreground">Imágenes de la propiedad. En construcción.</p>
+
+            <TabsContent value="images" className="mt-6">
+                <Card><CardContent className="p-6">
+                    <div className="flex items-center justify-center w-full">
+                        <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                <Upload className="w-10 h-10 mb-4 text-gray-500" />
+                                <p className="mb-2 text-sm text-gray-500"><span className="font-semibold">Click para subir imágenes</span></p>
+                                <p className="text-xs text-gray-500">PNG, JPG hasta 10MB cada una</p>
+                            </div>
+                            <input id="dropzone-file" type="file" className="hidden" multiple />
+                        </label>
+                    </div> 
+                    <p className="text-muted-foreground mt-4 text-sm">Mínimo 1 imagen recomendada. La primera imagen será la portada.</p>
+                    {/* Placeholder for uploaded images grid */}
+                    <div className="mt-6 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                        {/* Example of an uploaded image thumbnail */}
+                        <div className="relative group aspect-square">
+                           <Image src="https://picsum.photos/200" alt="thumbnail" fill className="object-cover rounded-md" data-ai-hint="property image"/>
+                           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <Button variant="destructive" size="icon" type="button"><Trash2 className="h-4 w-4"/></Button>
+                           </div>
+                        </div>
+                    </div>
+                </CardContent></Card>
             </TabsContent>
 
           </Tabs>
@@ -201,3 +360,5 @@ export default function PropertyFormPage() {
     </div>
   );
 }
+
+    
