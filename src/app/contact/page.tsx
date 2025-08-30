@@ -17,11 +17,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
-import { Check, Phone, MessageSquare, Mail, MapPin, Clock, Send, Building, Home, Briefcase, FileText, Calendar, LifeBuoy } from "lucide-react";
+import { Check, Phone, MessageSquare, Mail, MapPin, Clock, Send, Building, Home, Briefcase, FileText, Calendar } from "lucide-react";
 import Image from "next/image";
 import Link from 'next/link';
 
@@ -67,7 +66,7 @@ const contactOptions = [
         info: "Av. República 123",
         subInfo: "San Fernando del Valle de Catamarca",
         buttonText: "Ver Mapa",
-        href: "#"
+        href: "#map-location"
     },
 ];
 
@@ -105,7 +104,7 @@ export default function ContactPage() {
       name: "",
       email: "",
       phone: "",
-      contactPreference: "whatsapp",
+      contactPreference: "email",
       subject: "",
       message: "",
     },
@@ -278,7 +277,7 @@ export default function ContactPage() {
                         <h4 className="font-semibold text-muted-foreground text-sm">Cómo llegar</h4>
                         <p className="text-sm">Estamos ubicados en pleno centro de la ciudad, cerca de bancos y comercios principales.</p>
                         <Button variant="link" className="p-0 h-auto mt-1" asChild>
-                            <a href="#" target="_blank">Ver en Google Maps <Send className="ml-2 h-3 w-3"/></a>
+                            <a href="https://maps.google.com" target="_blank">Ver en Google Maps <Send className="ml-2 h-3 w-3"/></a>
                         </Button>
                      </div>
                 </CardContent>
@@ -307,14 +306,14 @@ export default function ContactPage() {
         </div>
         
         {/* Location Section */}
-        <div className="mt-16 lg:mt-24">
+        <div id="map-location" className="mt-16 lg:mt-24">
             <h2 className="text-2xl font-bold font-headline text-center mb-8">Nuestra Ubicación</h2>
             <div className="aspect-[16/9] md:aspect-[16/6] bg-muted rounded-lg overflow-hidden relative border">
                 <Image src="https://picsum.photos/1200/400" fill alt="Mapa de ubicación" className="object-cover" data-ai-hint="city map" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="p-2 bg-primary rounded-full">
+                <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                    <a href="https://maps.google.com" target="_blank" className="p-2 bg-primary rounded-full hover:bg-primary/90 transition-colors">
                         <MapPin className="h-8 w-8 text-white"/>
-                    </div>
+                    </a>
                 </div>
             </div>
         </div>
@@ -358,3 +357,4 @@ export default function ContactPage() {
   );
 }
 
+    
