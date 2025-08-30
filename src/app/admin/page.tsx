@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { properties } from '@/lib/data';
 import type { Property } from '@/lib/data';
+import { Input } from '@/components/ui/input';
 
 export default function AdminDashboard() {
   const router = useRouter();
