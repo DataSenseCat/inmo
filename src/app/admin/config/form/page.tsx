@@ -100,7 +100,7 @@ function ConfigForm() {
 
   async function onSubmit(data: ConfigFormValues) {
     try {
-        const payload: Omit<SiteConfig, 'updatedAt' | 'logoUrl'> = {
+        const payload: Omit<SiteConfig, 'updatedAt' | 'logoUrl'> & { logoUrl?: string | null } = {
             contactPhone: data.contactPhone,
             contactEmail: data.contactEmail,
             address: data.address,
@@ -112,8 +112,10 @@ function ConfigForm() {
             },
         };
 
-        if (data.logoUrl === null) {
-            (payload as any).logoUrl = null;
+        // This is the key change: we explicitly tell the update function
+        // that the logo should be removed if the preview is gone.
+        if (!logoPreview) {
+            payload.logoUrl = null;
         }
 
         await updateSiteConfig(payload, logoFile || undefined);

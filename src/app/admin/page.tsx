@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -276,7 +275,9 @@ export default function AdminDashboard() {
                           </Table>
                         </div>
                          <div className="text-center mt-6">
-                            <Button variant="outline">Ver Todas las Propiedades</Button>
+                            <Button asChild variant="outline">
+                                <Link href="/properties">Ver Todas las Propiedades</Link>
+                            </Button>
                         </div>
                     </TabsContent>
 
