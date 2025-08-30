@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Building, DollarSign, Filter, Layers, Search, Trash2, Users, CheckCircle, AlertCircle, RefreshCw, Plus, Upload, Pencil, Eye } from 'lucide-react';
+import { Building, DollarSign, Filter, Layers, Search, Trash2, Users, CheckCircle, RefreshCw, Plus, Upload, Pencil, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { properties } from '@/lib/data';
 import type { Property } from '@/lib/data';
 import { Input } from '@/components/ui/input';
+import Link from 'next/link';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -52,7 +53,11 @@ export default function AdminDashboard() {
           </div>
           <div className="flex gap-2">
             <Button variant="outline"><Upload className="mr-2 h-4 w-4" /> Exportar</Button>
-            <Button><Plus className="mr-2 h-4 w-4" /> Nueva Propiedad</Button>
+            <Button asChild>
+                <Link href="/admin/properties/form">
+                    <Plus className="mr-2 h-4 w-4" /> Nueva Propiedad
+                </Link>
+            </Button>
           </div>
         </div>
 
