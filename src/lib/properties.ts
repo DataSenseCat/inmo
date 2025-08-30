@@ -11,6 +11,7 @@ import {
   orderBy,
   limit,
   where,
+  deleteDoc,
 } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
@@ -67,3 +68,17 @@ export async function getPropertyById(id: string) {
         return null;
     }
 }
+
+// Function to delete a property by its ID
+export async function deleteProperty(id: string): Promise<void> {
+    try {
+        const docRef = doc(db, 'properties', id);
+        await deleteDoc(docRef);
+        // Note: Deleting images from storage should be handled by a Cloud Function trigger
+    } catch (error) {
+        console.error("Error deleting property: ", error);
+        throw new Error("Failed to delete property.");
+    }
+}
+
+    

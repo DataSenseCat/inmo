@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Building, DollarSign, Filter, Layers, Search, Trash2, Users, CheckCircle, RefreshCw, Plus, Upload, Pencil, Eye } from 'lucide-react';
+import { Building, DollarSign, Filter, Layers, Search, Trash2, Users, CheckCircle, RefreshCw, Plus, Upload, Pencil, Eye, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,30 +12,67 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import type { Property } from '@/models/property';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
-import { getProperties } from '@/lib/properties';
+import { deleteProperty, getProperties } from '@/lib/properties';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminDashboard() {
   const router = useRouter();
+  const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
   const [recentProperties, setRecentProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [propertyToDelete, setPropertyToDelete] = useState<Property | null>(null);
 
+  async function loadProperties() {
+      try {
+          setLoading(true);
+          const props = await getProperties();
+          setRecentProperties(props.slice(0, 5));
+      } catch (error) {
+          console.error("Failed to load properties:", error);
+          toast({
+              variant: "destructive",
+              title: "Error al cargar propiedades",
+              description: "No se pudieron cargar los datos desde la base de datos.",
+          });
+      } finally {
+          setLoading(false);
+      }
+  }
+  
   useEffect(() => {
     setIsClient(true);
     const isAuthenticated = sessionStorage.getItem('isAdminAuthenticated');
     if (!isAuthenticated) {
       router.replace('/admin/login');
+    } else {
+        loadProperties();
     }
-
-    async function loadProperties() {
-        const props = await getProperties();
-        setRecentProperties(props.slice(0, 5));
-    }
-    loadProperties();
-
   }, [router]);
 
+  const handleDelete = async () => {
+    if (!propertyToDelete) return;
+    try {
+      await deleteProperty(propertyToDelete.id);
+      toast({
+        title: "Propiedad Eliminada",
+        description: `La propiedad "${propertyToDelete.title}" ha sido eliminada.`,
+      });
+      setPropertyToDelete(null);
+      loadProperties(); // Recargar propiedades
+    } catch (error) {
+       console.error("Failed to delete property:", error);
+       toast({
+          variant: "destructive",
+          title: "Error al eliminar",
+          description: "No se pudo eliminar la propiedad. Inténtalo de nuevo.",
+       });
+    }
+  };
+
   if (!isClient) {
-    return null; // Or a loading spinner
+    return null; // O un loading spinner
   }
 
   const stats = [
@@ -152,23 +189,36 @@ export default function AdminDashboard() {
                                   </TableRow>
                               </TableHeader>
                               <TableBody>
-                                  {recentProperties.map(prop => (
+                                  {loading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={7} className="text-center py-8">Cargando propiedades...</TableCell>
+                                    </TableRow>
+                                  ) : recentProperties.length > 0 ? (
+                                    recentProperties.map(prop => (
                                     <TableRow key={prop.id}>
                                       <TableCell className="font-medium">{prop.title}</TableCell>
                                       <TableCell className="capitalize">{prop.type}</TableCell>
-                                      <TableCell className="capitalize">{prop.operation === 'sale' ? 'Venta' : 'Alquiler'}</TableCell>
+                                      <TableCell className="capitalize">{prop.operation === 'Venta' ? 'Venta' : 'Alquiler'}</TableCell>
                                       <TableCell>{prop.location}</TableCell>
-                                      <TableCell>10/08/2025</TableCell>
-                                      <TableCell>{getStatusBadge(true)}</TableCell>
+                                      <TableCell>{prop.createdAt?.toDate().toLocaleDateString() || '-'}</TableCell>
+                                      <TableCell>{getStatusBadge(prop.active)}</TableCell>
                                       <TableCell className="text-right">
-                                        <div className="flex gap-2 justify-end">
+                                        <div className="flex gap-1 justify-end">
                                           <Button variant="ghost" size="icon"><Eye className="h-4 w-4"/></Button>
                                           <Button variant="ghost" size="icon"><Pencil className="h-4 w-4"/></Button>
-                                          <Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                                          <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setPropertyToDelete(prop)}>
+                                                <Trash2 className="h-4 w-4"/>
+                                            </Button>
+                                          </AlertDialogTrigger>
                                         </div>
                                       </TableCell>
                                     </TableRow>
-                                  ))}
+                                  ))) : (
+                                    <TableRow>
+                                        <TableCell colSpan={7} className="text-center py-8">No hay propiedades creadas.</TableCell>
+                                    </TableRow>
+                                  )}
                               </TableBody>
                           </Table>
                         </div>
@@ -183,8 +233,24 @@ export default function AdminDashboard() {
                 </Tabs>
             </CardContent>
         </Card>
-
       </div>
+
+       <AlertDialog open={!!propertyToDelete} onOpenChange={(open) => !open && setPropertyToDelete(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>¿Estás seguro de que deseas eliminar esta propiedad?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Esta acción no se puede deshacer. Esto eliminará permanentemente la propiedad <span className="font-semibold">"{propertyToDelete?.title}"</span> de la base de datos.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setPropertyToDelete(null)}>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     </div>
   );
 }
+
+    
