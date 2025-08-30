@@ -81,9 +81,12 @@ function SearchFormComponent() {
                     </FormControl>
                     <SelectContent>
                         <SelectItem value="any">Todos los tipos</SelectItem>
-                        <SelectItem value="apartment">Departamento</SelectItem>
-                        <SelectItem value="house">Casa</SelectItem>
-                        <SelectItem value="land">Terreno</SelectItem>
+                        <SelectItem value="Casa">Casa</SelectItem>
+                        <SelectItem value="Departamento">Departamento</SelectItem>
+                        <SelectItem value="Local">Local</SelectItem>
+                        <SelectItem value="Lote">Lote</SelectItem>
+                        <SelectItem value="Oficina">Oficina</SelectItem>
+                        <SelectItem value="PH">PH</SelectItem>
                     </SelectContent>
                     </Select>
                 </FormItem>
@@ -103,8 +106,8 @@ function SearchFormComponent() {
                     </FormControl>
                     <SelectContent>
                         <SelectItem value="any">Cualquier operación</SelectItem>
-                        <SelectItem value="rent">Alquiler</SelectItem>
-                        <SelectItem value="sale">Venta</SelectItem>
+                        <SelectItem value="Alquiler">Alquiler</SelectItem>
+                        <SelectItem value="Venta">Venta</SelectItem>
                     </SelectContent>
                     </Select>
                 </FormItem>

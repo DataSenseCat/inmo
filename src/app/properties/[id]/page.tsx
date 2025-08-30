@@ -19,9 +19,13 @@ import { Separator } from '@/components/ui/separator';
 export default async function PropertyDetailPage({ params }: { params: { id: string } }) {
   const property = await getPropertyById(params.id);
 
-  if (!property) {
+  if (!property || !property.active) {
     notFound();
   }
+
+  const isSale = property.operation === 'Venta';
+  const price = isSale ? property.priceUSD : property.priceARS;
+  const currency = isSale ? 'USD' : 'ARS';
 
   return (
     <div className="bg-background">
@@ -49,15 +53,15 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
                     <CardTitle className="text-3xl md:text-4xl font-bold font-headline">{property.title}</CardTitle>
                     <div className="flex items-center gap-2 text-muted-foreground pt-2">
                         <MapPin className="w-4 h-4" />
-                        <span>{property.location}</span>
+                        <span>{property.location}, {property.address}</span>
                     </div>
                 </CardHeader>
                 <CardContent>
                     <Separator className='my-4' />
                     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-lg my-6">
-                        <span className="flex items-center gap-2"><BedDouble className="w-6 h-6 text-primary" /> {property.bedrooms} Dormitorios</span>
-                        <span className="flex items-center gap-2"><Bath className="w-6 h-6 text-primary" /> {property.bathrooms} Baños</span>
-                        <span className="flex items-center gap-2"><AreaChart className="w-6 h-6 text-primary" /> {property.area} m²</span>
+                        {property.bedrooms > 0 && <span className="flex items-center gap-2"><BedDouble className="w-6 h-6 text-primary" /> {property.bedrooms} Dormitorios</span>}
+                        {property.bathrooms > 0 && <span className="flex items-center gap-2"><Bath className="w-6 h-6 text-primary" /> {property.bathrooms} Baños</span>}
+                        {property.area > 0 && <span className="flex items-center gap-2"><AreaChart className="w-6 h-6 text-primary" /> {property.area} m²</span>}
                     </div>
                     <Separator className='my-4' />
                     <h2 className="text-2xl font-bold font-headline mt-8 mb-4">Descripción</h2>
@@ -71,11 +75,11 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
               <CardContent className="p-6 text-center">
                 <p className="text-muted-foreground mb-1">Precio</p>
                 <p className="text-4xl font-bold text-primary mb-4">
-                  ${property.priceUSD.toLocaleString()}
-                  {property.operation === 'rent' && <span className="text-lg font-normal text-muted-foreground"> / mes</span>}
+                  {currency} ${price.toLocaleString()}
+                  {!isSale && <span className="text-lg font-normal text-muted-foreground"> / mes</span>}
                 </p>
-                <Badge variant={property.operation === 'sale' ? 'default' : 'secondary'} className='text-sm'>
-                  En {property.operation === 'sale' ? 'Venta' : 'Alquiler'}
+                <Badge variant={isSale ? 'default' : 'secondary'} className='text-sm'>
+                  En {property.operation}
                 </Badge>
               </CardContent>
               <Separator />
