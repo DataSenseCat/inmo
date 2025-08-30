@@ -5,7 +5,7 @@ import {
     CarouselNext,
     CarouselPrevious,
   } from "@/components/ui/carousel";
-import { getFeaturedProperties } from '@/lib/data';
+import { getFeaturedProperties } from '@/lib/properties';
 import { PropertyCard } from '@/components/property-card';
 import { Button } from "../ui/button";
 import Link from "next/link";

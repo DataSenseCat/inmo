@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import type { Property } from '@/models/property';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
-import { getProperties } from '@/services/properties';
+import { getProperties } from '@/lib/properties';
 
 export default function AdminDashboard() {
   const router = useRouter();

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { BedDouble, Bath, AreaChart, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { Property } from '@/lib/data';
+import type { Property } from '@/models/property';
 
 interface PropertyCardProps {
   property: Property;
@@ -15,7 +15,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
     <Card className="overflow-hidden transition-shadow hover:shadow-xl h-full flex flex-col group border rounded-lg">
       <Link href={`/properties/${property.id}`} className="block relative aspect-[16/10] overflow-hidden">
         <Image
-          src={property.images[0]}
+          src={property.images[0].url}
           alt={property.title}
           fill
           className="object-cover transition-transform duration-300 group-hover:scale-105"
@@ -25,11 +25,11 @@ export function PropertyCard({ property }: PropertyCardProps) {
             <Badge className="bg-green-600 text-white">
                 {property.operation === 'sale' ? 'Venta' : 'Alquiler'}
             </Badge>
-            {property.isFeatured && <Badge variant="secondary">Destacada</Badge>}
+            {property.featured && <Badge variant="secondary">Destacada</Badge>}
         </div>
         <div className="absolute bottom-2 right-2">
             <Badge variant="default" className="text-lg bg-black/70 text-white border-black/70">
-                ${property.operation === 'sale' ? property.price.toLocaleString() : `${property.price.toLocaleString()}/mes`}
+                ${property.operation === 'sale' ? property.priceUSD.toLocaleString() : `${property.priceUSD.toLocaleString()}/mes`}
             </Badge>
         </div>
       </Link>

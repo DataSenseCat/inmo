@@ -4,7 +4,7 @@
 import { useSearchParams } from 'next/navigation';
 import { useMemo, Suspense, useState, useEffect } from 'react';
 import type { Property } from '@/models/property';
-import { getProperties } from '@/services/properties';
+import { getProperties } from '@/lib/properties';
 import { PropertyCard } from '@/components/property-card';
 import { SearchForm } from '@/components/search-form';
 import { Skeleton } from '@/components/ui/skeleton';
