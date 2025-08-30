@@ -1,21 +1,23 @@
-import { Briefcase, Users, Heart } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CheckCircle, Users, Heart } from 'lucide-react';
+import { Button } from '../ui/button';
+import Link from 'next/link';
+import Image from 'next/image';
 
 const benefits = [
   {
-    icon: Briefcase,
-    title: "Years of Experience",
-    description: "With over a decade in the local market, we have the expertise to guide you through every step of the process."
+    icon: CheckCircle,
+    title: "Más de 15 años de experiencia",
+    description: "Conocemos el mercado inmobiliario catamarqueño como nadie."
   },
   {
-    icon: Heart,
-    title: "Personalized Attention",
-    description: "We treat every client like family, offering tailored advice and support to meet your unique needs."
+    icon: CheckCircle,
+    title: "Atención personalizada",
+    description: "Te acompañamos en cada paso del proceso de compra o venta."
   },
   {
-    icon: Users,
-    title: "Community Focused",
-    description: "Deeply rooted in Catamarca, we have unparalleled local knowledge and a vast network to benefit you."
+    icon: CheckCircle,
+    title: "Tasaciones gratuitas",
+    description: "Conoce el valor real de tu propiedad sin costo alguno."
   }
 ];
 
@@ -23,26 +25,31 @@ export function WhyChooseUs() {
   return (
     <section className="py-12 lg:py-24 bg-muted">
       <div className="container mx-auto px-4 md:px-6">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold font-headline">Why Choose Catamarca Estates?</h2>
-          <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-            Discover the difference of working with a dedicated and experienced team.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {benefits.map((benefit, index) => (
-            <Card key={index} className="text-center group hover:border-primary transition-colors">
-              <CardHeader className="items-center">
-                <div className="mx-auto bg-primary/10 text-primary rounded-full w-16 h-16 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                  <benefit.icon className="w-8 h-8" />
-                </div>
-                <CardTitle className="font-headline">{benefit.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">{benefit.description}</p>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+                <h2 className="text-3xl md:text-4xl font-bold font-headline mb-6">¿Por qué elegir Inmobiliaria Catamarca?</h2>
+                <ul className="space-y-6">
+                    {benefits.map((benefit, index) => (
+                        <li key={index} className="flex items-start gap-4">
+                            <div className="flex-shrink-0">
+                                <benefit.icon className="w-6 h-6 text-primary" />
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-lg">{benefit.title}</h3>
+                                <p className="text-muted-foreground">{benefit.description}</p>
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+                <Button asChild variant="outline" className="mt-8">
+                    <Link href="/contact">
+                        Conoce Más Sobre Nosotros
+                    </Link>
+                </Button>
+            </div>
+            <div className="bg-gray-200 aspect-square rounded-lg flex items-center justify-center">
+                 <Image src="https://picsum.photos/600/600" alt="Imagen de la empresa" width={600} height={600} className="object-cover rounded-lg" data-ai-hint="office building"/>
+            </div>
         </div>
       </div>
     </section>

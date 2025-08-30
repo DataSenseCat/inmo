@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { BedDouble, Bath, AreaChart, ArrowRight } from "lucide-react";
+import { BedDouble, Bath, AreaChart, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Property } from '@/lib/data';
 
@@ -12,46 +12,64 @@ interface PropertyCardProps {
 
 export function PropertyCard({ property }: PropertyCardProps) {
   return (
-    <Card className="overflow-hidden transition-shadow hover:shadow-xl h-full flex flex-col group">
-      <CardContent className="p-0 flex flex-col flex-grow">
-        <Link href={`/properties/${property.id}`} className="block relative aspect-[16/10] overflow-hidden">
-          <Image
-            src={property.images[0]}
-            alt={property.title}
-            fill
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
-            data-ai-hint="property exterior"
-          />
-          <Badge className="absolute top-3 right-3" variant={property.operation === 'sale' ? 'default' : 'secondary'}>
-            For {property.operation === 'sale' ? 'Sale' : 'Rent'}
-          </Badge>
-        </Link>
-        <div className="p-4 flex flex-col flex-grow">
+    <Card className="overflow-hidden transition-shadow hover:shadow-xl h-full flex flex-col group border rounded-lg">
+      <Link href={`/properties/${property.id}`} className="block relative aspect-[16/10] overflow-hidden">
+        <Image
+          src={property.images[0]}
+          alt={property.title}
+          fill
+          className="object-cover transition-transform duration-300 group-hover:scale-105"
+          data-ai-hint="property exterior"
+        />
+        <div className="absolute top-2 left-2 flex gap-2">
+            <Badge className="bg-green-600 text-white">
+                {property.operation === 'sale' ? 'Venta' : 'Alquiler'}
+            </Badge>
+            {property.isFeatured && <Badge variant="secondary">Destacada</Badge>}
+        </div>
+        <div className="absolute bottom-2 right-2">
+            <Badge variant="default" className="text-lg bg-black/70 text-white border-black/70">
+                ${property.operation === 'sale' ? property.price.toLocaleString() : `${property.price.toLocaleString()}/mes`}
+            </Badge>
+        </div>
+      </Link>
+      <CardContent className="p-4 flex flex-col flex-grow">
+        <div>
           <h3 className="font-semibold text-lg font-headline mb-1 leading-tight">
             <Link href={`/properties/${property.id}`} className="hover:text-primary transition-colors">
                 {property.title}
             </Link>
           </h3>
-          <p className="text-muted-foreground text-sm mb-3">{property.location}</p>
-          
-          <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-            <span className="flex items-center gap-1.5"><BedDouble className="w-4 h-4 text-accent" /> {property.bedrooms} beds</span>
-            <span className="flex items-center gap-1.5"><Bath className="w-4 h-4 text-accent" /> {property.bathrooms} baths</span>
-            <span className="flex items-center gap-1.5"><AreaChart className="w-4 h-4 text-accent" /> {property.area} m²</span>
+          <div className="flex items-center gap-2 text-muted-foreground text-sm mb-3">
+              <MapPin className="w-4 h-4" />
+              <span>{property.location}</span>
           </div>
+          <p className="text-muted-foreground text-sm mb-4 line-clamp-2">{property.description}</p>
           
-          <div className="mt-auto flex justify-between items-center">
-             <p className="text-xl font-bold text-primary">
-               ${property.price.toLocaleString()}
-               {property.operation === 'rent' && <span className="text-sm font-normal text-muted-foreground"> / month</span>}
-             </p>
-             <Button asChild variant="ghost" size="sm" className="text-accent-foreground/80 hover:text-primary">
-                <Link href={`/properties/${property.id}`}>
-                  View <ArrowRight className="ml-2 w-4 h-4" />
-                </Link>
-             </Button>
+          <div className="flex items-center gap-4 text-sm text-muted-foreground border-t pt-3">
+            <span className="flex items-center gap-1.5"><BedDouble className="w-4 h-4 text-primary" /> {property.bedrooms}</span>
+            <span className="flex items-center gap-1.5"><Bath className="w-4 h-4 text-primary" /> {property.bathrooms}</span>
+            <span className="flex items-center gap-1.5"><AreaChart className="w-4 h-4 text-primary" /> {property.area} m²</span>
           </div>
         </div>
+        <div className="mt-4 pt-4 border-t flex justify-between items-center">
+             <div className="text-sm">
+                <p className="text-muted-foreground">Agente</p>
+                <p className="font-semibold">{property.contact.name}</p>
+             </div>
+             <div className="flex gap-2">
+                <Button asChild variant="outline" size="sm">
+                    <Link href={`/properties/${property.id}`}>
+                        Ver Detalles
+                    </Link>
+                </Button>
+                <Button asChild size="sm">
+                    <Link href={`/contact?propertyId=${property.id}`}>
+                        Consultar
+                    </Link>
+                </Button>
+             </div>
+          </div>
       </CardContent>
     </Card>
   );

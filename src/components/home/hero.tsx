@@ -5,9 +5,9 @@ export function Hero() {
   return (
     <section className="relative w-full h-[60vh] min-h-[500px] flex items-center justify-center">
       <Image
-        src="https://picsum.photos/1600/900?grayscale"
-        alt="Beautiful modern home"
-        data-ai-hint="modern home architecture"
+        src="https://picsum.photos/1600/900?blur=2"
+        alt="Catamarca city"
+        data-ai-hint="cathedral catamarca argentina"
         fill
         className="object-cover -z-10"
         priority
@@ -16,11 +16,8 @@ export function Hero() {
       <div className="container px-4 md:px-6 text-center text-white">
         <div className="max-w-3xl mx-auto space-y-4">
           <h1 className="text-4xl md:text-6xl font-bold font-headline tracking-tight">
-            Find Your Dream Home in Catamarca
+            Encuentre su propiedad
           </h1>
-          <p className="text-lg md:text-xl text-primary-foreground/80">
-            The key to your new beginning. Explore properties for rent or sale.
-          </p>
         </div>
         <div className="max-w-4xl mx-auto mt-8">
             <SearchForm />

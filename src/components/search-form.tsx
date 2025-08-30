@@ -12,7 +12,6 @@ import {
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
 } from "@/components/ui/form";
 import {
   Select,
@@ -22,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import Link from "next/link";
 
 const searchFormSchema = z.object({
   type: z.string().optional(),
@@ -39,117 +38,95 @@ export function SearchForm() {
   const form = useForm<SearchFormValues>({
     resolver: zodResolver(searchFormSchema),
     defaultValues: {
-      type: searchParams.get('type') || '',
-      operation: searchParams.get('operation') || '',
+      type: searchParams.get('type') || 'any',
+      operation: searchParams.get('operation') || 'any',
       location: searchParams.get('location') || '',
     },
   });
 
-  useEffect(() => {
-    try {
-        const storedState = localStorage.getItem('searchForm');
-        if (storedState) {
-            const parsedState = JSON.parse(storedState);
-            // Only reset if there are no URL params, URL params take precedence
-            if (!searchParams.toString()) {
-                form.reset(parsedState);
-            }
-        }
-    } catch (error) {
-        console.error("Failed to parse search form state from localStorage", error);
-    }
-  }, []);
-
-  useEffect(() => {
-    const subscription = form.watch((value) => {
-        try {
-            localStorage.setItem('searchForm', JSON.stringify(value));
-        } catch (error) {
-            console.error("Failed to save search form state to localStorage", error);
-        }
-    });
-    return () => subscription.unsubscribe();
-  }, [form]);
-  
   // Sync form with URL search params
   useEffect(() => {
     form.reset({
-      type: searchParams.get('type') || '',
-      operation: searchParams.get('operation') || '',
+      type: searchParams.get('type') || 'any',
+      operation: searchParams.get('operation') || 'any',
       location: searchParams.get('location') || '',
     });
   }, [searchParams, form]);
 
   function onSubmit(data: SearchFormValues) {
     const params = new URLSearchParams();
-    if (data.type) params.append('type', data.type);
-    if (data.operation) params.append('operation', data.operation);
+    if (data.type && data.type !== 'any') params.append('type', data.type);
+    if (data.operation && data.operation !== 'any') params.append('operation', data.operation);
     if (data.location) params.append('location', data.location);
     router.push(`/properties?${params.toString()}`);
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-4 items-end gap-4 p-6 bg-card/80 backdrop-blur-sm rounded-lg shadow-lg">
-        <FormField
-          control={form.control}
-          name="type"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-white md:text-card-foreground">Property Type</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
+      <div className="bg-white p-4 rounded-lg shadow-lg">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-4 items-end gap-4">
+          <FormField
+            control={form.control}
+            name="type"
+            render={({ field }) => (
+              <FormItem>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tipo de propiedad" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="any">Tipo de propiedad</SelectItem>
+                    <SelectItem value="apartment">Apartamento</SelectItem>
+                    <SelectItem value="house">Casa</SelectItem>
+                    <SelectItem value="land">Terreno</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="operation"
+            render={({ field }) => (
+              <FormItem>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Operación" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="any">Operación</SelectItem>
+                    <SelectItem value="rent">Alquiler</SelectItem>
+                    <SelectItem value="sale">Venta</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="location"
+            render={({ field }) => (
+              <FormItem>
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Any type" />
-                  </SelectTrigger>
+                  <Input placeholder="Ubicación" {...field} />
                 </FormControl>
-                <SelectContent>
-                  <SelectItem value="any">Any Type</SelectItem>
-                  <SelectItem value="apartment">Apartment</SelectItem>
-                  <SelectItem value="house">House</SelectItem>
-                  <SelectItem value="land">Land</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="operation"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-white md:text-card-foreground">Operation</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Rent or Sale" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="any">Rent or Sale</SelectItem>
-                  <SelectItem value="rent">For Rent</SelectItem>
-                  <SelectItem value="sale">For Sale</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="location"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-white md:text-card-foreground">Location</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., Downtown" {...field} />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-        <Button type="submit" className="w-full" variant="secondary">
-          <Search className="mr-2 h-4 w-4" /> Search
-        </Button>
-      </form>
+              </FormItem>
+            )}
+          />
+          <Button type="submit" className="w-full">
+            Buscar
+          </Button>
+        </form>
+        <div className="text-right mt-2">
+            <Link href="#" className="text-sm text-primary hover:underline">
+                Búsqueda avanzada
+            </Link>
+        </div>
+      </div>
     </Form>
   );
 }
