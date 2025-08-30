@@ -23,13 +23,13 @@ export function PropertyCard({ property }: PropertyCardProps) {
         />
         <div className="absolute top-2 left-2 flex gap-2">
             <Badge className="bg-green-600 text-white">
-                {property.operation === 'sale' ? 'Venta' : 'Alquiler'}
+                {property.operation === 'Venta' ? 'Venta' : 'Alquiler'}
             </Badge>
             {property.featured && <Badge variant="secondary">Destacada</Badge>}
         </div>
         <div className="absolute bottom-2 right-2">
             <Badge variant="default" className="text-lg bg-black/70 text-white border-black/70">
-                ${property.operation === 'sale' ? property.priceUSD.toLocaleString() : `${property.priceUSD.toLocaleString()}/mes`}
+                ${property.operation === 'Venta' ? property.priceUSD.toLocaleString() : `${property.priceARS.toLocaleString()}/mes`}
             </Badge>
         </div>
       </Link>
@@ -64,7 +64,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
                     </Link>
                 </Button>
                 <Button asChild size="sm">
-                    <Link href={`/contact?propertyId=${property.id}`}>
+                    <Link href={`/contact?subject=consulta-venta&propertyId=${property.id}`}>
                         Consultar
                     </Link>
                 </Button>
