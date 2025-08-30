@@ -4,21 +4,24 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu, Phone, Mail, User, Heart, Search } from 'lucide-react';
 import { Input } from '../ui/input';
+import { getSiteConfig } from '@/lib/config';
 
-export function Header() {
+export async function Header() {
+  const config = await getSiteConfig();
+
   return (
     <header className="sticky top-0 z-50 w-full bg-white shadow-md">
       {/* Top bar */}
       <div className="bg-[#0f172a] text-white text-xs">
         <div className="container mx-auto flex justify-between items-center h-8 px-4 md:px-6">
           <div className="flex items-center gap-4">
-            <a href="tel:+543834901545" className="flex items-center gap-1.5 hover:text-primary">
+            <a href={`tel:${config?.contactPhone}`} className="flex items-center gap-1.5 hover:text-primary">
               <Phone size={14} />
-              <span>+54 383 490-1545</span>
+              <span>{config?.contactPhone || ''}</span>
             </a>
-            <a href="mailto:info@inmobiliariacatamarca.com" className="hidden md:flex items-center gap-1.5 hover:text-primary">
+            <a href={`mailto:${config?.contactEmail}`} className="hidden md:flex items-center gap-1.5 hover:text-primary">
               <Mail size={14} />
-              <span>info@inmobiliariacatamarca.com</span>
+              <span>{config?.contactEmail || ''}</span>
             </a>
           </div>
           <div className="flex items-center gap-4">

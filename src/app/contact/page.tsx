@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,6 +25,9 @@ import { Check, Phone, MessageSquare, Mail, MapPin, Clock, Send, Building, Home,
 import Image from "next/image";
 import Link from 'next/link';
 import { createLead } from "@/lib/leads";
+import { getSiteConfig } from "@/lib/config";
+import { useEffect, useState } from "react";
+import type { SiteConfig } from "@/models/site-config";
 
 const contactFormSchema = z.object({
   name: z.string().min(2, "El nombre es requerido."),
@@ -35,41 +39,6 @@ const contactFormSchema = z.object({
 });
 
 type ContactFormValues = z.infer<typeof contactFormSchema>;
-
-const contactOptions = [
-    {
-        icon: Phone,
-        title: "Teléfono",
-        info: "+54 383 490-1545",
-        subInfo: "Lunes a Viernes de 9 a 18hs",
-        buttonText: "Llamar",
-        href: "tel:+543834901545"
-    },
-    {
-        icon: MessageSquare,
-        title: "WhatsApp",
-        info: "+54 383 490-1545",
-        subInfo: "Respuesta inmediata",
-        buttonText: "Chatear",
-        href: "https://wa.me/543834901545"
-    },
-    {
-        icon: Mail,
-        title: "Email",
-        info: "info@inmobiliariacatamarca.com",
-        subInfo: "Respuesta en 24hs",
-        buttonText: "Escribir",
-        href: "mailto:info@inmobiliariacatamarca.com"
-    },
-    {
-        icon: MapPin,
-        title: "Oficina",
-        info: "Av. República 123",
-        subInfo: "San Fernando del Valle de Catamarca",
-        buttonText: "Ver Mapa",
-        href: "#map-location"
-    },
-];
 
 const departments = [
     { icon: Home, title: "Ventas", email: "ventas@inmobiliariacatamarca.com", phone: "+54 383 456-7890" },
@@ -99,6 +68,12 @@ const faqs = [
 
 export default function ContactPage() {
   const { toast } = useToast();
+  const [config, setConfig] = useState<SiteConfig | null>(null);
+
+  useEffect(() => {
+    getSiteConfig().then(setConfig);
+  }, []);
+
   const form = useForm<ContactFormValues>({
     resolver: zodResolver(contactFormSchema),
     defaultValues: {
@@ -128,6 +103,41 @@ export default function ContactPage() {
       });
     }
   }
+
+  const contactOptions = [
+    {
+        icon: Phone,
+        title: "Teléfono",
+        info: config?.contactPhone || 'Cargando...',
+        subInfo: "Lunes a Viernes de 9 a 18hs",
+        buttonText: "Llamar",
+        href: `tel:${config?.contactPhone}`
+    },
+    {
+        icon: MessageSquare,
+        title: "WhatsApp",
+        info: config?.contactPhone || 'Cargando...',
+        subInfo: "Respuesta inmediata",
+        buttonText: "Chatear",
+        href: `https://wa.me/${config?.contactPhone?.replace(/\s|-/g, '')}`
+    },
+    {
+        icon: Mail,
+        title: "Email",
+        info: config?.contactEmail || 'Cargando...',
+        subInfo: "Respuesta en 24hs",
+        buttonText: "Escribir",
+        href: `mailto:${config?.contactEmail}`
+    },
+    {
+        icon: MapPin,
+        title: "Oficina",
+        info: config?.address.split(',')[0] || 'Cargando...',
+        subInfo: config?.address.split(',').slice(1).join(',') || '',
+        buttonText: "Ver Mapa",
+        href: "#map-location"
+    },
+];
 
   return (
     <div className="bg-gray-50/50">
@@ -258,9 +268,9 @@ export default function ContactPage() {
                              <div className="text-center mt-4 border-t pt-4">
                                 <p className="text-sm text-muted-foreground mb-3">¿Preferís contactarnos directamente?</p>
                                 <div className="flex justify-center gap-3">
-                                    <Button variant="outline" asChild><a href="https://wa.me/543834901545" target="_blank"><MessageSquare className="mr-2"/>WhatsApp</a></Button>
-                                    <Button variant="outline" asChild><a href="mailto:info@inmobiliariacatamarca.com"><Mail className="mr-2"/>Email</a></Button>
-                                    <Button variant="outline" asChild><a href="tel:+543834901545"><Phone className="mr-2"/>Llamar</a></Button>
+                                    <Button variant="outline" asChild><a href={`https://wa.me/${config?.contactPhone?.replace(/\s|-/g, '')}`} target="_blank"><MessageSquare className="mr-2"/>WhatsApp</a></Button>
+                                    <Button variant="outline" asChild><a href={`mailto:${config?.contactEmail}`}><Mail className="mr-2"/>Email</a></Button>
+                                    <Button variant="outline" asChild><a href={`tel:${config?.contactPhone}`}><Phone className="mr-2"/>Llamar</a></Button>
                                 </div>
                             </div>
                         </form>
@@ -276,12 +286,11 @@ export default function ContactPage() {
                 <CardContent className="space-y-4">
                      <div>
                         <h4 className="font-semibold text-muted-foreground text-sm">Dirección</h4>
-                        <p>Av. República 123, San Fernando del Valle de Catamarca, Argentina (CP 4700)</p>
+                        <p>{config?.address || 'Cargando...'}</p>
                      </div>
                      <div>
                         <h4 className="font-semibold text-muted-foreground text-sm">Horarios de Atención</h4>
-                        <p className="flex items-center gap-2"><Clock className="w-4 h-4"/> Lunes a Viernes: 9:00 - 18:00</p>
-                        <p className="flex items-center gap-2"><Clock className="w-4 h-4"/> Sábados: 9:00 - 13:00</p>
+                        <p className="flex items-center gap-2"><Clock className="w-4 h-4"/> {config?.officeHours || 'Cargando...'}</p>
                      </div>
                      <div>
                         <h4 className="font-semibold text-muted-foreground text-sm">Cómo llegar</h4>
@@ -357,7 +366,7 @@ export default function ContactPage() {
                     Para emergencias relacionadas con propiedades en administración o situaciones urgentes, contactanos por WhatsApp. Respondemos las 24 horas.
                 </p>
                 <Button variant="secondary" size="lg" className="bg-white text-orange-600 hover:bg-gray-100" asChild>
-                    <a href="https://wa.me/543834901545" target="_blank"><MessageSquare className="mr-2"/> WhatsApp 24hs</a>
+                    <a href={`https://wa.me/${config?.contactPhone?.replace(/\s|-/g, '')}`} target="_blank"><MessageSquare className="mr-2"/> WhatsApp 24hs</a>
                 </Button>
             </div>
         </div>

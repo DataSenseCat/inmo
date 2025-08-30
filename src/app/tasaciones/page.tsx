@@ -44,6 +44,9 @@ import {
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createLead } from "@/lib/leads";
+import type { SiteConfig } from "@/models/site-config";
+import { useEffect, useState } from "react";
+import { getSiteConfig } from "@/lib/config";
 
 
 const tasacionFormSchema = z.object({
@@ -60,6 +63,12 @@ type TasacionFormValues = z.infer<typeof tasacionFormSchema>;
 
 export default function TasacionesPage() {
     const { toast } = useToast();
+    const [config, setConfig] = useState<SiteConfig | null>(null);
+
+    useEffect(() => {
+        getSiteConfig().then(setConfig);
+    }, []);
+
     const form = useForm<TasacionFormValues>({
       resolver: zodResolver(tasacionFormSchema),
       defaultValues: {
@@ -365,22 +374,22 @@ export default function TasacionesPage() {
                         <CardTitle className="font-headline text-xl">¿Preferís contactarnos directamente?</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <a href="https://wa.me/543834901545" target="_blank" className="flex items-center gap-4 group">
+                        <a href={`https://wa.me/${config?.contactPhone?.replace(/\s|-/g, '')}`} target="_blank" className="flex items-center gap-4 group">
                            <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
                                 <MessageCircle className="h-5 w-5 text-green-600"/>
                            </div>
                            <div>
                                 <h3 className="font-semibold group-hover:underline">WhatsApp</h3>
-                                <p className="text-sm text-muted-foreground">+54 383 490-1545</p>
+                                <p className="text-sm text-muted-foreground">{config?.contactPhone || 'Cargando...'}</p>
                            </div>
                         </a>
-                         <a href="mailto:info@inmobiliariacatamarca.com" className="flex items-center gap-4 group">
+                         <a href={`mailto:${config?.contactEmail}`} className="flex items-center gap-4 group">
                            <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                                 <Mail className="h-5 w-5 text-blue-600"/>
                            </div>
                            <div>
                                 <h3 className="font-semibold group-hover:underline">Email</h3>
-                                <p className="text-sm text-muted-foreground">info@inmobiliariacatamarca.com</p>
+                                <p className="text-sm text-muted-foreground">{config?.contactEmail || 'Cargando...'}</p>
                            </div>
                         </a>
                     </CardContent>

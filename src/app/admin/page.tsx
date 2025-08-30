@@ -1,8 +1,9 @@
 
+
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Building, DollarSign, Filter, Layers, Search, Trash2, Users, CheckCircle, RefreshCw, Plus, Upload, Pencil, Eye, AlertTriangle, Mail, User, Settings, ExternalLink } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,8 @@ import { getAgents, deleteAgent } from '@/lib/agents';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import type { SiteConfig } from '@/models/site-config';
+import { getSiteConfig } from '@/lib/config';
 
 
 export default function AdminDashboard() {
@@ -33,6 +36,7 @@ export default function AdminDashboard() {
   const [developments, setDevelopments] = useState<Development[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [siteConfig, setSiteConfig] = useState<SiteConfig | null>(null);
   const [loading, setLoading] = useState(true);
   
   const [propertyToDelete, setPropertyToDelete] = useState<Property | null>(null);
@@ -42,16 +46,18 @@ export default function AdminDashboard() {
   async function loadData() {
       try {
           setLoading(true);
-          const [props, devs, leadData, agentData] = await Promise.all([
+          const [props, devs, leadData, agentData, configData] = await Promise.all([
             getProperties(), 
             getDevelopments(),
             getLeads(),
-            getAgents()
+            getAgents(),
+            getSiteConfig()
           ]);
           setProperties(props);
           setDevelopments(devs);
           setLeads(leadData);
           setAgents(agentData);
+          setSiteConfig(configData);
       } catch (error) {
           console.error("Failed to load data:", error);
           toast({
@@ -457,12 +463,18 @@ export default function AdminDashboard() {
                                 <p className='text-muted-foreground'>
                                     Estos son los datos que se mostrarán en el pie de página y otras áreas de contacto.
                                 </p>
-                                <div className='mt-4 text-sm space-y-2'>
-                                    <p><strong>Teléfono:</strong> +54 383 490-1545</p>
-                                    <p><strong>Email:</strong> info@inmobiliariacatamarca.com</p>
-                                    <p><strong>Dirección:</strong> Av. Belgrano 1250, San Fernando del Valle de Catamarca</p>
-                                    <p><strong>Horarios:</strong> Lun - Vie: 9:00 - 18:00, Sáb: 9:00 - 13:00</p>
-                                </div>
+                                {loading ? (
+                                    <p className='mt-4'>Cargando configuración...</p>
+                                ) : siteConfig ? (
+                                    <div className='mt-4 text-sm space-y-2'>
+                                        <p><strong>Teléfono:</strong> {siteConfig.contactPhone}</p>
+                                        <p><strong>Email:</strong> {siteConfig.contactEmail}</p>
+                                        <p><strong>Dirección:</strong> {siteConfig.address}</p>
+                                        <p><strong>Horarios:</strong> {siteConfig.officeHours}</p>
+                                    </div>
+                                ) : (
+                                    <p className='mt-4'>No se encontró configuración. Por favor, edítala para añadirla.</p>
+                                )}
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -518,5 +530,3 @@ export default function AdminDashboard() {
     </div>
   );
 }
-
-    
