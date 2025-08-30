@@ -1,11 +1,12 @@
 import { DevelopmentCard } from '@/components/emprendimientos/development-card';
-import { getDevelopments } from '@/lib/data';
+import { getDevelopments } from '@/services/developments';
+import type { Development } from '@/models/development';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
 export default async function EmprendimientosPage() {
-  const developments = await getDevelopments();
+  const developments: Development[] = await getDevelopments();
 
   const filteredDevelopments = (status: 'planning' | 'construction' | 'finished' | null) => {
     if (!status) return developments;
