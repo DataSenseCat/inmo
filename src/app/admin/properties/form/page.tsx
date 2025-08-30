@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, Info, Home, ListChecks, DollarSign, Image as ImageIcon, ParkingCircle, Waves, ConciergeBell, Grill, CookingPot, Upload, Trash2 } from 'lucide-react';
+import { ArrowLeft, Info, Home, ListChecks, DollarSign, Image as ImageIcon, ParkingCircle, Waves, ConciergeBell, Flame, CookingPot, Upload, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -30,6 +30,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
+import Image from 'next/image';
 
 // Esquema de validación con Zod para todo el formulario
 const propertyFormSchema = z.object({
@@ -72,7 +73,7 @@ const featureOptions = [
     { id: 'cochera', label: 'Cochera', icon: ParkingCircle },
     { id: 'piscina', label: 'Piscina', icon: Waves },
     { id: 'dptoServicio', label: 'Dpto. Servicio', icon: ConciergeBell },
-    { id: 'quincho', label: 'Quincho', icon: Grill },
+    { id: 'quincho', label: 'Quincho', icon: Flame },
     { id: 'parrillero', label: 'Parrillero', icon: CookingPot },
 ] as const;
 
@@ -360,5 +361,3 @@ export default function PropertyFormPage() {
     </div>
   );
 }
-
-    
