@@ -1,3 +1,4 @@
+
 import { DevelopmentCard } from '@/components/emprendimientos/development-card';
 import { getDevelopments } from '@/services/developments';
 import type { Development } from '@/models/development';
