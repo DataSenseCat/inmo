@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Check, Phone, MessageSquare, Mail, MapPin, Clock, Send, Building, Home, Briefcase, FileText, Calendar } from "lucide-react";
 import Image from "next/image";
 import Link from 'next/link';
+import { createLead } from "@/lib/leads";
 
 const contactFormSchema = z.object({
   name: z.string().min(2, "El nombre es requerido."),
@@ -111,12 +112,21 @@ export default function ContactPage() {
   });
 
   async function onSubmit(data: ContactFormValues) {
-    console.log(data);
-    toast({
-      title: "Mensaje Enviado!",
-      description: "Gracias por contactarte. Te responderemos a la brevedad.",
-    });
-    form.reset();
+    try {
+      await createLead(data);
+      toast({
+        title: "Mensaje Enviado!",
+        description: "Gracias por contactarte. Te responderemos a la brevedad.",
+      });
+      form.reset();
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error al enviar',
+        description: 'No se pudo enviar tu mensaje. Por favor, intentá de nuevo más tarde.',
+      });
+    }
   }
 
   return (
@@ -356,5 +366,3 @@ export default function ContactPage() {
     </div>
   );
 }
-
-    

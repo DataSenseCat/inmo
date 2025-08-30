@@ -5,7 +5,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, Info, Home, ListChecks, DollarSign, Image as ImageIcon, ParkingCircle, Waves, ConciergeBell, Flame, CookingPot, Upload, Trash2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Info, Home, ListChecks, DollarSign, Image as ImageIcon, ParkingCircle, Waves, ConciergeBell, Flame, CookingPot, Upload, Trash2, Loader2, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -34,6 +34,8 @@ import Image from 'next/image';
 import { createProperty, getPropertyById, updateProperty } from '@/lib/properties';
 import { useToast } from '@/hooks/use-toast';
 import type { Property } from '@/models/property';
+import type { Agent } from '@/models/agent';
+import { getAgents } from '@/lib/agents';
 
 // Esquema de validación con Zod para todo el formulario
 const propertyFormSchema = z.object({
@@ -66,11 +68,8 @@ const propertyFormSchema = z.object({
   priceUSD: z.coerce.number().min(0, "Debe ser un número positivo.").optional().or(z.literal('')),
   priceARS: z.coerce.number().min(0, "Debe ser un número positivo.").optional().or(z.literal('')),
   
-  contact: z.object({
-      name: z.string().min(1, "El nombre del agente es requerido"),
-      phone: z.string().optional(),
-      email: z.string().email("Email de contacto inválido").optional(),
-  }),
+  // Agente
+  agentId: z.string().min(1, "Debe seleccionar un agente."),
 
   // Imágenes (la lógica de subida se manejará por separado)
   images: z.array(z.any()).default([]),
@@ -99,6 +98,7 @@ function PropertyForm() {
   const [propertyData, setPropertyData] = useState<Property | null>(null);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
   
 
   const form = useForm<PropertyFormValues>({
@@ -124,16 +124,24 @@ function PropertyForm() {
       },
       priceUSD: 0,
       priceARS: 0,
+      agentId: '',
       images: [],
-      contact: {
-          name: "Roberto Fernández",
-          phone: "+54 383 490-1545",
-          email: "roberto@inmobiliariacatamarca.com"
-      }
     },
   });
 
    useEffect(() => {
+    async function loadAgents() {
+        try {
+            const agentList = await getAgents();
+            setAgents(agentList.filter(a => a.active));
+        } catch (error) {
+            console.error("Failed to load agents", error);
+            toast({ variant: "destructive", title: "Error", description: "No se pudieron cargar los agentes."})
+        }
+    }
+
+    loadAgents();
+
     if (isEditing && !propertyData) {
       setLoading(true);
       getPropertyById(propertyId)
@@ -179,15 +187,30 @@ function PropertyForm() {
 
   async function onSubmit(data: PropertyFormValues) {
     try {
+        const selectedAgent = agents.find(agent => agent.id === data.agentId);
+        if (!selectedAgent) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Agente seleccionado no es válido.' });
+            return;
+        }
+
+        const propertyPayload = {
+            ...data,
+            contact: {
+                name: selectedAgent.name,
+                phone: selectedAgent.phone,
+                email: selectedAgent.email,
+            }
+        };
+
         if(isEditing) {
-            await updateProperty(propertyId, data);
+            await updateProperty(propertyId, propertyPayload);
             toast({ title: 'Propiedad Actualizada', description: 'Los cambios se guardaron correctamente.' });
         } else {
             if (imageFiles.length === 0) {
               toast({ variant: 'destructive', title: 'Error', description: 'Debes subir al menos una imagen.' });
               return;
             }
-            await createProperty(data, imageFiles);
+            await createProperty(propertyPayload, imageFiles);
             toast({ title: 'Propiedad Creada', description: 'La nueva propiedad se ha guardado.' });
         }
         router.push('/admin');
@@ -198,7 +221,7 @@ function PropertyForm() {
     }
   }
 
-  if (loading) {
+  if (loading && isEditing) {
       return (
           <div className="flex justify-center items-center h-[calc(100vh-200px)]">
               <Loader2 className="h-10 w-10 animate-spin" />
@@ -391,11 +414,30 @@ function PropertyForm() {
                             </FormItem>
                         )}/>
                     </div>
-                    <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800">
-                        <Info className="float-left mr-3 h-5 w-5 mt-0.5" />
-                        <p className="font-semibold">
-                            Puedes especificar el precio en una o ambas monedas. Si no especificas precio, se mostrará "A consultar".
-                        </p>
+                    <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex">
+                            <div className="flex-shrink-0">
+                                <User className="h-5 w-5 text-blue-400 mt-0.5" />
+                            </div>
+                            <div className="ml-3">
+                                <h3 className="text-blue-800 font-semibold mb-2">Asignar Agente</h3>
+                                <FormField control={form.control} name="agentId" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Agente a Cargo*</FormLabel>
+                                        <Select onValueChange={field.onChange} value={field.value}>
+                                            <FormControl><SelectTrigger><SelectValue placeholder="Seleccionar un agente..."/></SelectTrigger></FormControl>
+                                            <SelectContent>
+                                                {agents.map(agent => (
+                                                    <SelectItem key={agent.id} value={agent.id}>{agent.name}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormDescription>Seleccioná el agente responsable de esta propiedad.</FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
+                            </div>
+                        </div>
                     </div>
                  </CardContent></Card>
             </TabsContent>

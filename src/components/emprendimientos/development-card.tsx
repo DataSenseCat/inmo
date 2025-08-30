@@ -27,13 +27,15 @@ export function DevelopmentCard({ development }: DevelopmentCardProps) {
   return (
     <Card className="overflow-hidden transition-shadow hover:shadow-xl h-full flex flex-col group border rounded-lg">
       <div className="relative aspect-[16/10] overflow-hidden">
-        <Image
-          src={development.image}
-          alt={development.title}
-          fill
-          className="object-cover transition-transform duration-300 group-hover:scale-105"
-          data-ai-hint="building exterior"
-        />
+        <Link href={detailUrl}>
+          <Image
+            src={development.image}
+            alt={development.title}
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            data-ai-hint="building exterior"
+          />
+        </Link>
         <div className="absolute top-3 left-3 flex gap-2">
             <Badge variant="outline" className={`text-xs backdrop-blur-sm bg-white/80 ${status.className}`}>
                 <StatusIcon className="w-3 h-3 mr-1.5" />
@@ -100,7 +102,7 @@ export function DevelopmentCard({ development }: DevelopmentCardProps) {
                 </Link>
             </Button>
             <Button asChild className='w-full bg-green-600 hover:bg-green-700'>
-                <Link href={`/contact?subject=consulta-emprendimiento&propertyId=${development.id}`}>
+                <Link href={`/contact?subject=consulta-emprendimiento&developmentId=${development.id}`}>
                     Consultar
                 </Link>
             </Button>

@@ -13,6 +13,7 @@ export type Property = {
     images: { url: string }[];
     featured: boolean;
     active: boolean;
+    agentId: string;
     contact: {
       name: string;
       phone: string;
@@ -29,3 +30,5 @@ export type Property = {
     updatedAt: any;
   };
   
+
+    
