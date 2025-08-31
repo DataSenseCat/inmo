@@ -29,12 +29,12 @@ import Image from 'next/image';
 const configFormSchema = z.object({
   contactPhone: z.string().min(1, 'El teléfono es requerido.'),
   contactEmail: z.string().email('Por favor, ingrese un email válido.'),
+  leadNotificationEmail: z.string().email('Por favor, ingrese un email válido.').optional().or(z.literal('')),
   address: z.string().min(1, 'La dirección es requerida.'),
   officeHours: z.string().min(1, 'El horario es requerido.'),
-  facebookUrl: z.string().url().or(z.literal('')),
-  instagramUrl: z.string().url().or(z.literal('')),
-  twitterUrl: z.string().url().or(z.literal('')),
-  logoUrl: z.string().optional().nullable(),
+  facebookUrl: z.string().url({ message: "Por favor ingrese una URL válida." }).optional().or(z.literal('')),
+  instagramUrl: z.string().url({ message: "Por favor ingrese una URL válida." }).optional().or(z.literal('')),
+  twitterUrl: z.string().url({ message: "Por favor ingrese una URL válida." }).optional().or(z.literal('')),
 });
 
 type ConfigFormValues = z.infer<typeof configFormSchema>;
@@ -44,6 +44,7 @@ function ConfigForm() {
   const { toast } = useToast();
   
   const [loading, setLoading] = useState(true);
+  const [currentConfig, setCurrentConfig] = useState<SiteConfig | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   
@@ -52,12 +53,12 @@ function ConfigForm() {
     defaultValues: {
       contactPhone: '',
       contactEmail: '',
+      leadNotificationEmail: '',
       address: '',
       officeHours: '',
       facebookUrl: '',
       instagramUrl: '',
       twitterUrl: '',
-      logoUrl: '',
     },
   });
 
@@ -66,15 +67,16 @@ function ConfigForm() {
     getSiteConfig()
       .then(data => {
         if (data) {
+            setCurrentConfig(data);
             form.reset({
                 contactPhone: data.contactPhone || '',
                 contactEmail: data.contactEmail || '',
+                leadNotificationEmail: data.leadNotificationEmail || '',
                 address: data.address || '',
                 officeHours: data.officeHours || '',
                 facebookUrl: data.socials?.facebook || '',
                 instagramUrl: data.socials?.instagram || '',
                 twitterUrl: data.socials?.twitter || '',
-                logoUrl: data.logoUrl || '',
             });
             if(data.logoUrl) {
                 setLogoPreview(data.logoUrl);
@@ -95,24 +97,13 @@ function ConfigForm() {
   const removeLogo = () => {
       setLogoFile(null);
       setLogoPreview(null);
-      form.setValue('logoUrl', null);
   }
 
   async function onSubmit(data: ConfigFormValues) {
     try {
-        const payload: Omit<SiteConfig, 'updatedAt' | 'logoUrl'> = {
-            contactPhone: data.contactPhone,
-            contactEmail: data.contactEmail,
-            address: data.address,
-            officeHours: data.officeHours,
-            socials: {
-                facebook: data.facebookUrl,
-                instagram: data.instagramUrl,
-                twitter: data.twitterUrl,
-            },
-        };
-
-        await updateSiteConfig(payload, logoFile || undefined, logoPreview);
+        const wasLogoRemoved = !logoPreview && !!currentConfig?.logoUrl;
+        await updateSiteConfig(data, currentConfig, logoFile || undefined, wasLogoRemoved);
+        
         toast({ title: 'Configuración Actualizada', description: 'Los cambios se guardaron correctamente.' });
         router.push('/admin?tab=config');
         router.refresh();
@@ -149,8 +140,8 @@ function ConfigForm() {
                 <CardHeader><CardTitle>Logo de la Empresa</CardTitle></CardHeader>
                 <CardContent className="flex flex-col items-center gap-6">
                     {logoPreview && (
-                        <div className="bg-muted p-4 rounded-lg">
-                           <Image src={logoPreview} alt="Vista previa del logo" width={200} height={100} className="object-contain" />
+                        <div className="bg-muted p-4 rounded-lg w-full max-w-sm h-28 relative">
+                           <Image src={logoPreview} alt="Vista previa del logo" fill className="object-contain" />
                         </div>
                     )}
                      <div className="w-full max-w-sm">
@@ -188,6 +179,14 @@ function ConfigForm() {
                             <FormLabel>Email Principal*</FormLabel>
                             <FormControl><Input type="email" placeholder="info@email.com" {...field} /></FormControl>
                             <FormDescription>El email de contacto general de la empresa.</FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    )}/>
+                     <FormField control={form.control} name="leadNotificationEmail" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Email de Notificación de Leads</FormLabel>
+                            <FormControl><Input type="email" placeholder="leads@email.com" {...field} /></FormControl>
+                            <FormDescription>La dirección de email donde se recibirán las notificaciones de nuevos contactos.</FormDescription>
                             <FormMessage />
                         </FormItem>
                     )}/>

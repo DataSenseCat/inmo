@@ -65,15 +65,41 @@ export async function createProperty(data: Omit<Property, 'id' | 'images' | 'cre
 }
 
 // Function to update an existing property
-export async function updateProperty(id: string, data: Partial<Property>) {
+export async function updateProperty(id: string, data: Partial<Property>, newImages?: File[]) {
     try {
         const docRef = doc(db, 'properties', id);
-        const propertyData = {
+        const propertyData: any = {
             ...cleanData(data),
             updatedAt: Timestamp.now(),
         };
-        // Note: Image update logic is not included in this simple update.
-        // A more complex flow would be needed to handle image replacement.
+
+        if (newImages && newImages.length > 0) {
+            const docSnap = await getDoc(docRef);
+            const currentProperty = docSnap.data() as Property | undefined;
+
+            // Delete old images from storage
+            if (currentProperty?.images && currentProperty.images.length > 0) {
+                for (const image of currentProperty.images) {
+                    try {
+                        const oldImageRef = ref(storage, image.url);
+                        await deleteObject(oldImageRef);
+                    } catch (storageError) {
+                        console.warn(`Could not delete old image ${image.url}:`, storageError);
+                    }
+                }
+            }
+            
+            // Upload new images
+            const newImageUrls = [];
+            for (const image of newImages) {
+                const imageRef = ref(storage, `properties/${Date.now()}_${image.name}`);
+                await uploadBytes(imageRef, image);
+                const url = await getDownloadURL(imageRef);
+                newImageUrls.push({ url });
+            }
+            propertyData.images = newImageUrls;
+        }
+
         await updateDoc(docRef, propertyData);
     } catch (error) {
         console.error("Error updating property: ", error);

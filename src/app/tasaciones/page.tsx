@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -64,9 +65,13 @@ type TasacionFormValues = z.infer<typeof tasacionFormSchema>;
 export default function TasacionesPage() {
     const { toast } = useToast();
     const [config, setConfig] = useState<SiteConfig | null>(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        getSiteConfig().then(setConfig);
+        getSiteConfig().then(data => {
+            setConfig(data);
+            setLoading(false);
+        });
     }, []);
 
     const form = useForm<TasacionFormValues>({
@@ -380,7 +385,7 @@ export default function TasacionesPage() {
                            </div>
                            <div>
                                 <h3 className="font-semibold group-hover:underline">WhatsApp</h3>
-                                <p className="text-sm text-muted-foreground">{config?.contactPhone || 'Cargando...'}</p>
+                                <p className="text-sm text-muted-foreground">{loading ? 'Cargando...' : config?.contactPhone}</p>
                            </div>
                         </a>
                          <a href={`mailto:${config?.contactEmail}`} className="flex items-center gap-4 group">
@@ -389,7 +394,7 @@ export default function TasacionesPage() {
                            </div>
                            <div>
                                 <h3 className="font-semibold group-hover:underline">Email</h3>
-                                <p className="text-sm text-muted-foreground">{config?.contactEmail || 'Cargando...'}</p>
+                                <p className="text-sm text-muted-foreground">{loading ? 'Cargando...' : config?.contactEmail}</p>
                            </div>
                         </a>
                     </CardContent>
@@ -498,3 +503,5 @@ export default function TasacionesPage() {
     </div>
   );
 }
+
+    

@@ -339,6 +339,11 @@ export default function AdminDashboard() {
                               </TableBody>
                            </Table>
                         </div>
+                        <div className="text-center mt-6">
+                            <Button asChild variant="outline">
+                                <Link href="/emprendimientos">Ver Todos los Emprendimientos</Link>
+                            </Button>
+                        </div>
                     </TabsContent>
                     
                     <TabsContent value="agents" className="p-6">
@@ -458,11 +463,11 @@ export default function AdminDashboard() {
                         </div>
                         <Card>
                             <CardHeader>
-                                <CardTitle>Información de Contacto Principal</CardTitle>
+                                <CardTitle>Información Principal</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <p className='text-muted-foreground'>
-                                    Estos son los datos que se mostrarán en el pie de página y otras áreas de contacto.
+                                    Estos son los datos que se mostrarán en todo el sitio.
                                 </p>
                                 {loading ? (
                                     <p className='mt-4'>Cargando configuración...</p>
@@ -470,6 +475,7 @@ export default function AdminDashboard() {
                                     <div className='mt-4 text-sm space-y-2'>
                                         <p><strong>Teléfono:</strong> {siteConfig.contactPhone}</p>
                                         <p><strong>Email:</strong> {siteConfig.contactEmail}</p>
+                                        <p><strong>Email de Notificación de Leads:</strong> {siteConfig.leadNotificationEmail || 'No configurado'}</p>
                                         <p><strong>Dirección:</strong> {siteConfig.address}</p>
                                         <p><strong>Horarios:</strong> {siteConfig.officeHours}</p>
                                     </div>

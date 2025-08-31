@@ -11,6 +11,8 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Lead } from '@/models/lead';
+import { getSiteConfig } from './config';
+import { sendLeadNotification } from '@/ai/flows/send-lead-notification';
 
 // Function to create a new lead
 export async function createLead(data: Omit<Lead, 'id' | 'createdAt'>) {
@@ -20,6 +22,16 @@ export async function createLead(data: Omit<Lead, 'id' | 'createdAt'>) {
             createdAt: Timestamp.now(),
         }
         await addDoc(collection(db, 'leads'), leadData);
+
+        // After saving, send the notification
+        const config = await getSiteConfig();
+        if (config?.leadNotificationEmail) {
+            await sendLeadNotification({
+                to: config.leadNotificationEmail,
+                lead: data,
+            });
+        }
+
     } catch (error) {
         console.error("Error creating lead: ", error);
         throw new Error("Failed to create lead.");

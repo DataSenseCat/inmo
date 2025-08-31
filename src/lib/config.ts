@@ -8,6 +8,35 @@ import type { SiteConfig } from '@/models/site-config';
 
 const CONFIG_DOC_ID = 'main'; 
 
+// Helper to remove undefined, null, or empty string values from an object
+const cleanData = (obj: any): any => {
+    if (obj === null || obj === undefined) {
+        return undefined;
+    }
+    if (Array.isArray(obj)) {
+        return obj
+            .map(v => (v && typeof v === 'object') ? cleanData(v) : v)
+            .filter(v => v !== null && v !== undefined); // Allow empty strings in arrays
+    }
+    if (obj instanceof Timestamp || obj instanceof File) {
+        return obj;
+    }
+    if (typeof obj === 'object') {
+        const newObj: { [key: string]: any } = {};
+        for (const key in obj) {
+            if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                const value = obj[key];
+                if (value !== null && value !== undefined) {
+                    newObj[key] = (value && typeof value === 'object') ? cleanData(value) : value;
+                }
+            }
+        }
+        return newObj;
+    }
+    return obj;
+};
+
+
 export async function getSiteConfig(): Promise<SiteConfig | null> {
     try {
         const docRef = doc(db, 'siteConfig', CONFIG_DOC_ID);
@@ -16,8 +45,16 @@ export async function getSiteConfig(): Promise<SiteConfig | null> {
         if (docSnap.exists()) {
             return docSnap.data() as SiteConfig;
         } else {
-            console.warn("No config document found!");
-            return null;
+            console.warn("No config document found! Creating a default one.");
+            const defaultConfig: SiteConfig = {
+                contactPhone: '',
+                contactEmail: '',
+                address: '',
+                officeHours: '',
+                socials: { facebook: '', instagram: '', twitter: '' },
+            };
+            await setDoc(docRef, defaultConfig);
+            return defaultConfig;
         }
     } catch (error) {
         console.error("Error getting site config, returning null: ", error);
@@ -25,44 +62,62 @@ export async function getSiteConfig(): Promise<SiteConfig | null> {
     }
 }
 
-export async function updateSiteConfig(data: Partial<Omit<SiteConfig, 'updatedAt'>>, logoFile?: File, logoPreview?: string | null): Promise<void> {
+
+export async function updateSiteConfig(
+    data: Omit<SiteConfig, 'logoUrl' | 'updatedAt' | 'socials'> & { facebookUrl?: string, instagramUrl?: string, twitterUrl?: string },
+    currentConfig: SiteConfig | null,
+    logoFile?: File, 
+    logoRemoved?: boolean
+): Promise<void> {
     try {
         const docRef = doc(db, 'siteConfig', CONFIG_DOC_ID);
-        const currentConfig = await getSiteConfig();
         
-        const configData: any = {
-            ...data,
-            updatedAt: Timestamp.now()
-        };
+        let logoUrl = currentConfig?.logoUrl;
 
+        // If a new logo file is provided, upload it and delete the old one
         if (logoFile) {
-            // Upload new logo, delete old one if it exists
             if (currentConfig?.logoUrl) {
                 try {
                     const oldImageRef = ref(storage, currentConfig.logoUrl);
                     await deleteObject(oldImageRef);
                 } catch(e) {
-                    console.error("Failed to delete old logo, continuing with update...", e);
+                    console.warn("Old logo not found or failed to delete, continuing with update...", e);
                 }
             }
             const logoRef = ref(storage, `site/logo_${Date.now()}_${logoFile.name}`);
             await uploadBytes(logoRef, logoFile);
-            configData.logoUrl = await getDownloadURL(logoRef);
-
-        } else if (!logoPreview && currentConfig?.logoUrl) {
-            // If preview is null/empty and there was a logo, it means we need to delete it.
+            logoUrl = await getDownloadURL(logoRef);
+        } 
+        // If no new file, but the logo was marked for removal, delete the old one
+        else if (logoRemoved && currentConfig?.logoUrl) {
             try {
                 const oldImageRef = ref(storage, currentConfig.logoUrl);
                 await deleteObject(oldImageRef);
             } catch(e) {
-                console.error("Failed to delete logo, continuing with update...", e);
+                console.warn("Failed to delete logo, continuing with update...", e);
             }
-            configData.logoUrl = ''; // Set to empty string to remove from db
+            logoUrl = ''; 
         }
-        // If logoFile is null but logoPreview exists, it means we keep the existing logo.
-        // In this case, we don't add logoUrl to configData, so it's not overwritten.
 
-        await setDoc(docRef, configData, { merge: true });
+        const configToSave: Partial<SiteConfig> = {
+            contactPhone: data.contactPhone,
+            contactEmail: data.contactEmail,
+            leadNotificationEmail: data.leadNotificationEmail,
+            address: data.address,
+            officeHours: data.officeHours,
+            socials: {
+                facebook: data.facebookUrl || '',
+                instagram: data.instagramUrl || '',
+                twitter: data.twitterUrl || '',
+            },
+            logoUrl: logoUrl,
+            updatedAt: Timestamp.now()
+        };
+        
+        const cleanedConfigData = cleanData(configToSave);
+
+        await setDoc(docRef, cleanedConfigData, { merge: true });
+
     } catch (error) {
         console.error("Error updating site config: ", error);
         throw new Error("Failed to update site config.");
