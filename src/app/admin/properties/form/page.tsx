@@ -203,7 +203,7 @@ function PropertyForm() {
         };
 
         if(isEditing) {
-            await updateProperty(propertyId, propertyPayload);
+            await updateProperty(propertyId, propertyPayload, imageFiles);
             toast({ title: 'Propiedad Actualizada', description: 'Los cambios se guardaron correctamente.' });
         } else {
             if (imageFiles.length === 0) {
@@ -505,5 +505,3 @@ export default function PropertyFormPage() {
         </Suspense>
     )
 }
-
-    
