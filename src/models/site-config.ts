@@ -1,4 +1,13 @@
 
+export type Service = {
+    title: string;
+    description: string;
+};
+
+export type Certification = {
+    name: string;
+};
+
 export type SiteConfig = {
     logoUrl?: string;
     contactPhone: string;
@@ -11,5 +20,7 @@ export type SiteConfig = {
         instagram: string;
         twitter: string;
     };
+    services?: Service[];
+    certifications?: Certification[];
     updatedAt?: any;
 };

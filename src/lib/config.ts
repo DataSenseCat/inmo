@@ -7,7 +7,7 @@ import type { SiteConfig } from '@/models/site-config';
 
 const CONFIG_DOC_ID = 'main'; 
 
-// Helper to remove undefined, null, or empty string values from an object
+// Helper to remove undefined, null, or empty string values from an object, including nested objects and arrays
 const cleanData = (obj: any): any => {
     if (obj === null || obj === undefined) {
         return undefined;
@@ -20,20 +20,21 @@ const cleanData = (obj: any): any => {
     if (obj instanceof Timestamp || obj instanceof File) {
         return obj;
     }
-    if (typeof obj === 'object') {
+    if (typeof obj === 'object' && Object.keys(obj).length > 0) {
         const newObj: { [key: string]: any } = {};
         for (const key in obj) {
             if (Object.prototype.hasOwnProperty.call(obj, key)) {
                 const value = obj[key];
-                if (value !== null && value !== undefined) {
-                     const cleanedValue = (value && typeof value === 'object') ? cleanData(value) : value;
-                     if(cleanedValue !== undefined) {
-                         newObj[key] = cleanedValue;
-                     }
-                }
+                 const cleanedValue = (value && typeof value === 'object') ? cleanData(value) : value;
+                 if(cleanedValue !== undefined && cleanedValue !== null) {
+                     newObj[key] = cleanedValue;
+                 }
             }
         }
-        return newObj;
+        if (Object.keys(newObj).length > 0) {
+            return newObj;
+        }
+        return undefined;
     }
     return obj;
 };
@@ -53,6 +54,8 @@ export async function getSiteConfig(): Promise<SiteConfig | null> {
                 address: '',
                 officeHours: '',
                 socials: { facebook: '', instagram: '', twitter: '' },
+                services: [],
+                certifications: [],
                 logoUrl: '/logo.png' // Default logo
             };
             await setDoc(docRef, defaultConfig);

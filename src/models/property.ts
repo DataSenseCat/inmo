@@ -7,6 +7,7 @@ export type Property = {
     type: 'Casa' | 'Departamento' | 'Local' | 'Lote' | 'Oficina' | 'PH';
     operation: 'Venta' | 'Alquiler';
     location: string;
+    address?: string;
     bedrooms: number;
     bathrooms: number;
     area: number;
