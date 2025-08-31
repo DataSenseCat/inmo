@@ -6,7 +6,7 @@ export function Hero() {
   return (
     <section className="relative w-full h-[60vh] min-h-[500px] flex items-center justify-center">
       <Image
-        src="https://picsum.photos/1600/900?blur=2"
+        src="https://picsum.photos/1600/900"
         alt="Catamarca city"
         data-ai-hint="cathedral catamarca argentina"
         fill

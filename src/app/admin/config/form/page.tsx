@@ -32,9 +32,9 @@ const configFormSchema = z.object({
   leadNotificationEmail: z.string().email('Por favor, ingrese un email válido.').optional().or(z.literal('')),
   address: z.string().min(1, 'La dirección es requerida.'),
   officeHours: z.string().min(1, 'El horario es requerido.'),
-  facebookUrl: z.string().url().or(z.literal('')),
-  instagramUrl: z.string().url().or(z.literal('')),
-  twitterUrl: z.string().url().or(z.literal('')),
+  facebookUrl: z.string().url({ message: "Por favor ingrese una URL válida." }).or(z.literal('')),
+  instagramUrl: z.string().url({ message: "Por favor ingrese una URL válida." }).or(z.literal('')),
+  twitterUrl: z.string().url({ message: "Por favor ingrese una URL válida." }).or(z.literal('')),
 });
 
 type ConfigFormValues = z.infer<typeof configFormSchema>;
@@ -101,22 +101,9 @@ function ConfigForm() {
 
   async function onSubmit(data: ConfigFormValues) {
     try {
-        const configToSave = {
-          contactPhone: data.contactPhone,
-          contactEmail: data.contactEmail,
-          leadNotificationEmail: data.leadNotificationEmail,
-          address: data.address,
-          officeHours: data.officeHours,
-          socials: {
-            facebook: data.facebookUrl,
-            instagram: data.instagramUrl,
-            twitter: data.twitterUrl,
-          },
-        };
-
         const wasLogoRemoved = !logoPreview && !!currentConfig?.logoUrl;
 
-        await updateSiteConfig(configToSave, currentConfig, logoFile || undefined, wasLogoRemoved);
+        await updateSiteConfig(data, currentConfig, logoFile || undefined, wasLogoRemoved);
         
         toast({ title: 'Configuración Actualizada', description: 'Los cambios se guardaron correctamente.' });
         router.push('/admin?tab=config');

@@ -14,13 +14,20 @@ const cleanData = (obj: any): any => {
         return obj.map(v => (v && typeof v === 'object') ? cleanData(v) : v)
                    .filter(v => v !== null && v !== undefined && v !== '');
     } else if (obj && typeof obj === 'object' && !(obj instanceof Timestamp) && !(obj instanceof File)) {
-        return Object.entries(obj)
-            .map(([k, v]) => [k, v && typeof v === 'object' ? cleanData(v) : v])
-            .reduce((a, [k, v]) => (v === null || v === undefined || v === '' ? a : (a[k as keyof any] = v, a)), {} as any);
+        const newObj: { [key: string]: any } = {};
+        for (const key in obj) {
+            const value = obj[key];
+            if (value !== null && value !== undefined && value !== '') {
+                 const cleanedValue = (value && typeof value === 'object') ? cleanData(value) : value;
+                 if (cleanedValue !== null && cleanedValue !== undefined && (typeof cleanedValue !== 'object' || Array.isArray(cleanedValue) || Object.keys(cleanedValue).length > 0)) {
+                    newObj[key] = cleanedValue;
+                 }
+            }
+        }
+        return newObj;
     }
     return obj;
 };
-
 
 export async function getSiteConfig(): Promise<SiteConfig | null> {
     try {
@@ -49,7 +56,7 @@ export async function getSiteConfig(): Promise<SiteConfig | null> {
 
 
 export async function updateSiteConfig(
-    data: Omit<SiteConfig, 'logoUrl' | 'updatedAt'>,
+    data: Omit<SiteConfig, 'logoUrl' | 'updatedAt' | 'socials'> & { facebookUrl?: string, instagramUrl?: string, twitterUrl?: string },
     currentConfig: SiteConfig | null,
     logoFile?: File, 
     logoRemoved?: boolean
@@ -57,39 +64,57 @@ export async function updateSiteConfig(
     try {
         const docRef = doc(db, 'siteConfig', CONFIG_DOC_ID);
         
-        let configData: any = {
-            ...data,
-            updatedAt: Timestamp.now()
-        };
+        let logoUrl = currentConfig?.logoUrl;
 
         if (logoFile) {
-            if (currentConfig?.logoUrl) {
+            // If there's an old logo, delete it
+            if (logoUrl) {
                 try {
-                    const oldImageRef = ref(storage, currentConfig.logoUrl);
+                    const oldImageRef = ref(storage, logoUrl);
                     await deleteObject(oldImageRef);
                 } catch(e) {
                     console.warn("Old logo not found or failed to delete, continuing with update...", e);
                 }
             }
+            // Upload the new logo
             const logoRef = ref(storage, `site/logo_${Date.now()}_${logoFile.name}`);
             await uploadBytes(logoRef, logoFile);
-            configData.logoUrl = await getDownloadURL(logoRef);
+            logoUrl = await getDownloadURL(logoRef);
 
-        } else if (logoRemoved && currentConfig?.logoUrl) {
+        } else if (logoRemoved && logoUrl) {
+            // If the logo was removed in the UI, delete it from storage
             try {
-                const oldImageRef = ref(storage, currentConfig.logoUrl);
+                const oldImageRef = ref(storage, logoUrl);
                 await deleteObject(oldImageRef);
             } catch(e) {
                 console.warn("Failed to delete logo, continuing with update...", e);
             }
-            configData.logoUrl = '';
+            logoUrl = ''; // Set URL to empty
         }
 
-        const cleanedConfigData = cleanData(configData);
+        const configToSave = {
+            contactPhone: data.contactPhone,
+            contactEmail: data.contactEmail,
+            leadNotificationEmail: data.leadNotificationEmail,
+            address: data.address,
+            officeHours: data.officeHours,
+            socials: {
+                facebook: data.facebookUrl,
+                instagram: data.instagramUrl,
+                twitter: data.twitterUrl,
+            },
+            logoUrl: logoUrl,
+            updatedAt: Timestamp.now()
+        };
+        
+        const cleanedConfigData = cleanData(configToSave);
 
         await setDoc(docRef, cleanedConfigData, { merge: true });
+
     } catch (error) {
         console.error("Error updating site config: ", error);
         throw new Error("Failed to update site config.");
     }
 }
+
+    
