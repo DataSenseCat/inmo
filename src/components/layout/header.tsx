@@ -45,7 +45,7 @@ export function Header({ config }: HeaderProps) {
       <div className="bg-white">
         <div className="container mx-auto flex h-20 items-center justify-between px-4 md:px-6">
           <Link href="/" className="flex items-center space-x-2">
-            <Image src="/logo.png" alt="Guerrero Inmobiliaria Logo" width={163} height={65} className='object-contain' priority />
+            <Image src="/logo.png" alt="Guerrero Inmobiliaria Logo" width={180} height={50} className='object-contain' priority />
           </Link>
           
           <nav className="hidden lg:flex gap-4 text-sm font-medium items-center">
