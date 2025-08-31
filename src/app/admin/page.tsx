@@ -384,7 +384,7 @@ function AdminDashboardComponent() {
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-xl font-bold font-headline">Agentes Inmobiliarios</h3>
                              <Button asChild>
-                                <Link href="/admin/agents/form?tab=agents">
+                                <Link href="/admin/agents/form">
                                     <Plus className="mr-2 h-4 w-4" /> Nuevo Agente
                                 </Link>
                             </Button>
@@ -656,5 +656,3 @@ export default function AdminDashboard() {
         </Suspense>
     )
 }
-
-    
