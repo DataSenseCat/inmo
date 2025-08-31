@@ -11,7 +11,8 @@ const firebaseConfig = {
     apiKey: "AIzaSyClnikNK5zuHaS5c1hWnZEepRppHwB6Y4M",
     authDomain: "catamarca-estates.firebaseapp.com",
     projectId: "catamarca-estates",
-    storageBucket: "catamarca-estates.appspot.com",
+    // IMPORTANTE: Reemplaza esta línea con el nombre de tu bucket de GCS
+    storageBucket: "TU_BUCKET_DE_GCS.appspot.com",
     messagingSenderId: "826854436736",
     appId: "1:826854436736:web:21b0f4995ce88ba33a9b65"
 };
