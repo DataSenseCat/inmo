@@ -73,7 +73,7 @@ export async function updateAgent(id: string, data: Partial<Agent>, photoFile?: 
         }
 
         const agentData: any = {
-            ...cleanAgentData(data),
+            ...cleanData(data),
             updatedAt: Timestamp.now(),
         };
 
