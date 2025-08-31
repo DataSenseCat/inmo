@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Building, DollarSign, Filter, Layers, Search, Trash2, Users, CheckCircle, RefreshCw, Plus, Upload, Pencil, Eye, AlertTriangle, Mail, User, Settings, ExternalLink } from 'lucide-react';
+import { Building, DollarSign, Filter, Layers, Search, Trash2, Users, CheckCircle, RefreshCw, Plus, Upload, Pencil, Eye, AlertTriangle, Mail, User, Settings, ExternalLink, Star } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,12 +13,14 @@ import type { Property } from '@/models/property';
 import type { Development } from '@/models/development';
 import type { Lead } from '@/models/lead';
 import type { Agent } from '@/models/agent';
+import type { Testimonial } from '@/models/testimonial';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { deleteProperty, getProperties } from '@/lib/properties';
 import { deleteDevelopment, getDevelopments } from '@/lib/developments';
 import { getLeads } from '@/lib/leads';
 import { getAgents, deleteAgent } from '@/lib/agents';
+import { getTestimonials, deleteTestimonial } from '@/lib/testimonials';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -35,28 +37,32 @@ export default function AdminDashboard() {
   const [developments, setDevelopments] = useState<Development[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [siteConfig, setSiteConfig] = useState<SiteConfig | null>(null);
   const [loading, setLoading] = useState(true);
   
   const [propertyToDelete, setPropertyToDelete] = useState<Property | null>(null);
   const [developmentToDelete, setDevelopmentToDelete] = useState<Development | null>(null);
   const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
+  const [testimonialToDelete, setTestimonialToDelete] = useState<Testimonial | null>(null);
 
   async function loadData() {
       try {
           setLoading(true);
-          const [props, devs, leadData, agentData, configData] = await Promise.all([
+          const [props, devs, leadData, agentData, configData, testimonialData] = await Promise.all([
             getProperties(), 
             getDevelopments(),
             getLeads(),
             getAgents(),
-            getSiteConfig()
+            getSiteConfig(),
+            getTestimonials(),
           ]);
           setProperties(props);
           setDevelopments(devs);
           setLeads(leadData);
           setAgents(agentData);
           setSiteConfig(configData);
+          setTestimonials(testimonialData);
       } catch (error) {
           console.error("Failed to load data:", error);
           toast({
@@ -139,6 +145,26 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDeleteTestimonial = async () => {
+    if (!testimonialToDelete) return;
+    try {
+      await deleteTestimonial(testimonialToDelete.id);
+      toast({
+        title: "Testimonio Eliminado",
+        description: `El testimonio de "${testimonialToDelete.name}" ha sido eliminado.`,
+      });
+      setTestimonialToDelete(null);
+      loadData();
+    } catch (error) {
+       console.error("Failed to delete testimonial:", error);
+       toast({
+          variant: "destructive",
+          title: "Error al eliminar",
+          description: "No se pudo eliminar el testimonio. Inténtalo de nuevo.",
+       });
+    }
+  };
+
   if (!isClient) {
     return null; 
   }
@@ -208,6 +234,7 @@ export default function AdminDashboard() {
                           <TabsTrigger value="developments">Emprendimientos</TabsTrigger>
                           <TabsTrigger value="agents">Agentes</TabsTrigger>
                           <TabsTrigger value="leads">Leads</TabsTrigger>
+                          <TabsTrigger value="testimonials">Testimonios</TabsTrigger>
                           <TabsTrigger value="config">Configuración</TabsTrigger>
                       </TabsList>
                     </div>
@@ -452,6 +479,67 @@ export default function AdminDashboard() {
                         </div>
                     </TabsContent>
 
+                    <TabsContent value="testimonials" className="p-6">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-bold font-headline">Testimonios de Clientes</h3>
+                             <Button asChild>
+                                <Link href="/admin/testimonials/form">
+                                    <Plus className="mr-2 h-4 w-4" /> Nuevo Testimonio
+                                </Link>
+                            </Button>
+                        </div>
+                        <div className="border rounded-lg">
+                           <Table>
+                              <TableHeader>
+                                  <TableRow>
+                                      <TableHead>Cliente</TableHead>
+                                      <TableHead>Calificación</TableHead>
+                                      <TableHead>Comentario</TableHead>
+                                      <TableHead>Estado</TableHead>
+                                      <TableHead className="text-right">Acciones</TableHead>
+                                  </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                 {loading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="text-center py-8">Cargando testimonios...</TableCell>
+                                    </TableRow>
+                                  ) : testimonials.length > 0 ? (
+                                    testimonials.map(testimonial => (
+                                    <TableRow key={testimonial.id}>
+                                      <TableCell className="font-medium">{testimonial.name}</TableCell>
+                                      <TableCell>
+                                        <div className="flex items-center">
+                                            {[...Array(5)].map((_, i) => (
+                                                <Star key={i} className={`w-4 h-4 ${i < testimonial.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
+                                            ))}
+                                        </div>
+                                      </TableCell>
+                                      <TableCell className="text-sm text-muted-foreground max-w-sm truncate">{testimonial.comment}</TableCell>
+                                      <TableCell>{getStatusBadge(testimonial.active)}</TableCell>
+                                      <TableCell className="text-right">
+                                        <div className="flex gap-1 justify-end">
+                                          <Button asChild variant="ghost" size="icon">
+                                            <Link href={`/admin/testimonials/form?id=${testimonial.id}`}><Pencil className="h-4 w-4"/></Link>
+                                          </Button>
+                                          <AlertDialogTrigger asChild>
+                                              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setTestimonialToDelete(testimonial)}>
+                                                  <Trash2 className="h-4 w-4"/>
+                                              </Button>
+                                          </AlertDialogTrigger>
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))) : (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="text-center py-8">No hay testimonios creados.</TableCell>
+                                    </TableRow>
+                                  )}
+                              </TableBody>
+                           </Table>
+                        </div>
+                    </TabsContent>
+
                      <TabsContent value="config" className="p-6">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-xl font-bold font-headline">Configuración del Sitio</h3>
@@ -531,6 +619,21 @@ export default function AdminDashboard() {
                 <AlertDialogFooter>
                     <AlertDialogCancel onClick={() => setAgentToDelete(null)}>Cancelar</AlertDialogCancel>
                     <AlertDialogAction onClick={handleDeleteAgent} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={!!testimonialToDelete} onOpenChange={(open) => !open && setTestimonialToDelete(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>¿Estás seguro de que deseas eliminar este testimonio?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Esta acción no se puede deshacer. Esto eliminará permanentemente el testimonio de <span className="font-semibold">"{testimonialToDelete?.name}"</span>.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setTestimonialToDelete(null)}>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteTestimonial} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
