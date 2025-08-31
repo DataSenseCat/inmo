@@ -2,8 +2,7 @@
 'use server';
 
 import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
-import { db, storage } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import type { SiteConfig } from '@/models/site-config';
 
 const CONFIG_DOC_ID = 'main'; 
@@ -16,7 +15,7 @@ const cleanData = (obj: any): any => {
     if (Array.isArray(obj)) {
         return obj
             .map(v => (v && typeof v === 'object') ? cleanData(v) : v)
-            .filter(v => v !== null && v !== undefined); // Allow empty strings in arrays
+            .filter(v => v !== null && v !== undefined);
     }
     if (obj instanceof Timestamp || obj instanceof File) {
         return obj;
@@ -27,7 +26,10 @@ const cleanData = (obj: any): any => {
             if (Object.prototype.hasOwnProperty.call(obj, key)) {
                 const value = obj[key];
                 if (value !== null && value !== undefined) {
-                    newObj[key] = (value && typeof value === 'object') ? cleanData(value) : value;
+                     const cleanedValue = (value && typeof value === 'object') ? cleanData(value) : value;
+                     if(cleanedValue !== undefined) {
+                         newObj[key] = cleanedValue;
+                     }
                 }
             }
         }
@@ -35,7 +37,6 @@ const cleanData = (obj: any): any => {
     }
     return obj;
 };
-
 
 export async function getSiteConfig(): Promise<SiteConfig | null> {
     try {
@@ -52,6 +53,7 @@ export async function getSiteConfig(): Promise<SiteConfig | null> {
                 address: '',
                 officeHours: '',
                 socials: { facebook: '', instagram: '', twitter: '' },
+                logoUrl: '/logo.png' // Default logo
             };
             await setDoc(docRef, defaultConfig);
             return defaultConfig;
@@ -62,55 +64,12 @@ export async function getSiteConfig(): Promise<SiteConfig | null> {
     }
 }
 
-
-export async function updateSiteConfig(
-    data: Omit<SiteConfig, 'logoUrl' | 'updatedAt' | 'socials'> & { facebookUrl?: string, instagramUrl?: string, twitterUrl?: string },
-    currentConfig: SiteConfig | null,
-    logoFile?: File, 
-    logoRemoved?: boolean
-): Promise<void> {
+export async function updateSiteConfig(data: Partial<Omit<SiteConfig, 'logoUrl'>>): Promise<void> {
     try {
         const docRef = doc(db, 'siteConfig', CONFIG_DOC_ID);
         
-        let logoUrl = currentConfig?.logoUrl;
-
-        // If a new logo file is provided, upload it and delete the old one
-        if (logoFile) {
-            if (currentConfig?.logoUrl) {
-                try {
-                    const oldImageRef = ref(storage, currentConfig.logoUrl);
-                    await deleteObject(oldImageRef);
-                } catch(e) {
-                    console.warn("Old logo not found or failed to delete, continuing with update...", e);
-                }
-            }
-            const logoRef = ref(storage, `site/logo_${Date.now()}_${logoFile.name}`);
-            await uploadBytes(logoRef, logoFile);
-            logoUrl = await getDownloadURL(logoRef);
-        } 
-        // If no new file, but the logo was marked for removal, delete the old one
-        else if (logoRemoved && currentConfig?.logoUrl) {
-            try {
-                const oldImageRef = ref(storage, currentConfig.logoUrl);
-                await deleteObject(oldImageRef);
-            } catch(e) {
-                console.warn("Failed to delete logo, continuing with update...", e);
-            }
-            logoUrl = ''; 
-        }
-
         const configToSave: Partial<SiteConfig> = {
-            contactPhone: data.contactPhone,
-            contactEmail: data.contactEmail,
-            leadNotificationEmail: data.leadNotificationEmail,
-            address: data.address,
-            officeHours: data.officeHours,
-            socials: {
-                facebook: data.facebookUrl || '',
-                instagram: data.instagramUrl || '',
-                twitter: data.twitterUrl || '',
-            },
-            logoUrl: logoUrl,
+            ...data,
             updatedAt: Timestamp.now()
         };
         

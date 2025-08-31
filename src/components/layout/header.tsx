@@ -4,12 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu, Phone, Mail, User, Heart, Search } from 'lucide-react';
 import { Input } from '../ui/input';
-import { getSiteConfig } from '@/lib/config';
 import Image from 'next/image';
+import type { SiteConfig } from '@/models/site-config';
 
-export async function Header() {
-  const config = await getSiteConfig();
+interface HeaderProps {
+  config: SiteConfig | null;
+}
 
+export function Header({ config }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 w-full bg-white shadow-md">
       {/* Top bar */}
@@ -43,13 +45,7 @@ export async function Header() {
       <div className="bg-white">
         <div className="container mx-auto flex h-20 items-center justify-between px-4 md:px-6">
           <Link href="/" className="flex items-center space-x-2">
-            {config?.logoUrl ? (
-                <Image src={config.logoUrl} alt="Logo Inmobiliaria" width={180} height={50} className='object-contain' priority />
-            ) : (
-                <span className="font-bold text-lg sm:text-xl font-headline text-[#0f172a]">
-                CATAMARCA <br/> INMOBILIARIA
-                </span>
-            )}
+            <Image src="/logo.png" alt="Guerrero Inmobiliaria Logo" width={163} height={65} className='object-contain' priority />
           </Link>
           
           <nav className="hidden lg:flex gap-4 text-sm font-medium items-center">
@@ -84,7 +80,7 @@ export async function Header() {
               <SheetContent side="left">
                 <nav className="grid gap-6 text-lg font-medium">
                   <Link href="/" className="flex items-center gap-2 font-semibold">
-                    <span className="font-bold font-headline text-[#0f172a]">CATAMARCA INMOBILIARIA</span>
+                    <span className="font-bold font-headline text-[#0f172a]">GUERRERO INMOBILIARIA</span>
                   </Link>
                   <Link href="/" className="hover:text-primary">Inicio</Link>
                   <Link href="/properties" className="text-muted-foreground hover:text-primary">Propiedades</Link>

@@ -1,17 +1,19 @@
 
 import Link from 'next/link';
 import { Facebook, Instagram, Twitter } from 'lucide-react';
-import { getSiteConfig } from '@/lib/config';
+import type { SiteConfig } from '@/models/site-config';
 
-export async function Footer() {
-  const config = await getSiteConfig();
+interface FooterProps {
+  config: SiteConfig | null;
+}
 
+export function Footer({ config }: FooterProps) {
   return (
     <footer className="bg-[#0f172a] text-white">
         <div className="container mx-auto py-12 px-4 md:px-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                 <div>
-                    <h3 className="font-bold text-lg mb-4 font-headline">CATAMARCA INMOBILIARIA</h3>
+                    <h3 className="font-bold text-lg mb-4 font-headline">GUERRERO INMOBILIARIA</h3>
                     <p className="text-sm text-gray-400">
                         Más de 15 años conectando personas con sus hogares ideales en el corazón de Argentina.
                     </p>
@@ -58,7 +60,7 @@ export async function Footer() {
                 </div>
             </div>
             <div className="mt-8 border-t border-gray-800 pt-6 text-center text-sm text-gray-500 flex justify-between flex-wrap">
-                <p>&copy; {new Date().getFullYear()} Inmobiliaria Catamarca. Todos los derechos reservados.</p>
+                <p>&copy; {new Date().getFullYear()} Guerrero Inmobiliaria. Todos los derechos reservados.</p>
                 <div className='space-x-4'>
                     <Link href="#" className="hover:underline">Politica de Privacidad</Link>
                     <Link href="#" className="hover:underline">Términos de Uso</Link>

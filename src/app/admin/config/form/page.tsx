@@ -5,7 +5,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, Loader2, Save, Upload, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -44,9 +44,6 @@ function ConfigForm() {
   const { toast } = useToast();
   
   const [loading, setLoading] = useState(true);
-  const [currentConfig, setCurrentConfig] = useState<SiteConfig | null>(null);
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   
   const form = useForm<ConfigFormValues>({
     resolver: zodResolver(configFormSchema),
@@ -67,7 +64,6 @@ function ConfigForm() {
     getSiteConfig()
       .then(data => {
         if (data) {
-            setCurrentConfig(data);
             form.reset({
                 contactPhone: data.contactPhone || '',
                 contactEmail: data.contactEmail || '',
@@ -78,31 +74,23 @@ function ConfigForm() {
                 instagramUrl: data.socials?.instagram || '',
                 twitterUrl: data.socials?.twitter || '',
             });
-            if(data.logoUrl) {
-                setLogoPreview(data.logoUrl);
-            }
         }
       })
       .finally(() => setLoading(false));
    }, [form]);
 
-   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      if(e.target.files && e.target.files[0]) {
-          const file = e.target.files[0];
-          setLogoFile(file);
-          setLogoPreview(URL.createObjectURL(file));
-      }
-  }
-
-  const removeLogo = () => {
-      setLogoFile(null);
-      setLogoPreview(null);
-  }
-
   async function onSubmit(data: ConfigFormValues) {
     try {
-        const wasLogoRemoved = !logoPreview && !!currentConfig?.logoUrl;
-        await updateSiteConfig(data, currentConfig, logoFile || undefined, wasLogoRemoved);
+        const configToSave = {
+            ...data,
+            socials: {
+                facebook: data.facebookUrl,
+                instagram: data.instagramUrl,
+                twitter: data.twitterUrl,
+            }
+        };
+
+        await updateSiteConfig(configToSave);
         
         toast({ title: 'Configuración Actualizada', description: 'Los cambios se guardaron correctamente.' });
         router.push('/admin?tab=config');
@@ -137,29 +125,14 @@ function ConfigForm() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <Card>
-                <CardHeader><CardTitle>Logo de la Empresa</CardTitle></CardHeader>
+                <CardHeader><CardTitle>Logo (Referencia)</CardTitle></CardHeader>
                 <CardContent className="flex flex-col items-center gap-6">
-                    {logoPreview && (
-                        <div className="bg-muted p-4 rounded-lg w-full max-w-sm h-28 relative">
-                           <Image src={logoPreview} alt="Vista previa del logo" fill className="object-contain" />
-                        </div>
-                    )}
-                     <div className="w-full max-w-sm">
-                        <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full py-4 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
-                            <div className="flex flex-col items-center justify-center">
-                                <Upload className="w-8 h-8 mb-2 text-gray-500" />
-                                <p className="text-sm text-gray-500 text-center"><span className="font-semibold">Click para subir logo</span></p>
-                                <p className="text-xs text-gray-500">PNG o JPG</p>
-                            </div>
-                            <input id="dropzone-file" type="file" className="hidden" onChange={handleLogoChange} accept="image/png, image/jpeg" />
-                        </label>
-                    </div> 
-                    {logoPreview && (
-                        <Button variant="destructive" type="button" onClick={removeLogo}>
-                            <Trash2 className="h-4 w-4 mr-2"/>
-                            Quitar Logo
-                        </Button>
-                    )}
+                    <div className="bg-muted p-4 rounded-lg w-full max-w-sm text-center">
+                        <p className="text-muted-foreground">El logo se gestiona desde el código de la aplicación para asegurar la máxima calidad.</p>
+                         <div className="mt-4 p-4 bg-white inline-block rounded-md">
+                           <Image src="/logo.png" alt="Logo Actual" width={163} height={65} />
+                         </div>
+                    </div>
                 </CardContent>
             </Card>
 
