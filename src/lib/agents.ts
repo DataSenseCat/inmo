@@ -24,6 +24,10 @@ const cleanData = (data: any) => {
             cleanedData[key] = data[key];
         }
     }
+    // Ensure bio is always present, even if empty
+    if (data.bio === null || data.bio === undefined) {
+        cleanedData.bio = '';
+    }
     return cleanedData;
 };
 
@@ -31,16 +35,16 @@ export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'created
     try {
         const agentData: any = {
             ...cleanData(data),
-            bio: data.bio || '',
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
-            photoUrl: '',
         };
 
         if (photoFile) {
             const imageRef = ref(storage, `agents/${Date.now()}_${photoFile.name}`);
             await uploadBytes(imageRef, photoFile);
             agentData.photoUrl = await getDownloadURL(imageRef);
+        } else {
+            agentData.photoUrl = '';
         }
 
         const docRef = await addDoc(collection(db, 'agents'), agentData);
@@ -82,7 +86,7 @@ export async function updateAgent(id: string, data: Partial<Agent>, photoFile?: 
             agentData.photoUrl = photoUrl;
         }
 
-        if ((data as any).bio === null) {
+        if ((data as any).bio === null || (data as any).bio === undefined) {
             agentData.bio = '';
         }
 
