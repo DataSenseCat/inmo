@@ -280,7 +280,7 @@ function AdminDashboardComponent() {
                                     <TableRow key={prop.id}>
                                       <TableCell className="font-medium">{prop.title}</TableCell>
                                       <TableCell className="capitalize">{prop.type}</TableCell>
-                                      <TableCell className="capitalize">{prop.operation === 'Venta' ? 'Venta' : 'Alquiler'}</TableCell>
+                                      <TableCell className="capitalize">{prop.operation}</TableCell>
                                       <TableCell>{prop.location}</TableCell>
                                       <TableCell>{prop.createdAt?.toDate().toLocaleDateString() || '-'}</TableCell>
                                       <TableCell>{getStatusBadge(prop.active)}</TableCell>
@@ -384,7 +384,7 @@ function AdminDashboardComponent() {
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-xl font-bold font-headline">Agentes Inmobiliarios</h3>
                              <Button asChild>
-                                <Link href="/admin/agents/form">
+                                <Link href="/admin/agents/form?tab=agents">
                                     <Plus className="mr-2 h-4 w-4" /> Nuevo Agente
                                 </Link>
                             </Button>
@@ -490,7 +490,7 @@ function AdminDashboardComponent() {
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-xl font-bold font-headline">Testimonios de Clientes</h3>
                              <Button asChild>
-                                <Link href="/admin/testimonials/form">
+                                <Link href="/admin/testimonials/form?tab=testimonials">
                                     <Plus className="mr-2 h-4 w-4" /> Nuevo Testimonio
                                 </Link>
                             </Button>
@@ -551,7 +551,7 @@ function AdminDashboardComponent() {
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-xl font-bold font-headline">Configuración del Sitio</h3>
                             <Button asChild>
-                                <Link href="/admin/config/form">
+                                <Link href="/admin/config/form?tab=config">
                                     <Pencil className="mr-2 h-4 w-4" /> Editar Configuración
                                 </Link>
                             </Button>
@@ -656,3 +656,5 @@ export default function AdminDashboard() {
         </Suspense>
     )
 }
+
+    
