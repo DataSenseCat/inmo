@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Development } from '@/models/development';
@@ -72,13 +73,15 @@ export function DevelopmentCard({ development }: DevelopmentCardProps) {
                     <p>Disponibles</p>
                 </div>
             </div>
-             <div className='flex items-start gap-2'>
-                <p className='text-primary font-bold text-lg mt-0.5'>$</p>
-                <div>
-                    <span className='font-medium text-foreground'>USD {development.priceFrom.toLocaleString()}</span>
-                    <p>Desde</p>
+             {development.priceFrom && (
+                <div className='flex items-start gap-2'>
+                    <p className='text-primary font-bold text-lg mt-0.5'>$</p>
+                    <div>
+                        <span className='font-medium text-foreground'>USD {development.priceFrom.toLocaleString()}</span>
+                        <p>Desde</p>
+                    </div>
                 </div>
-            </div>
+             )}
             <div className='flex items-start gap-2'>
                 <Calendar className="w-4 h-4 text-primary mt-0.5" />
                 <div>
@@ -88,11 +91,13 @@ export function DevelopmentCard({ development }: DevelopmentCardProps) {
             </div>
           </div>
           
-          <div className='mt-4 bg-blue-50 border border-blue-100 rounded-lg p-3 text-center'>
-            <p className='text-sm text-blue-900'>
-                Rango de precios: <span className='font-semibold'>USD {development.priceRange.min.toLocaleString()} - USD {development.priceRange.max.toLocaleString()}</span>
-            </p>
-          </div>
+          {development.priceRange?.min && development.priceRange?.max && (
+             <div className='mt-4 bg-blue-50 border border-blue-100 rounded-lg p-3 text-center'>
+                <p className='text-sm text-blue-900'>
+                    Rango de precios: <span className='font-semibold'>USD {development.priceRange.min.toLocaleString()} - USD {development.priceRange.max.toLocaleString()}</span>
+                </p>
+            </div>
+          )}
 
         </div>
         <div className="mt-auto pt-6 flex gap-3">

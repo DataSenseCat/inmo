@@ -24,7 +24,10 @@ const cleanData = (data: any) => {
         const value = data[key];
         if (value !== '' && value !== undefined && value !== null) {
              if(typeof value === 'object' && !Array.isArray(value) && value !== null && !(value instanceof File)) {
-                cleanedData[key] = cleanData(value);
+                const cleanedObject = cleanData(value);
+                if (Object.keys(cleanedObject).length > 0) {
+                    cleanedData[key] = cleanedObject;
+                }
             } else {
                 cleanedData[key] = value;
             }

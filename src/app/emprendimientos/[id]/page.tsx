@@ -76,11 +76,13 @@ export default async function DevelopmentDetailPage({ params }: { params: { id: 
                  <DetailItem icon={Calendar} label="Entrega Estimada" value={development.deliveryDate} />
                  <DetailItem icon={Home} label="Unidades Totales" value={development.totalUnits} />
                  <DetailItem icon={CheckCircle} label="Unidades Disponibles" value={development.availableUnits} />
-                 <DetailItem icon={DollarSign} label="Precios Desde" value={`USD ${development.priceFrom.toLocaleString()}`} />
-                 <div className="sm:col-span-2 lg:col-span-1 p-4 rounded-lg bg-primary/10 border border-primary/20 text-center">
-                    <p className="text-sm text-primary/80">Rango de Precios</p>
-                    <p className="font-semibold text-lg text-primary">USD {development.priceRange.min.toLocaleString()} - {development.priceRange.max.toLocaleString()}</p>
-                 </div>
+                 {development.priceFrom && <DetailItem icon={DollarSign} label="Precios Desde" value={`USD ${development.priceFrom.toLocaleString()}`} />}
+                 {development.priceRange?.min && development.priceRange?.max && (
+                    <div className="sm:col-span-2 lg:col-span-1 p-4 rounded-lg bg-primary/10 border border-primary/20 text-center">
+                        <p className="text-sm text-primary/80">Rango de Precios</p>
+                        <p className="font-semibold text-lg text-primary">USD {development.priceRange.min.toLocaleString()} - {development.priceRange.max.toLocaleString()}</p>
+                    </div>
+                 )}
               </CardContent>
             </Card>
 
