@@ -319,7 +319,7 @@ function AdminDashboardComponent() {
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-xl font-bold font-headline">Emprendimientos</h3>
                              <Button asChild>
-                                <Link href="/admin/developments/form">
+                                <Link href="/admin/developments/form?tab=developments">
                                     <Plus className="mr-2 h-4 w-4" /> Nuevo Emprendimiento
                                 </Link>
                             </Button>
@@ -384,7 +384,7 @@ function AdminDashboardComponent() {
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-xl font-bold font-headline">Agentes Inmobiliarios</h3>
                              <Button asChild>
-                                <Link href="/admin/agents/form">
+                                <Link href="/admin/agents/form?tab=agents">
                                     <Plus className="mr-2 h-4 w-4" /> Nuevo Agente
                                 </Link>
                             </Button>
