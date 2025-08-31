@@ -47,7 +47,7 @@ export async function Header() {
                 <Image src={config.logoUrl} alt="Logo Inmobiliaria" width={180} height={50} className='object-contain' priority />
             ) : (
                 <span className="font-bold text-lg sm:text-xl font-headline text-[#0f172a]">
-                CATAMARCA <br/> INMOBILIARIA
+                GUERRERO <br/> INMOBILIARIA
                 </span>
             )}
           </Link>
@@ -84,7 +84,7 @@ export async function Header() {
               <SheetContent side="left">
                 <nav className="grid gap-6 text-lg font-medium">
                   <Link href="/" className="flex items-center gap-2 font-semibold">
-                    <span className="font-bold font-headline text-[#0f172a]">CATAMARCA INMOBILIARIA</span>
+                    <span className="font-bold font-headline text-[#0f172a]">GUERRERO INMOBILIARIA</span>
                   </Link>
                   <Link href="/" className="hover:text-primary">Inicio</Link>
                   <Link href="/properties" className="text-muted-foreground hover:text-primary">Propiedades</Link>

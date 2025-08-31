@@ -91,7 +91,7 @@ export default async function AboutUsPage() {
             <section className="bg-primary text-primary-foreground py-20">
                 <div className="container mx-auto px-4 text-center">
                     <Badge variant="secondary" className="mb-4 bg-white/20 text-white">Desde 2008</Badge>
-                    <h1 className="text-4xl md:text-6xl font-bold font-headline">Inmobiliaria Catamarca</h1>
+                    <h1 className="text-4xl md:text-6xl font-bold font-headline">Guerrero Inmobiliaria</h1>
                     <p className="mt-4 max-w-2xl mx-auto text-lg text-primary-foreground/90">
                         Líderes en el mercado inmobiliario catamarqueño con más de 15 años de experiencia, conectando sueños con realidades a través del mejor servicio profesional.
                     </p>

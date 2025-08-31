@@ -28,7 +28,7 @@ export function WhyChooseUs() {
       <div className="container mx-auto px-4 md:px-6">
         <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
-                <h2 className="text-3xl md:text-4xl font-bold font-headline mb-6">¿Por qué elegir Inmobiliaria Catamarca?</h2>
+                <h2 className="text-3xl md:text-4xl font-bold font-headline mb-6">¿Por qué elegir Guerrero Inmobiliaria?</h2>
                 <ul className="space-y-6">
                     {benefits.map((benefit, index) => (
                         <li key={index} className="flex items-start gap-4">

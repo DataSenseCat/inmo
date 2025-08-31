@@ -5,7 +5,7 @@ import { Footer } from '@/components/layout/footer';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'Inmobiliaria Catamarca',
+  title: 'Guerrero Inmobiliaria',
   description: 'Encuentre su propiedad ideal en Catamarca.',
   icons: {
     icon: "/favicon.ico",
