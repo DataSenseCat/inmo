@@ -43,13 +43,7 @@ export async function Header() {
       <div className="bg-white">
         <div className="container mx-auto flex h-20 items-center justify-between px-4 md:px-6">
           <Link href="/" className="flex items-center space-x-2">
-            {config?.logoUrl ? (
-                <Image src={config.logoUrl} alt="Logo Inmobiliaria" width={180} height={50} className='object-contain' priority />
-            ) : (
-                <span className="font-bold text-lg sm:text-xl font-headline text-[#0f172a]">
-                GUERRERO <br/> INMOBILIARIA
-                </span>
-            )}
+            <Image src="/logo.png" alt="Guerrero Inmobiliaria Logo" width={163} height={65} className='object-contain' priority />
           </Link>
           
           <nav className="hidden lg:flex gap-4 text-sm font-medium items-center">

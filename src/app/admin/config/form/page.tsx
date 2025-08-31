@@ -45,8 +45,6 @@ function ConfigForm() {
   
   const [loading, setLoading] = useState(true);
   const [currentConfig, setCurrentConfig] = useState<SiteConfig | null>(null);
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   
   const form = useForm<ConfigFormValues>({
     resolver: zodResolver(configFormSchema),
@@ -78,31 +76,23 @@ function ConfigForm() {
                 instagramUrl: data.socials?.instagram || '',
                 twitterUrl: data.socials?.twitter || '',
             });
-            if(data.logoUrl) {
-                setLogoPreview(data.logoUrl);
-            }
         }
       })
       .finally(() => setLoading(false));
    }, [form]);
 
-   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      if(e.target.files && e.target.files[0]) {
-          const file = e.target.files[0];
-          setLogoFile(file);
-          setLogoPreview(URL.createObjectURL(file));
-      }
-  }
-
-  const removeLogo = () => {
-      setLogoFile(null);
-      setLogoPreview(null);
-  }
-
   async function onSubmit(data: ConfigFormValues) {
     try {
-        const wasLogoRemoved = !logoPreview && !!currentConfig?.logoUrl;
-        await updateSiteConfig(data, currentConfig, logoFile || undefined, wasLogoRemoved);
+        const configToSave = {
+            ...data,
+            socials: {
+                facebook: data.facebookUrl || '',
+                instagram: data.instagramUrl || '',
+                twitter: data.twitterUrl || '',
+            }
+        };
+
+        await updateSiteConfig(configToSave);
         
         toast({ title: 'Configuración Actualizada', description: 'Los cambios se guardaron correctamente.' });
         router.push('/admin?tab=config');
@@ -141,6 +131,9 @@ function ConfigForm() {
                 <CardContent className="flex flex-col items-center gap-6">
                     <div className="bg-muted p-4 rounded-lg w-full max-w-sm text-center">
                         <p className="text-muted-foreground">El logo se gestiona desde el código de la aplicación para asegurar la máxima calidad.</p>
+                         <div className="mt-4 p-4 bg-white inline-block rounded-md">
+                           <Image src="/logo.png" alt="Logo Actual" width={163} height={65} />
+                         </div>
                     </div>
                 </CardContent>
             </Card>
