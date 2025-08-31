@@ -4,12 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu, Phone, Mail, User, Heart, Search } from 'lucide-react';
 import { Input } from '../ui/input';
-import { getSiteConfig } from '@/lib/config';
 import Image from 'next/image';
+import type { SiteConfig } from '@/models/site-config';
 
-export async function Header() {
-  const config = await getSiteConfig();
+interface HeaderProps {
+  config: SiteConfig | null;
+}
 
+export function Header({ config }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 w-full bg-white shadow-md">
       {/* Top bar */}

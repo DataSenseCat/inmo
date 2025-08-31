@@ -1,11 +1,13 @@
 
 import Link from 'next/link';
 import { Facebook, Instagram, Twitter } from 'lucide-react';
-import { getSiteConfig } from '@/lib/config';
+import type { SiteConfig } from '@/models/site-config';
 
-export async function Footer() {
-  const config = await getSiteConfig();
+interface FooterProps {
+  config: SiteConfig | null;
+}
 
+export function Footer({ config }: FooterProps) {
   return (
     <footer className="bg-[#0f172a] text-white">
         <div className="container mx-auto py-12 px-4 md:px-6">

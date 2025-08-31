@@ -3,6 +3,7 @@ import './globals.css';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { Toaster } from "@/components/ui/toaster";
+import { getSiteConfig } from '@/lib/config';
 
 export const metadata: Metadata = {
   title: 'Guerrero Inmobiliaria',
@@ -12,11 +13,13 @@ export const metadata: Metadata = {
   }
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const siteConfig = await getSiteConfig();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -26,9 +29,9 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <div className="flex flex-col min-h-screen">
-          <Header />
+          <Header config={siteConfig} />
           <main className="flex-grow">{children}</main>
-          <Footer />
+          <Footer config={siteConfig} />
         </div>
         <Toaster />
       </body>
