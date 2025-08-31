@@ -47,7 +47,6 @@ function ConfigForm() {
   const [currentConfig, setCurrentConfig] = useState<SiteConfig | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [logoRemoved, setLogoRemoved] = useState(false);
   
   const form = useForm<ConfigFormValues>({
     resolver: zodResolver(configFormSchema),
@@ -92,14 +91,12 @@ function ConfigForm() {
           const file = e.target.files[0];
           setLogoFile(file);
           setLogoPreview(URL.createObjectURL(file));
-          setLogoRemoved(false);
       }
   }
 
   const removeLogo = () => {
       setLogoFile(null);
       setLogoPreview(null);
-      setLogoRemoved(true);
   }
 
   async function onSubmit(data: ConfigFormValues) {
@@ -117,7 +114,9 @@ function ConfigForm() {
           },
         };
 
-        await updateSiteConfig(configToSave, currentConfig, logoFile || undefined, logoRemoved);
+        const wasLogoRemoved = !logoPreview && !!currentConfig?.logoUrl;
+
+        await updateSiteConfig(configToSave, currentConfig, logoFile || undefined, wasLogoRemoved);
         
         toast({ title: 'Configuración Actualizada', description: 'Los cambios se guardaron correctamente.' });
         router.push('/admin?tab=config');
@@ -155,8 +154,8 @@ function ConfigForm() {
                 <CardHeader><CardTitle>Logo de la Empresa</CardTitle></CardHeader>
                 <CardContent className="flex flex-col items-center gap-6">
                     {logoPreview && (
-                        <div className="bg-muted p-4 rounded-lg">
-                           <Image src={logoPreview} alt="Vista previa del logo" width={200} height={100} className="object-contain" />
+                        <div className="bg-muted p-4 rounded-lg w-full max-w-sm h-28 relative">
+                           <Image src={logoPreview} alt="Vista previa del logo" fill className="object-contain" />
                         </div>
                     )}
                      <div className="w-full max-w-sm">
@@ -272,3 +271,5 @@ export default function ConfigFormPage() {
         </Suspense>
     )
 }
+
+    
