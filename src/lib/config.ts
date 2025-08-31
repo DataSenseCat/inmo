@@ -7,35 +7,24 @@ import type { SiteConfig } from '@/models/site-config';
 
 const CONFIG_DOC_ID = 'main'; 
 
-// Helper to remove undefined, null, or empty string values from an object, including nested objects and arrays
+// Helper to remove undefined or null values from an object
 const cleanData = (obj: any): any => {
-    if (obj === null || obj === undefined) {
-        return undefined;
-    }
-    if (Array.isArray(obj)) {
-        return obj
-            .map(v => (v && typeof v === 'object') ? cleanData(v) : v)
-            .filter(v => v !== null && v !== undefined);
-    }
-    if (obj instanceof Timestamp || obj instanceof File) {
-        return obj;
-    }
+    if (obj === null || obj === undefined) return undefined;
+    if (Array.isArray(obj)) return obj.map(v => cleanData(v)).filter(v => v !== null && v !== undefined);
+    if (obj instanceof Timestamp || obj instanceof File) return obj;
+
     if (typeof obj === 'object' && Object.keys(obj).length > 0) {
-        const newObj: { [key: string]: any } = {};
-        for (const key in obj) {
-            if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                const value = obj[key];
-                 const cleanedValue = (value && typeof value === 'object') ? cleanData(value) : value;
-                 if(cleanedValue !== undefined && cleanedValue !== null) {
-                     newObj[key] = cleanedValue;
-                 }
+        return Object.entries(obj).reduce((acc, [key, value]) => {
+            if(key === 'id') return acc; // Don't include id field
+            const cleanedValue = cleanData(value);
+            // Allow empty strings, but not null/undefined
+            if (cleanedValue !== undefined && cleanedValue !== null) {
+                acc[key as keyof typeof acc] = cleanedValue;
             }
-        }
-        if (Object.keys(newObj).length > 0) {
-            return newObj;
-        }
-        return undefined;
+            return acc;
+        }, {} as { [key: string]: any });
     }
+    // Allow empty strings and other primitives
     return obj;
 };
 

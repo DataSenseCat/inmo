@@ -18,22 +18,23 @@ import { db, storage } from '@/lib/firebase';
 import type { Development } from '@/models/development';
 
 // Helper function to clean data for Firestore
-const cleanData = (data: any) => {
-    const cleanedData: { [key: string]: any } = {};
-    for (const key in data) {
-        const value = data[key];
-        if (value !== '' && value !== undefined && value !== null) {
-             if(typeof value === 'object' && !Array.isArray(value) && value !== null && !(value instanceof File)) {
-                const cleanedObject = cleanData(value);
-                if (Object.keys(cleanedObject).length > 0) {
-                    cleanedData[key] = cleanedObject;
-                }
-            } else {
-                cleanedData[key] = value;
+const cleanData = (obj: any): any => {
+    if (obj === null || obj === undefined) return undefined;
+    if (Array.isArray(obj)) return obj.map(v => cleanData(v));
+    if (obj instanceof Timestamp || obj instanceof File) return obj;
+
+    if (typeof obj === 'object' && Object.keys(obj).length > 0) {
+         return Object.entries(obj).reduce((acc, [key, value]) => {
+            const cleanedValue = cleanData(value);
+            if (value === '' || value === 0) { // Keep empty strings and zero values
+                 acc[key as keyof typeof acc] = value;
+            } else if (cleanedValue !== undefined && cleanedValue !== null) {
+                acc[key as keyof typeof acc] = cleanedValue;
             }
-        }
+            return acc;
+        }, {} as { [key: string]: any });
     }
-    return cleanedData;
+    return obj;
 };
 
 // Function to create a new development
