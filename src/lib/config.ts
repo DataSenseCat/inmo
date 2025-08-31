@@ -10,24 +10,35 @@ const CONFIG_DOC_ID = 'main';
 
 // Helper to remove undefined, null, or empty string values from an object
 const cleanData = (obj: any): any => {
+    if (obj === null || obj === undefined) {
+        return undefined;
+    }
     if (Array.isArray(obj)) {
-        return obj.map(v => (v && typeof v === 'object') ? cleanData(v) : v)
-                   .filter(v => v !== null && v !== undefined && v !== '');
-    } else if (obj && typeof obj === 'object' && !(obj instanceof Timestamp) && !(obj instanceof File)) {
+        return obj
+            .map(v => (v && typeof v === 'object') ? cleanData(v) : v)
+            .filter(v => v !== null && v !== undefined && v !== '');
+    }
+    if (obj instanceof Timestamp || obj instanceof File) {
+        return obj;
+    }
+    if (typeof obj === 'object') {
         const newObj: { [key: string]: any } = {};
         for (const key in obj) {
-            const value = obj[key];
-            if (value !== null && value !== undefined && value !== '') {
-                 const cleanedValue = (value && typeof value === 'object') ? cleanData(value) : value;
-                 if (cleanedValue !== null && cleanedValue !== undefined && (typeof cleanedValue !== 'object' || Array.isArray(cleanedValue) || Object.keys(cleanedValue).length > 0)) {
-                    newObj[key] = cleanedValue;
-                 }
+            if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                const value = obj[key];
+                if (value !== null && value !== undefined && value !== '') {
+                    const cleanedValue = (value && typeof value === 'object') ? cleanData(value) : value;
+                    if (cleanedValue !== null && cleanedValue !== undefined && cleanedValue !== '') {
+                        newObj[key] = cleanedValue;
+                    }
+                }
             }
         }
         return newObj;
     }
     return obj;
 };
+
 
 export async function getSiteConfig(): Promise<SiteConfig | null> {
     try {
@@ -38,7 +49,7 @@ export async function getSiteConfig(): Promise<SiteConfig | null> {
             return docSnap.data() as SiteConfig;
         } else {
             console.warn("No config document found! Creating a default one.");
-            const defaultConfig: Partial<SiteConfig> = {
+            const defaultConfig: SiteConfig = {
                 contactPhone: '',
                 contactEmail: '',
                 address: '',
@@ -46,7 +57,7 @@ export async function getSiteConfig(): Promise<SiteConfig | null> {
                 socials: { facebook: '', instagram: '', twitter: '' },
             };
             await setDoc(docRef, defaultConfig);
-            return defaultConfig as SiteConfig;
+            return defaultConfig;
         }
     } catch (error) {
         console.error("Error getting site config, returning null: ", error);
@@ -67,7 +78,6 @@ export async function updateSiteConfig(
         let logoUrl = currentConfig?.logoUrl;
 
         if (logoFile) {
-            // If there's an old logo, delete it
             if (logoUrl) {
                 try {
                     const oldImageRef = ref(storage, logoUrl);
@@ -76,32 +86,30 @@ export async function updateSiteConfig(
                     console.warn("Old logo not found or failed to delete, continuing with update...", e);
                 }
             }
-            // Upload the new logo
             const logoRef = ref(storage, `site/logo_${Date.now()}_${logoFile.name}`);
             await uploadBytes(logoRef, logoFile);
             logoUrl = await getDownloadURL(logoRef);
 
         } else if (logoRemoved && logoUrl) {
-            // If the logo was removed in the UI, delete it from storage
             try {
                 const oldImageRef = ref(storage, logoUrl);
                 await deleteObject(oldImageRef);
             } catch(e) {
                 console.warn("Failed to delete logo, continuing with update...", e);
             }
-            logoUrl = ''; // Set URL to empty
+            logoUrl = ''; 
         }
 
-        const configToSave = {
+        const configToSave: Partial<SiteConfig> = {
             contactPhone: data.contactPhone,
             contactEmail: data.contactEmail,
             leadNotificationEmail: data.leadNotificationEmail,
             address: data.address,
             officeHours: data.officeHours,
             socials: {
-                facebook: data.facebookUrl,
-                instagram: data.instagramUrl,
-                twitter: data.twitterUrl,
+                facebook: data.facebookUrl || '',
+                instagram: data.instagramUrl || '',
+                twitter: data.twitterUrl || '',
             },
             logoUrl: logoUrl,
             updatedAt: Timestamp.now()
@@ -116,5 +124,3 @@ export async function updateSiteConfig(
         throw new Error("Failed to update site config.");
     }
 }
-
-    
