@@ -20,21 +20,29 @@ import { db, storage } from '@/lib/firebase';
 import type { Property } from '@/models/property';
 
 // Helper function to clean data for Firestore
-const cleanData = (data: any) => {
-    const cleanedData: { [key: string]: any } = {};
-    const dataToClean = { ...data };
-    delete dataToClean.agentId; // Don't store agentId directly
+const cleanData = (obj: any): any => {
+    // Make a shallow copy to avoid modifying the original object
+    const dataToClean = { ...obj };
+    // Don't store agentId directly in the property document
+    delete dataToClean.agentId; 
     
-    for (const key in dataToClean) {
-        if (dataToClean[key] !== '' && dataToClean[key] !== undefined && dataToClean[key] !== null) {
-            if(typeof dataToClean[key] === 'object' && !Array.isArray(dataToClean[key]) && dataToClean[key] !== null && !(dataToClean[key] instanceof File)) {
-                cleanedData[key] = cleanData(dataToClean[key]);
-            } else {
-                cleanedData[key] = dataToClean[key];
+    if (dataToClean === null || dataToClean === undefined) return undefined;
+    if (Array.isArray(dataToClean)) return dataToClean.map(v => cleanData(v));
+    if (dataToClean instanceof Timestamp || dataToClean instanceof File) return dataToClean;
+
+    if (typeof dataToClean === 'object' && Object.keys(dataToClean).length > 0) {
+         return Object.entries(dataToClean).reduce((acc, [key, value]) => {
+            const cleanedValue = cleanData(value);
+            // Keep empty strings and zero values, but discard null/undefined
+            if (value === '' || value === 0 || value === false) {
+                 acc[key as keyof typeof acc] = value;
+            } else if (cleanedValue !== undefined && cleanedValue !== null) {
+                acc[key as keyof typeof acc] = cleanedValue;
             }
-        }
+            return acc;
+        }, {} as { [key: string]: any });
     }
-    return cleanedData;
+    return dataToClean;
 };
 
 
@@ -125,7 +133,7 @@ export async function getProperties(): Promise<Property[]> {
 export async function getFeaturedProperties(): Promise<Property[]> {
     try {
         const propertiesCol = collection(db, 'properties');
-        const q = query(propertiesCol, where('featured', '==', true), orderBy('createdAt', 'desc'), limit(4));
+        const q = query(propertiesCol, where('featured', '==', true), where('active', '==', true), orderBy('createdAt', 'desc'), limit(4));
         const snapshot = await getDocs(q);
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Property));
     } catch (error) {

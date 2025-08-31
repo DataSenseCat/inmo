@@ -8,7 +8,16 @@ export async function FeaturedProperties() {
   const featured = await getFeaturedProperties();
 
   if (featured.length === 0) {
-    return null;
+    return (
+        <section className="py-12 lg:py-24 bg-background">
+          <div className="container mx-auto px-4 md:px-6">
+             <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-bold font-headline">Propiedades Destacadas</h2>
+                <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">Actualmente no hay propiedades destacadas. ¡Vuelve pronto!</p>
+            </div>
+          </div>
+        </section>
+    );
   }
 
   return (

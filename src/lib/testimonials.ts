@@ -17,14 +17,21 @@ import {
 import { db } from '@/lib/firebase';
 import type { Testimonial } from '@/models/testimonial';
 
-const cleanData = (data: any) => {
-    const cleanedData: { [key: string]: any } = {};
-    for (const key in data) {
-        if (data[key] !== '' && data[key] !== undefined && data[key] !== null) {
-            cleanedData[key] = data[key];
-        }
+const cleanData = (obj: any): any => {
+    if (obj === null || obj === undefined) return undefined;
+    if (Array.isArray(obj)) return obj.map(v => cleanData(v));
+    if (obj instanceof Timestamp || obj instanceof File) return obj;
+
+    if (typeof obj === 'object' && Object.keys(obj).length > 0) {
+        return Object.entries(obj).reduce((acc, [key, value]) => {
+            const cleanedValue = cleanData(value);
+            if (cleanedValue !== undefined && cleanedValue !== null) {
+                acc[key as keyof typeof acc] = cleanedValue;
+            }
+            return acc;
+        }, {} as { [key: string]: any });
     }
-    return cleanedData;
+    return obj;
 };
 
 export async function createTestimonial(data: Omit<Testimonial, 'id' | 'createdAt' | 'updatedAt'>): Promise<{ id: string }> {

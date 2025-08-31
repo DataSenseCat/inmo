@@ -17,46 +17,43 @@ import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage
 import { db, storage } from '@/lib/firebase';
 import type { Agent } from '@/models/agent';
 
-const cleanData = (data: any) => {
-    const cleanedData: { [key: string]: any } = {};
-    for (const key in data) {
-        if (data[key] !== '' && data[key] !== undefined && data[key] !== null) {
-            cleanedData[key] = data[key];
-        }
+// Helper to remove undefined or null values from an object
+const cleanData = (obj: any): any => {
+    if (obj === null || obj === undefined) return undefined;
+    if (Array.isArray(obj)) return obj.map(v => cleanData(v));
+    if (obj instanceof Timestamp || obj instanceof File) return obj;
+
+    if (typeof obj === 'object' && Object.keys(obj).length > 0) {
+        return Object.entries(obj).reduce((acc, [key, value]) => {
+            const cleanedValue = cleanData(value);
+            if (cleanedValue !== undefined && cleanedValue !== null) {
+                acc[key as keyof typeof acc] = cleanedValue;
+            }
+            return acc;
+        }, {} as { [key: string]: any });
     }
-    return cleanedData;
+    return obj;
 };
 
 export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'createdAt' | 'updatedAt'>, photoFile?: File) {
     try {
-        console.log("--- SIMULATING AGENT CREATION ---");
         const agentData: any = {
             ...cleanData(data),
-            bio: data.bio || '',
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
         };
 
         if (photoFile) {
-            console.log("Photo file provided:", photoFile.name);
             const imageRef = ref(storage, `agents/${Date.now()}_${photoFile.name}`);
-            // await uploadBytes(imageRef, photoFile); // SIMULATED
-            // agentData.photoUrl = await getDownloadURL(imageRef); // SIMULATED
-            agentData.photoUrl = `https://fake-storage.com/agents/${photoFile.name}`;
-            console.log("Simulated photo upload. URL:", agentData.photoUrl);
+            await uploadBytes(imageRef, photoFile);
+            agentData.photoUrl = await getDownloadURL(imageRef);
         } else {
-            console.log("No photo file provided.");
             agentData.photoUrl = '';
         }
 
-        console.log("Data that would be sent to Firestore:", agentData);
+        const docRef = await addDoc(collection(db, 'agents'), agentData);
 
-        // const docRef = await addDoc(collection(db, 'agents'), agentData); // SIMULATED
-        const simulatedId = `sim_${Date.now()}`;
-        console.log("--- AGENT CREATION SIMULATED SUCCESSFULLY ---");
-        console.log("--- Simulated Document ID:", simulatedId, "---");
-
-        return { id: simulatedId };
+        return { id: docRef.id };
     } catch (error) {
         console.error("Error creating agent: ", error);
         throw new Error("Failed to create agent.");
@@ -92,10 +89,11 @@ export async function updateAgent(id: string, data: Partial<Agent>, photoFile?: 
         if (photoUrl) {
             agentData.photoUrl = photoUrl;
         }
-
-        if ((data as any).bio === null) {
-            agentData.bio = '';
+        
+        if (data.bio === null || data.bio === undefined) {
+             agentData.bio = '';
         }
+
 
         await updateDoc(docRef, agentData);
     } catch (error) {
