@@ -29,19 +29,19 @@ const cleanData = (data: any) => {
 
 export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'createdAt' | 'updatedAt'>, photoFile?: File) {
     try {
-        let photoUrl = '';
-        if (photoFile) {
-            const imageRef = ref(storage, `agents/${Date.now()}_${photoFile.name}`);
-            await uploadBytes(imageRef, photoFile);
-            photoUrl = await getDownloadURL(imageRef);
-        }
-        
-        const agentData = {
+        const agentData: any = {
             ...cleanData(data),
-            photoUrl: photoUrl || '',
             bio: data.bio || '',
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
+        };
+
+        if (photoFile) {
+            const imageRef = ref(storage, `agents/${Date.now()}_${photoFile.name}`);
+            await uploadBytes(imageRef, photoFile);
+            agentData.photoUrl = await getDownloadURL(imageRef);
+        } else {
+            agentData.photoUrl = '';
         }
 
         const docRef = await addDoc(collection(db, 'agents'), agentData);
