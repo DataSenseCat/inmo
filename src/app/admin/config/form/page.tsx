@@ -2,10 +2,10 @@
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, Loader2, Save } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, PlusCircle, Trash2, FileText, ShieldCheck, Landmark, Library } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -22,9 +22,18 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
-import type { SiteConfig } from '@/models/site-config';
+import type { SiteConfig, Service, Certification } from '@/models/site-config';
 import { getSiteConfig, updateSiteConfig } from '@/lib/config';
 import Image from 'next/image';
+
+const serviceSchema = z.object({
+  title: z.string().min(1, 'El título es requerido.'),
+  description: z.string().min(1, 'La descripción es requerida.'),
+});
+
+const certificationSchema = z.object({
+  name: z.string().min(1, 'El nombre es requerido.'),
+});
 
 const configFormSchema = z.object({
   contactPhone: z.string().min(1, 'El teléfono es requerido.'),
@@ -35,6 +44,8 @@ const configFormSchema = z.object({
   facebookUrl: z.string().url({ message: "Por favor ingrese una URL válida." }).optional().or(z.literal('')),
   instagramUrl: z.string().url({ message: "Por favor ingrese una URL válida." }).optional().or(z.literal('')),
   twitterUrl: z.string().url({ message: "Por favor ingrese una URL válida." }).optional().or(z.literal('')),
+  services: z.array(serviceSchema).optional(),
+  certifications: z.array(certificationSchema).optional(),
 });
 
 type ConfigFormValues = z.infer<typeof configFormSchema>;
@@ -56,7 +67,19 @@ function ConfigForm() {
       facebookUrl: '',
       instagramUrl: '',
       twitterUrl: '',
+      services: [],
+      certifications: [],
     },
+  });
+
+  const { fields: serviceFields, append: appendService, remove: removeService } = useFieldArray({
+    control: form.control,
+    name: "services",
+  });
+
+  const { fields: certificationFields, append: appendCertification, remove: removeCertification } = useFieldArray({
+    control: form.control,
+    name: "certifications",
   });
 
   useEffect(() => {
@@ -73,6 +96,8 @@ function ConfigForm() {
                 facebookUrl: data.socials?.facebook || '',
                 instagramUrl: data.socials?.instagram || '',
                 twitterUrl: data.socials?.twitter || '',
+                services: data.services || [],
+                certifications: data.certifications || [],
             });
         }
       })
@@ -81,13 +106,19 @@ function ConfigForm() {
 
   async function onSubmit(data: ConfigFormValues) {
     try {
-        const configToSave = {
-            ...data,
+        const configToSave: Partial<SiteConfig> = {
+            contactPhone: data.contactPhone,
+            contactEmail: data.contactEmail,
+            leadNotificationEmail: data.leadNotificationEmail,
+            address: data.address,
+            officeHours: data.officeHours,
             socials: {
-                facebook: data.facebookUrl,
-                instagram: data.instagramUrl,
-                twitter: data.twitterUrl,
-            }
+                facebook: data.facebookUrl || '',
+                instagram: data.instagramUrl || '',
+                twitter: data.twitterUrl || '',
+            },
+            services: data.services,
+            certifications: data.certifications,
         };
 
         await updateSiteConfig(configToSave);
@@ -130,7 +161,7 @@ function ConfigForm() {
                     <div className="bg-muted p-4 rounded-lg w-full max-w-sm text-center">
                         <p className="text-muted-foreground">El logo se gestiona desde el código de la aplicación para asegurar la máxima calidad.</p>
                          <div className="mt-4 p-4 bg-white inline-block rounded-md">
-                           <Image src="/logo.png" alt="Logo Actual" width={163} height={65} />
+                           <Image src="/logo.png" alt="Logo Actual" width={180} height={50} />
                          </div>
                     </div>
                 </CardContent>
@@ -204,6 +235,65 @@ function ConfigForm() {
                             <FormMessage />
                         </FormItem>
                     )}/>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader className="flex-row items-center justify-between">
+                    <CardTitle>Servicios de la Empresa</CardTitle>
+                    <Button type="button" size="sm" variant="outline" onClick={() => appendService({ title: '', description: '' })}>
+                        <PlusCircle className="mr-2 h-4 w-4" /> Añadir Servicio
+                    </Button>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {serviceFields.map((field, index) => (
+                        <div key={field.id} className="p-4 border rounded-md space-y-4 relative">
+                            <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-destructive" onClick={() => removeService(index)}>
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                            <FormField control={form.control} name={`services.${index}.title`} render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Título del Servicio</FormLabel>
+                                    <FormControl><Input {...field} placeholder="Ej: Venta de Propiedades" /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
+                            <FormField control={form.control} name={`services.${index}.description`} render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Descripción del Servicio</FormLabel>
+                                    <FormControl><Textarea {...field} placeholder="Describe el servicio..." /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
+                        </div>
+                    ))}
+                    {serviceFields.length === 0 && <p className="text-sm text-muted-foreground">No hay servicios añadidos.</p>}
+                </CardContent>
+            </Card>
+
+             <Card>
+                <CardHeader className="flex-row items-center justify-between">
+                    <CardTitle>Certificaciones y Membresías</CardTitle>
+                    <Button type="button" size="sm" variant="outline" onClick={() => appendCertification({ name: '' })}>
+                        <PlusCircle className="mr-2 h-4 w-4" /> Añadir Certificación
+                    </Button>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {certificationFields.map((field, index) => (
+                        <div key={field.id} className="flex items-center gap-4 p-4 border rounded-md">
+                            <FormField control={form.control} name={`certifications.${index}.name`} render={({ field }) => (
+                                <FormItem className="flex-grow">
+                                    <FormLabel>Nombre de la Certificación</FormLabel>
+                                    <FormControl><Input {...field} placeholder="Ej: Colegio de Martilleros de Catamarca" /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
+                             <Button type="button" variant="ghost" size="icon" className="text-destructive self-end" onClick={() => removeCertification(index)}>
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    ))}
+                    {certificationFields.length === 0 && <p className="text-sm text-muted-foreground">No hay certificaciones añadidas.</p>}
                 </CardContent>
             </Card>
 
