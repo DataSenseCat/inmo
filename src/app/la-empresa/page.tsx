@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getAgents } from "@/lib/agents";
 import { getSiteConfig } from "@/lib/config";
+import { getTestimonials } from "@/lib/testimonials";
 import { Award, Briefcase, Check, Handshake, Heart, Home, KeyRound, Landmark, Library, Mail, Phone, Scale, Search, ShieldCheck, Smile, Star, Users, FileText } from "lucide-react";
 import Image from "next/image";
 import Link from 'next/link';
@@ -55,24 +56,6 @@ const services = [
     },
 ];
 
-const testimonials = [
-    {
-      text: "La tasación fue muy profesional y me ayudó a establecer un precio justo para mi casa. ¡Vendimos en menos de un mes!",
-      name: "Juan Carlos Paez",
-      company: "Cliente Vendedor",
-    },
-    {
-      text: "Muy conformes con el servicio. El informe fue detallado y las recomendaciones me ayudaron mucho en la venta.",
-      name: "Laura Martinez",
-      company: "Cliente Inversor",
-    },
-    {
-      text: "Profesionalismo, serios y confiables. Me acompañaron en cada paso de la compra de mi primer departamento.",
-      name: "Miguel Sanchez",
-      company: "Cliente Comprador",
-    },
-];
-
 const certifications = [
     { name: "Colegio de Martilleros de Catamarca", icon: Landmark },
     { name: "Cámara Inmobiliaria Argentina", icon: Library },
@@ -84,6 +67,7 @@ export default async function AboutUsPage() {
     const agents = await getAgents();
     const activeAgents = agents.filter(a => a.active);
     const config = await getSiteConfig();
+    const testimonials = await getTestimonials(true);
 
     return (
         <div className="bg-gray-50/50">
@@ -219,20 +203,26 @@ export default async function AboutUsPage() {
                             Testimonios reales de personas que confían en nosotros.
                         </p>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {testimonials.map((testimonial, index) => (
-                            <Card key={index} className="p-8 bg-gray-50/70 border-l-4 border-primary">
-                                <div className="flex mb-2">
-                                    {[...Array(5)].map((_, i) => (
-                                        <Star key={i} className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                                    ))}
-                                </div>
-                                <p className="text-muted-foreground italic mb-4">"{testimonial.text}"</p>
-                                <p className="font-semibold">{testimonial.name}</p>
-                                <p className="text-sm text-muted-foreground">{testimonial.company}</p>
-                            </Card>
-                        ))}
-                    </div>
+                    {testimonials.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {testimonials.map((testimonial) => (
+                                <Card key={testimonial.id} className="p-8 bg-gray-50/70 border-l-4 border-primary">
+                                    <div className="flex mb-2">
+                                        {[...Array(5)].map((_, i) => (
+                                            <Star key={i} className={`w-5 h-5 ${i < testimonial.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
+                                        ))}
+                                    </div>
+                                    <p className="text-muted-foreground italic mb-4">"{testimonial.comment}"</p>
+                                    <p className="font-semibold">{testimonial.name}</p>
+                                    <p className="text-sm text-muted-foreground">Cliente Satisfecho</p>
+                                </Card>
+                            ))}
+                        </div>
+                     ) : (
+                        <div className="text-center text-muted-foreground py-8">
+                            <p>Aún no hay testimonios para mostrar. ¡Vuelve pronto!</p>
+                        </div>
+                     )}
                 </div>
             </section>
 
