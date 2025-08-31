@@ -38,7 +38,8 @@ export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'created
         
         const agentData = {
             ...cleanData(data),
-            photoUrl,
+            photoUrl: photoUrl || '',
+            bio: data.bio || '',
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
         }
