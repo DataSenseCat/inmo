@@ -17,7 +17,7 @@ import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage
 import { db, storage } from '@/lib/firebase';
 import type { Agent } from '@/models/agent';
 
-const cleanAgentData = (data: any) => {
+const cleanData = (data: any) => {
     const cleanedData: { [key: string]: any } = {};
     for (const key in data) {
         if (data[key] !== '' && data[key] !== undefined && data[key] !== null) {
@@ -37,7 +37,7 @@ export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'created
         }
         
         const agentData = {
-            ...cleanAgentData(data),
+            ...cleanData(data),
             photoUrl,
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
