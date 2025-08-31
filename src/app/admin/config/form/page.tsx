@@ -299,7 +299,9 @@ function ConfigForm() {
 
             <div className="lg:col-span-3 fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-sm p-4 border-t z-10">
                 <div className="container mx-auto flex justify-end gap-4">
-                    <Button type="button" variant="outline" size="lg" onClick={() => router.back()}>Cancelar</Button>
+                    <Button type="button" variant="outline" size="lg" asChild>
+                        <Link href="/admin?tab=config">Cancelar</Link>
+                    </Button>
                     <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
                         {form.formState.isSubmitting 
                             ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Guardando...</>

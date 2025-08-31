@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Building, DollarSign, Filter, Layers, Search, Trash2, Users, CheckCircle, RefreshCw, Plus, Upload, Pencil, Eye, AlertTriangle, Mail, User, Settings, ExternalLink, Star } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,8 +28,9 @@ import type { SiteConfig } from '@/models/site-config';
 import { getSiteConfig } from '@/lib/config';
 
 
-export default function AdminDashboard() {
+function AdminDashboardComponent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
   
@@ -45,6 +46,8 @@ export default function AdminDashboard() {
   const [developmentToDelete, setDevelopmentToDelete] = useState<Development | null>(null);
   const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
   const [testimonialToDelete, setTestimonialToDelete] = useState<Testimonial | null>(null);
+  
+  const activeTab = searchParams.get('tab') || 'properties';
 
   async function loadData() {
       try {
@@ -165,6 +168,10 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleTabChange = (value: string) => {
+    router.push(`/admin?tab=${value}`);
+  };
+
   if (!isClient) {
     return null; 
   }
@@ -227,7 +234,7 @@ export default function AdminDashboard() {
         
         <Card>
             <CardContent className="p-0">
-                <Tabs defaultValue="properties">
+                <Tabs value={activeTab} onValueChange={handleTabChange}>
                     <div className="px-6 pt-4 border-b">
                       <TabsList>
                           <TabsTrigger value="properties">Propiedades</TabsTrigger>
@@ -639,4 +646,13 @@ export default function AdminDashboard() {
         </AlertDialog>
     </div>
   );
+}
+
+
+export default function AdminDashboard() {
+    return (
+        <Suspense fallback={<div>Cargando panel...</div>}>
+            <AdminDashboardComponent />
+        </Suspense>
+    )
 }

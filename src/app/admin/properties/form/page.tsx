@@ -162,7 +162,7 @@ function PropertyForm() {
             }
           } else {
             toast({ variant: 'destructive', title: 'Error', description: 'Propiedad no encontrada.' });
-            router.push('/admin');
+            router.push('/admin?tab=properties');
           }
         })
         .finally(() => setLoading(false));
@@ -213,7 +213,7 @@ function PropertyForm() {
             await createProperty(propertyPayload, imageFiles);
             toast({ title: 'Propiedad Creada', description: 'La nueva propiedad se ha guardado.' });
         }
-        router.push('/admin');
+        router.push('/admin?tab=properties');
         router.refresh();
     } catch (error) {
         console.error('Failed to save property:', error);
@@ -233,7 +233,7 @@ function PropertyForm() {
     <div className="container mx-auto px-4 md:px-6 py-8 mb-24">
       <div className="flex items-center mb-6">
         <Button variant="outline" size="icon" asChild>
-            <Link href="/admin">
+            <Link href="/admin?tab=properties">
                 <ArrowLeft />
             </Link>
         </Button>
@@ -483,7 +483,9 @@ function PropertyForm() {
 
            <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-sm p-4 border-t z-10">
                 <div className="container mx-auto flex justify-end gap-4">
-                    <Button type="button" variant="outline" size="lg" onClick={() => router.back()}>Cancelar</Button>
+                    <Button type="button" variant="outline" size="lg" asChild>
+                        <Link href="/admin?tab=properties">Cancelar</Link>
+                    </Button>
                     <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
                         {form.formState.isSubmitting 
                             ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Guardando...</>
