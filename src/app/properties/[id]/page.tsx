@@ -2,7 +2,7 @@
 import { getPropertyById } from '@/lib/properties';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
-import { BedDouble, Bath, AreaChart, MapPin, Phone, Mail } from 'lucide-react';
+import { BedDouble, Bath, AreaChart, MapPin, Phone, Mail, ParkingCircle, Waves, ConciergeBell, Flame, CookingPot } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -16,6 +16,23 @@ import { Button } from '@/components/ui/button';
 import { VirtualTour } from './virtual-tour';
 import { Separator } from '@/components/ui/separator';
 
+const featureIcons = {
+    cochera: ParkingCircle,
+    piscina: Waves,
+    dptoServicio: ConciergeBell,
+    quincho: Flame,
+    parrillero: CookingPot,
+};
+
+const featureLabels = {
+    cochera: "Cochera",
+    piscina: "Piscina",
+    dptoServicio: "Dpto. de Servicio",
+    quincho: "Quincho",
+    parrillero: "Parrillero",
+};
+
+
 export default async function PropertyDetailPage({ params }: { params: { id: string } }) {
   const property = await getPropertyById(params.id);
 
@@ -26,6 +43,7 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
   const isSale = property.operation === 'Venta';
   const price = isSale ? property.priceUSD : property.priceARS;
   const currency = isSale ? 'USD' : 'ARS';
+  const availableFeatures = Object.entries(property.features || {}).filter(([_, value]) => value);
 
   return (
     <div className="bg-background">
@@ -50,10 +68,11 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
             
             <Card className="mt-8">
                 <CardHeader>
+                    <Badge variant="outline" className="mb-2 text-sm w-fit">{property.type}</Badge>
                     <CardTitle className="text-3xl md:text-4xl font-bold font-headline">{property.title}</CardTitle>
                     <div className="flex items-center gap-2 text-muted-foreground pt-2">
                         <MapPin className="w-4 h-4" />
-                        <span>{property.location}, {property.address}</span>
+                        <span>{property.location}{property.address && `, ${property.address}`}</span>
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -66,6 +85,24 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
                     <Separator className='my-4' />
                     <h2 className="text-2xl font-bold font-headline mt-8 mb-4">Descripción</h2>
                     <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{property.description}</p>
+
+                    {availableFeatures.length > 0 && (
+                        <>
+                            <h2 className="text-2xl font-bold font-headline mt-8 mb-4">Características</h2>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                {availableFeatures.map(([key, value]) => {
+                                    const Icon = featureIcons[key as keyof typeof featureIcons];
+                                    const label = featureLabels[key as keyof typeof featureLabels];
+                                    return (
+                                        <div key={key} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                                            <Icon className="w-5 h-5 text-primary" />
+                                            <span>{label}</span>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </>
+                    )}
                 </CardContent>
             </Card>
           </div>

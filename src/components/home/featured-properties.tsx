@@ -1,16 +1,8 @@
 
-import {
-    Carousel,
-    CarouselContent,
-    CarouselItem,
-    CarouselNext,
-    CarouselPrevious,
-  } from "@/components/ui/carousel";
 import { getFeaturedProperties } from '@/lib/properties';
 import { PropertyCard } from '@/components/property-card';
 import { Button } from "../ui/button";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 
 export async function FeaturedProperties() {
   const featured = await getFeaturedProperties();

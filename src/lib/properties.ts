@@ -27,7 +27,7 @@ const cleanData = (data: any) => {
     
     for (const key in dataToClean) {
         if (dataToClean[key] !== '' && dataToClean[key] !== undefined && dataToClean[key] !== null) {
-            if(typeof dataToClean[key] === 'object' && !Array.isArray(dataToClean[key]) && dataToClean[key] !== null) {
+            if(typeof dataToClean[key] === 'object' && !Array.isArray(dataToClean[key]) && dataToClean[key] !== null && !(dataToClean[key] instanceof File)) {
                 cleanedData[key] = cleanData(dataToClean[key]);
             } else {
                 cleanedData[key] = dataToClean[key];
