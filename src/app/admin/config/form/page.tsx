@@ -35,7 +35,6 @@ const configFormSchema = z.object({
   facebookUrl: z.string().url().or(z.literal('')),
   instagramUrl: z.string().url().or(z.literal('')),
   twitterUrl: z.string().url().or(z.literal('')),
-  logoUrl: z.string().optional().nullable(),
 });
 
 type ConfigFormValues = z.infer<typeof configFormSchema>;
@@ -47,6 +46,7 @@ function ConfigForm() {
   const [loading, setLoading] = useState(true);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [logoRemoved, setLogoRemoved] = useState(false);
   
   const form = useForm<ConfigFormValues>({
     resolver: zodResolver(configFormSchema),
@@ -59,7 +59,6 @@ function ConfigForm() {
       facebookUrl: '',
       instagramUrl: '',
       twitterUrl: '',
-      logoUrl: '',
     },
   });
 
@@ -77,7 +76,6 @@ function ConfigForm() {
                 facebookUrl: data.socials?.facebook || '',
                 instagramUrl: data.socials?.instagram || '',
                 twitterUrl: data.socials?.twitter || '',
-                logoUrl: data.logoUrl || '',
             });
             if(data.logoUrl) {
                 setLogoPreview(data.logoUrl);
@@ -92,18 +90,33 @@ function ConfigForm() {
           const file = e.target.files[0];
           setLogoFile(file);
           setLogoPreview(URL.createObjectURL(file));
+          setLogoRemoved(false);
       }
   }
 
   const removeLogo = () => {
       setLogoFile(null);
       setLogoPreview(null);
-      form.setValue('logoUrl', null);
+      setLogoRemoved(true);
   }
 
   async function onSubmit(data: ConfigFormValues) {
     try {
-        await updateSiteConfig(data, logoFile || undefined, logoPreview);
+        const configToSave = {
+          contactPhone: data.contactPhone,
+          contactEmail: data.contactEmail,
+          leadNotificationEmail: data.leadNotificationEmail,
+          address: data.address,
+          officeHours: data.officeHours,
+          socials: {
+            facebook: data.facebookUrl,
+            instagram: data.instagramUrl,
+            twitter: data.twitterUrl,
+          },
+        };
+
+        await updateSiteConfig(configToSave, logoFile || undefined, logoRemoved);
+        
         toast({ title: 'Configuración Actualizada', description: 'Los cambios se guardaron correctamente.' });
         router.push('/admin?tab=config');
         router.refresh();

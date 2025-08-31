@@ -1,7 +1,7 @@
 
 'use server';
 
-import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, Timestamp, updateDoc } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import type { SiteConfig } from '@/models/site-config';
@@ -16,8 +16,17 @@ export async function getSiteConfig(): Promise<SiteConfig | null> {
         if (docSnap.exists()) {
             return docSnap.data() as SiteConfig;
         } else {
-            console.warn("No config document found!");
-            return null;
+            console.warn("No config document found! Creating a default one.");
+            // Create a default empty config if it doesn't exist
+            const defaultConfig: Partial<SiteConfig> = {
+                contactPhone: '',
+                contactEmail: '',
+                address: '',
+                officeHours: '',
+                socials: { facebook: '', instagram: '', twitter: '' },
+            };
+            await setDoc(docRef, defaultConfig);
+            return defaultConfig as SiteConfig;
         }
     } catch (error) {
         console.error("Error getting site config, returning null: ", error);
@@ -25,7 +34,8 @@ export async function getSiteConfig(): Promise<SiteConfig | null> {
     }
 }
 
-export async function updateSiteConfig(data: Partial<Omit<SiteConfig, 'updatedAt'>>, logoFile?: File, logoPreview?: string | null): Promise<void> {
+
+export async function updateSiteConfig(data: Omit<SiteConfig, 'logoUrl' | 'updatedAt'>, logoFile?: File, logoRemoved?: boolean): Promise<void> {
     try {
         const docRef = doc(db, 'siteConfig', CONFIG_DOC_ID);
         const currentConfig = await getSiteConfig();
@@ -36,31 +46,30 @@ export async function updateSiteConfig(data: Partial<Omit<SiteConfig, 'updatedAt
         };
 
         if (logoFile) {
-            // Upload new logo, delete old one if it exists
+            // 1. Upload new logo, delete old one if it exists
             if (currentConfig?.logoUrl) {
                 try {
                     const oldImageRef = ref(storage, currentConfig.logoUrl);
                     await deleteObject(oldImageRef);
                 } catch(e) {
-                    console.error("Failed to delete old logo, continuing with update...", e);
+                    console.warn("Old logo not found or failed to delete, continuing with update...", e);
                 }
             }
             const logoRef = ref(storage, `site/logo_${Date.now()}_${logoFile.name}`);
             await uploadBytes(logoRef, logoFile);
             configData.logoUrl = await getDownloadURL(logoRef);
 
-        } else if (!logoPreview && currentConfig?.logoUrl) {
-            // If preview is null/empty and there was a logo, it means we need to delete it.
+        } else if (logoRemoved && currentConfig?.logoUrl) {
+            // 2. If no new file but logo was removed, delete the old one
             try {
                 const oldImageRef = ref(storage, currentConfig.logoUrl);
                 await deleteObject(oldImageRef);
             } catch(e) {
-                console.error("Failed to delete logo, continuing with update...", e);
+                console.warn("Failed to delete logo, continuing with update...", e);
             }
             configData.logoUrl = ''; // Set to empty string to remove from db
         }
-        // If logoFile is null but logoPreview exists, it means we keep the existing logo.
-        // In this case, we don't add logoUrl to configData, so it's not overwritten.
+        // 3. If no new file and logo was not removed, do nothing to logoUrl (it keeps its value)
 
         await setDoc(docRef, configData, { merge: true });
     } catch (error) {
