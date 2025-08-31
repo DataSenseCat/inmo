@@ -29,34 +29,23 @@ const cleanData = (data: any) => {
 
 export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'createdAt' | 'updatedAt'>, photoFile?: File) {
     try {
-        console.log("--- SIMULATING AGENT CREATION ---");
         const agentData: any = {
             ...cleanData(data),
             bio: data.bio || '',
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
+            photoUrl: '',
         };
 
         if (photoFile) {
-            console.log("Photo file provided:", photoFile.name);
             const imageRef = ref(storage, `agents/${Date.now()}_${photoFile.name}`);
-            // await uploadBytes(imageRef, photoFile); // SIMULATED
-            // agentData.photoUrl = await getDownloadURL(imageRef); // SIMULATED
-            agentData.photoUrl = `https://fake-storage.com/agents/${photoFile.name}`;
-            console.log("Simulated photo upload. URL:", agentData.photoUrl);
-        } else {
-            console.log("No photo file provided.");
-            agentData.photoUrl = '';
+            await uploadBytes(imageRef, photoFile);
+            agentData.photoUrl = await getDownloadURL(imageRef);
         }
 
-        console.log("Data that would be sent to Firestore:", agentData);
+        const docRef = await addDoc(collection(db, 'agents'), agentData);
 
-        // const docRef = await addDoc(collection(db, 'agents'), agentData); // SIMULATED
-        const simulatedId = `sim_${Date.now()}`;
-        console.log("--- AGENT CREATION SIMULATED SUCCESSFULLY ---");
-        console.log("--- Simulated Document ID:", simulatedId, "---");
-
-        return { id: simulatedId };
+        return { id: docRef.id };
     } catch (error) {
         console.error("Error creating agent: ", error);
         throw new Error("Failed to create agent.");
