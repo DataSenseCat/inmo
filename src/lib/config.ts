@@ -17,7 +17,6 @@ export async function getSiteConfig(): Promise<SiteConfig | null> {
             return docSnap.data() as SiteConfig;
         } else {
             console.warn("No config document found! Creating a default one.");
-            // Create a default empty config if it doesn't exist
             const defaultConfig: Partial<SiteConfig> = {
                 contactPhone: '',
                 contactEmail: '',
@@ -35,10 +34,14 @@ export async function getSiteConfig(): Promise<SiteConfig | null> {
 }
 
 
-export async function updateSiteConfig(data: Omit<SiteConfig, 'logoUrl' | 'updatedAt'>, logoFile?: File, logoRemoved?: boolean): Promise<void> {
+export async function updateSiteConfig(
+    data: Omit<SiteConfig, 'logoUrl' | 'updatedAt'>,
+    currentConfig: SiteConfig | null,
+    logoFile?: File, 
+    logoRemoved?: boolean
+): Promise<void> {
     try {
         const docRef = doc(db, 'siteConfig', CONFIG_DOC_ID);
-        const currentConfig = await getSiteConfig();
         
         const configData: any = {
             ...data,
@@ -69,7 +72,8 @@ export async function updateSiteConfig(data: Omit<SiteConfig, 'logoUrl' | 'updat
             }
             configData.logoUrl = ''; // Set to empty string to remove from db
         }
-        // 3. If no new file and logo was not removed, do nothing to logoUrl (it keeps its value)
+        // 3. If no new file and logo was not removed, logoUrl is not added to configData,
+        // so it keeps its previous value in Firestore due to merge:true.
 
         await setDoc(docRef, configData, { merge: true });
     } catch (error) {

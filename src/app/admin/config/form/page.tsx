@@ -44,6 +44,7 @@ function ConfigForm() {
   const { toast } = useToast();
   
   const [loading, setLoading] = useState(true);
+  const [currentConfig, setCurrentConfig] = useState<SiteConfig | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoRemoved, setLogoRemoved] = useState(false);
@@ -67,6 +68,7 @@ function ConfigForm() {
     getSiteConfig()
       .then(data => {
         if (data) {
+            setCurrentConfig(data);
             form.reset({
                 contactPhone: data.contactPhone || '',
                 contactEmail: data.contactEmail || '',
@@ -115,7 +117,7 @@ function ConfigForm() {
           },
         };
 
-        await updateSiteConfig(configToSave, logoFile || undefined, logoRemoved);
+        await updateSiteConfig(configToSave, currentConfig, logoFile || undefined, logoRemoved);
         
         toast({ title: 'Configuración Actualizada', description: 'Los cambios se guardaron correctamente.' });
         router.push('/admin?tab=config');
