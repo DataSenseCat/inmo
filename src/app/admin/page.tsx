@@ -355,7 +355,7 @@ function AdminDashboardComponent() {
                                             <Link href={`/emprendimientos/${dev.id}`} target="_blank"><Eye className="h-4 w-4"/></Link>
                                           </Button>
                                           <Button asChild variant="ghost" size="icon">
-                                            <Link href={`/admin/developments/form?id=${dev.id}`}><Pencil className="h-4 w-4"/></Link>
+                                            <Link href={`/admin/developments/form?id=${dev.id}&tab=developments`}><Pencil className="h-4 w-4"/></Link>
                                           </Button>
                                           <AlertDialogTrigger asChild>
                                               <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setDevelopmentToDelete(dev)}>
@@ -421,7 +421,7 @@ function AdminDashboardComponent() {
                                       <TableCell className="text-right">
                                         <div className="flex gap-1 justify-end">
                                           <Button asChild variant="ghost" size="icon">
-                                            <Link href={`/admin/agents/form?id=${agent.id}`}><Pencil className="h-4 w-4"/></Link>
+                                            <Link href={`/admin/agents/form?id=${agent.id}&tab=agents`}><Pencil className="h-4 w-4"/></Link>
                                           </Button>
                                           <AlertDialogTrigger asChild>
                                               <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setAgentToDelete(agent)}>
@@ -527,7 +527,7 @@ function AdminDashboardComponent() {
                                       <TableCell className="text-right">
                                         <div className="flex gap-1 justify-end">
                                           <Button asChild variant="ghost" size="icon">
-                                            <Link href={`/admin/testimonials/form?id=${testimonial.id}`}><Pencil className="h-4 w-4"/></Link>
+                                            <Link href={`/admin/testimonials/form?id=${testimonial.id}&tab=testimonials`}><Pencil className="h-4 w-4"/></Link>
                                           </Button>
                                           <AlertDialogTrigger asChild>
                                               <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setTestimonialToDelete(testimonial)}>
