@@ -5,7 +5,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, Loader2, Save, Upload, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -44,7 +44,6 @@ function ConfigForm() {
   const { toast } = useToast();
   
   const [loading, setLoading] = useState(true);
-  const [currentConfig, setCurrentConfig] = useState<SiteConfig | null>(null);
   
   const form = useForm<ConfigFormValues>({
     resolver: zodResolver(configFormSchema),
@@ -65,7 +64,6 @@ function ConfigForm() {
     getSiteConfig()
       .then(data => {
         if (data) {
-            setCurrentConfig(data);
             form.reset({
                 contactPhone: data.contactPhone || '',
                 contactEmail: data.contactEmail || '',
@@ -86,9 +84,9 @@ function ConfigForm() {
         const configToSave = {
             ...data,
             socials: {
-                facebook: data.facebookUrl || '',
-                instagram: data.instagramUrl || '',
-                twitter: data.twitterUrl || '',
+                facebook: data.facebookUrl,
+                instagram: data.instagramUrl,
+                twitter: data.twitterUrl,
             }
         };
 
