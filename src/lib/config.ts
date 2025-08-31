@@ -16,7 +16,7 @@ const cleanData = (obj: any): any => {
     if (Array.isArray(obj)) {
         return obj
             .map(v => (v && typeof v === 'object') ? cleanData(v) : v)
-            .filter(v => v !== null && v !== undefined && v !== '');
+            .filter(v => v !== null && v !== undefined); // Allow empty strings in arrays
     }
     if (obj instanceof Timestamp || obj instanceof File) {
         return obj;
@@ -26,11 +26,8 @@ const cleanData = (obj: any): any => {
         for (const key in obj) {
             if (Object.prototype.hasOwnProperty.call(obj, key)) {
                 const value = obj[key];
-                if (value !== null && value !== undefined && value !== '') {
-                    const cleanedValue = (value && typeof value === 'object') ? cleanData(value) : value;
-                    if (cleanedValue !== null && cleanedValue !== undefined && cleanedValue !== '') {
-                        newObj[key] = cleanedValue;
-                    }
+                if (value !== null && value !== undefined) {
+                    newObj[key] = (value && typeof value === 'object') ? cleanData(value) : value;
                 }
             }
         }
@@ -77,10 +74,11 @@ export async function updateSiteConfig(
         
         let logoUrl = currentConfig?.logoUrl;
 
+        // If a new logo file is provided, upload it and delete the old one
         if (logoFile) {
-            if (logoUrl) {
+            if (currentConfig?.logoUrl) {
                 try {
-                    const oldImageRef = ref(storage, logoUrl);
+                    const oldImageRef = ref(storage, currentConfig.logoUrl);
                     await deleteObject(oldImageRef);
                 } catch(e) {
                     console.warn("Old logo not found or failed to delete, continuing with update...", e);
@@ -89,10 +87,11 @@ export async function updateSiteConfig(
             const logoRef = ref(storage, `site/logo_${Date.now()}_${logoFile.name}`);
             await uploadBytes(logoRef, logoFile);
             logoUrl = await getDownloadURL(logoRef);
-
-        } else if (logoRemoved && logoUrl) {
+        } 
+        // If no new file, but the logo was marked for removal, delete the old one
+        else if (logoRemoved && currentConfig?.logoUrl) {
             try {
-                const oldImageRef = ref(storage, logoUrl);
+                const oldImageRef = ref(storage, currentConfig.logoUrl);
                 await deleteObject(oldImageRef);
             } catch(e) {
                 console.warn("Failed to delete logo, continuing with update...", e);

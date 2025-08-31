@@ -32,9 +32,9 @@ const configFormSchema = z.object({
   leadNotificationEmail: z.string().email('Por favor, ingrese un email válido.').optional().or(z.literal('')),
   address: z.string().min(1, 'La dirección es requerida.'),
   officeHours: z.string().min(1, 'El horario es requerido.'),
-  facebookUrl: z.string().url({ message: "Por favor ingrese una URL válida." }).or(z.literal('')),
-  instagramUrl: z.string().url({ message: "Por favor ingrese una URL válida." }).or(z.literal('')),
-  twitterUrl: z.string().url({ message: "Por favor ingrese una URL válida." }).or(z.literal('')),
+  facebookUrl: z.string().url({ message: "Por favor ingrese una URL válida." }).optional().or(z.literal('')),
+  instagramUrl: z.string().url({ message: "Por favor ingrese una URL válida." }).optional().or(z.literal('')),
+  twitterUrl: z.string().url({ message: "Por favor ingrese una URL válida." }).optional().or(z.literal('')),
 });
 
 type ConfigFormValues = z.infer<typeof configFormSchema>;
@@ -102,7 +102,6 @@ function ConfigForm() {
   async function onSubmit(data: ConfigFormValues) {
     try {
         const wasLogoRemoved = !logoPreview && !!currentConfig?.logoUrl;
-
         await updateSiteConfig(data, currentConfig, logoFile || undefined, wasLogoRemoved);
         
         toast({ title: 'Configuración Actualizada', description: 'Los cambios se guardaron correctamente.' });
@@ -258,5 +257,3 @@ export default function ConfigFormPage() {
         </Suspense>
     )
 }
-
-    
