@@ -103,20 +103,7 @@ function ConfigForm() {
 
   async function onSubmit(data: ConfigFormValues) {
     try {
-        const payload: Partial<SiteConfig> = {
-            contactPhone: data.contactPhone,
-            contactEmail: data.contactEmail,
-            leadNotificationEmail: data.leadNotificationEmail,
-            address: data.address,
-            officeHours: data.officeHours,
-            socials: {
-                facebook: data.facebookUrl || '',
-                instagram: data.instagramUrl || '',
-                twitter: data.twitterUrl || '',
-            },
-        };
-
-        await updateSiteConfig(payload, logoFile || undefined, logoPreview);
+        await updateSiteConfig(data, logoFile || undefined, logoPreview);
         toast({ title: 'Configuración Actualizada', description: 'Los cambios se guardaron correctamente.' });
         router.push('/admin?tab=config');
         router.refresh();
