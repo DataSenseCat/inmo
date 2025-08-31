@@ -339,6 +339,11 @@ export default function AdminDashboard() {
                               </TableBody>
                            </Table>
                         </div>
+                        <div className="text-center mt-6">
+                            <Button asChild variant="outline">
+                                <Link href="/emprendimientos">Ver Todos los Emprendimientos</Link>
+                            </Button>
+                        </div>
                     </TabsContent>
                     
                     <TabsContent value="agents" className="p-6">
