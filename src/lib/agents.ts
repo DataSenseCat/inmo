@@ -73,12 +73,15 @@ export async function updateAgent(id: string, data: Partial<Agent>, photoFile?: 
             photoUrl = await getDownloadURL(imageRef);
         }
         
-        const updatePayload: Partial<Agent> = {
+        const updatePayload = {
             ...data,
-            bio: data.bio || '',
             photoUrl: photoUrl,
             updatedAt: Timestamp.now(),
         };
+        
+        // Remove undefined fields before updating
+        Object.keys(updatePayload).forEach(key => updatePayload[key as keyof typeof updatePayload] === undefined && delete updatePayload[key as keyof typeof updatePayload]);
+
 
         await updateDoc(docRef, updatePayload);
     } catch (error) {
