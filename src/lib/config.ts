@@ -1,12 +1,26 @@
 
 'use server';
 
-import { doc, getDoc, setDoc, Timestamp, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import type { SiteConfig } from '@/models/site-config';
 
 const CONFIG_DOC_ID = 'main'; 
+
+// Helper to remove undefined, null, or empty string values from an object
+const cleanData = (obj: any): any => {
+    if (Array.isArray(obj)) {
+        return obj.map(v => (v && typeof v === 'object') ? cleanData(v) : v)
+                   .filter(v => v !== null && v !== undefined && v !== '');
+    } else if (obj && typeof obj === 'object' && !(obj instanceof Timestamp) && !(obj instanceof File)) {
+        return Object.entries(obj)
+            .map(([k, v]) => [k, v && typeof v === 'object' ? cleanData(v) : v])
+            .reduce((a, [k, v]) => (v === null || v === undefined || v === '' ? a : (a[k as keyof any] = v, a)), {} as any);
+    }
+    return obj;
+};
+
 
 export async function getSiteConfig(): Promise<SiteConfig | null> {
     try {
@@ -43,13 +57,12 @@ export async function updateSiteConfig(
     try {
         const docRef = doc(db, 'siteConfig', CONFIG_DOC_ID);
         
-        const configData: any = {
+        let configData: any = {
             ...data,
             updatedAt: Timestamp.now()
         };
 
         if (logoFile) {
-            // 1. Upload new logo, delete old one if it exists
             if (currentConfig?.logoUrl) {
                 try {
                     const oldImageRef = ref(storage, currentConfig.logoUrl);
@@ -63,19 +76,18 @@ export async function updateSiteConfig(
             configData.logoUrl = await getDownloadURL(logoRef);
 
         } else if (logoRemoved && currentConfig?.logoUrl) {
-            // 2. If no new file but logo was removed, delete the old one
             try {
                 const oldImageRef = ref(storage, currentConfig.logoUrl);
                 await deleteObject(oldImageRef);
             } catch(e) {
                 console.warn("Failed to delete logo, continuing with update...", e);
             }
-            configData.logoUrl = ''; // Set to empty string to remove from db
+            configData.logoUrl = '';
         }
-        // 3. If no new file and logo was not removed, logoUrl is not added to configData,
-        // so it keeps its previous value in Firestore due to merge:true.
 
-        await setDoc(docRef, configData, { merge: true });
+        const cleanedConfigData = cleanData(configData);
+
+        await setDoc(docRef, cleanedConfigData, { merge: true });
     } catch (error) {
         console.error("Error updating site config: ", error);
         throw new Error("Failed to update site config.");
