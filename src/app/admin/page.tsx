@@ -3,7 +3,7 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Building, DollarSign, Filter, Layers, Search, Trash2, Users, CheckCircle, RefreshCw, Plus, Upload, Pencil, Eye, AlertTriangle, Mail, User, Settings, ExternalLink, Star } from 'lucide-react';
+import { Building, DollarSign, Filter, Layers, Search, Trash2, Users, CheckCircle, RefreshCw, Plus, Upload, Pencil, Eye, AlertTriangle, Mail, User, Settings, ExternalLink, Star, MessageSquare } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -46,6 +46,7 @@ function AdminDashboardComponent() {
   const [developmentToDelete, setDevelopmentToDelete] = useState<Development | null>(null);
   const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
   const [testimonialToDelete, setTestimonialToDelete] = useState<Testimonial | null>(null);
+  const [leadToView, setLeadToView] = useState<Lead | null>(null);
   
   const activeTab = searchParams.get('tab') || 'properties';
 
@@ -467,13 +468,13 @@ function AdminDashboardComponent() {
                                       <TableCell className="font-medium">{lead.name}</TableCell>
                                       <TableCell>{lead.email}</TableCell>
                                       <TableCell>{lead.phone || '-'}</TableCell>
-                                      <TableCell>{lead.subject}</TableCell>
+                                      <TableCell className="max-w-xs truncate">{lead.subject}</TableCell>
                                       <TableCell className="text-right">
-                                        <Button asChild variant="outline" size="sm">
-                                            <a href={`mailto:${lead.email}`}>
-                                                <Mail className="mr-2 h-4 w-4"/> Responder
-                                            </a>
-                                        </Button>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="outline" size="sm" onClick={() => setLeadToView(lead)}>
+                                                <Eye className="mr-2 h-4 w-4"/> Ver Detalle
+                                            </Button>
+                                        </AlertDialogTrigger>
                                       </TableCell>
                                     </TableRow>
                                   ))) : (
@@ -584,6 +585,64 @@ function AdminDashboardComponent() {
             </CardContent>
         </Card>
       </div>
+
+        <AlertDialog open={!!leadToView} onOpenChange={(open) => !open && setLeadToView(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Detalle del Lead</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Recibido el {leadToView?.createdAt?.toDate().toLocaleString()}
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                {leadToView && (
+                    <div className="text-sm space-y-4">
+                        <div>
+                            <h4 className="font-semibold">Nombre</h4>
+                            <p className="text-muted-foreground">{leadToView.name}</p>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold">Email</h4>
+                            <p className="text-muted-foreground">{leadToView.email}</p>
+                        </div>
+                        {leadToView.phone && (
+                            <div>
+                                <h4 className="font-semibold">Teléfono</h4>
+                                <p className="text-muted-foreground">{leadToView.phone}</p>
+                            </div>
+                        )}
+                        <div>
+                            <h4 className="font-semibold">Preferencia de Contacto</h4>
+                            <p className="text-muted-foreground capitalize">{leadToView.contactPreference}</p>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold">Asunto</h4>
+                            <p className="text-muted-foreground">{leadToView.subject}</p>
+                        </div>
+                        <div className="p-3 bg-muted/50 rounded-md border">
+                            <h4 className="font-semibold">Mensaje</h4>
+                            <p className="text-muted-foreground whitespace-pre-wrap">{leadToView.message}</p>
+                        </div>
+                    </div>
+                )}
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setLeadToView(null)}>Cerrar</AlertDialogCancel>
+                    {leadToView && (
+                        <div className="flex gap-2">
+                             <Button asChild variant="secondary">
+                                <a href={`https://wa.me/${(leadToView.phone || siteConfig?.contactPhone)?.replace(/\s|-/g, '')}`} target="_blank">
+                                    <MessageSquare className="mr-2 h-4 w-4"/> WhatsApp
+                                </a>
+                            </Button>
+                            <Button asChild>
+                                <a href={`mailto:${leadToView.email}`}>
+                                    <Mail className="mr-2 h-4 w-4"/> Responder Email
+                                </a>
+                            </Button>
+                        </div>
+                    )}
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
 
        <AlertDialog open={!!propertyToDelete} onOpenChange={(open) => !open && setPropertyToDelete(null)}>
             <AlertDialogContent>

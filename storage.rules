@@ -1,0 +1,13 @@
+
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Regla permisiva para desarrollo: permite leer y escribir a cualquiera.
+    // Para producción, deberías restringir esto a usuarios autenticados.
+    // Ejemplo: allow read, write: if request.auth != null;
+    match /{allPaths=**} {
+      allow read, write;
+    }
+  }
+}
