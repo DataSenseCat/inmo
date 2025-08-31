@@ -17,25 +17,25 @@ import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage
 import { db, storage } from '@/lib/firebase';
 import type { Development } from '@/models/development';
 
-// Helper function to clean data for Firestore
-const cleanData = (obj: any): any => {
-    if (obj === null || obj === undefined) return undefined;
-    if (Array.isArray(obj)) return obj.map(v => cleanData(v));
-    if (obj instanceof Timestamp || obj instanceof File) return obj;
-
-    if (typeof obj === 'object' && Object.keys(obj).length > 0) {
-         return Object.entries(obj).reduce((acc, [key, value]) => {
-            const cleanedValue = cleanData(value);
-            if (value === '' || value === 0) { // Keep empty strings and zero values
-                 acc[key as keyof typeof acc] = value;
-            } else if (cleanedValue !== undefined && cleanedValue !== null) {
-                acc[key as keyof typeof acc] = cleanedValue;
-            }
-            return acc;
-        }, {} as { [key: string]: any });
-    }
-    return obj;
+// Helper to prepare data by converting types and handling optionals
+const prepareDevelopmentData = (data: any) => {
+    return {
+        title: data.title || '',
+        location: data.location || '',
+        description: data.description || '',
+        status: data.status || 'planning',
+        isFeatured: data.isFeatured || false,
+        totalUnits: Number(data.totalUnits) || 0,
+        availableUnits: Number(data.availableUnits) || 0,
+        priceFrom: Number(data.priceFrom) || 0,
+        priceRange: {
+            min: Number(data.priceRange?.min) || 0,
+            max: Number(data.priceRange?.max) || 0,
+        },
+        deliveryDate: data.deliveryDate || '',
+    };
 };
+
 
 // Function to create a new development
 export async function createDevelopment(data: Omit<Development, 'id' | 'image' | 'createdAt' | 'updatedAt'>, image: File) {
@@ -44,14 +44,14 @@ export async function createDevelopment(data: Omit<Development, 'id' | 'image' |
         await uploadBytes(imageRef, image);
         const imageUrl = await getDownloadURL(imageRef);
         
-        const developmentData = {
-            ...cleanData(data),
+        const developmentPayload = {
+            ...prepareDevelopmentData(data),
             image: imageUrl,
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
         }
 
-        const docRef = await addDoc(collection(db, 'developments'), developmentData);
+        const docRef = await addDoc(collection(db, 'developments'), developmentPayload);
         return { id: docRef.id };
     } catch (error) {
         console.error("Error creating development: ", error);
@@ -64,12 +64,17 @@ export async function updateDevelopment(id: string, data: Partial<Development>, 
     try {
         const docRef = doc(db, 'developments', id);
         const currentDoc = await getDoc(docRef);
-        const currentData = currentDoc.data() as Development | undefined;
-        let imageUrl = currentData?.image;
+
+        if (!currentDoc.exists()) {
+            throw new Error("Development not found");
+        }
+        
+        const currentData = currentDoc.data() as Development;
+        let imageUrl = currentData.image;
 
         if (newImage) {
             // Delete old image if it exists
-            if (imageUrl) {
+            if (imageUrl && imageUrl.startsWith('https://firebasestorage.googleapis.com')) {
                 try {
                     const oldImageRef = ref(storage, imageUrl);
                     await deleteObject(oldImageRef);
@@ -83,16 +88,13 @@ export async function updateDevelopment(id: string, data: Partial<Development>, 
             imageUrl = await getDownloadURL(imageRef);
         }
 
-        const developmentData: any = {
-            ...cleanData(data),
+        const developmentPayload = {
+            ...prepareDevelopmentData(data),
+            image: imageUrl, // Persist existing or new image URL
             updatedAt: Timestamp.now(),
         };
 
-        if (imageUrl) {
-            developmentData.image = imageUrl;
-        }
-
-        await updateDoc(docRef, developmentData);
+        await updateDoc(docRef, developmentPayload);
     } catch (error) {
         console.error("Error updating development: ", error);
         throw new Error("Failed to update development.");
@@ -137,7 +139,7 @@ export async function deleteDevelopment(id: string): Promise<void> {
 
         if (docSnap.exists()) {
             const development = docSnap.data() as Development;
-            if (development.image) {
+            if (development.image && development.image.startsWith('https://firebasestorage.googleapis.com')) {
                 try {
                     const imageRef = ref(storage, development.image);
                     await deleteObject(imageRef);

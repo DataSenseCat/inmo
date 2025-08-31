@@ -17,31 +17,23 @@ import {
 import { db } from '@/lib/firebase';
 import type { Testimonial } from '@/models/testimonial';
 
-const cleanData = (obj: any): any => {
-    if (obj === null || obj === undefined) return undefined;
-    if (Array.isArray(obj)) return obj.map(v => cleanData(v));
-    if (obj instanceof Timestamp || obj instanceof File) return obj;
-
-    if (typeof obj === 'object' && Object.keys(obj).length > 0) {
-        return Object.entries(obj).reduce((acc, [key, value]) => {
-            const cleanedValue = cleanData(value);
-            if (cleanedValue !== undefined && cleanedValue !== null) {
-                acc[key as keyof typeof acc] = cleanedValue;
-            }
-            return acc;
-        }, {} as { [key: string]: any });
-    }
-    return obj;
+const prepareTestimonialData = (data: any) => {
+    return {
+        name: data.name || '',
+        comment: data.comment || '',
+        rating: Number(data.rating) || 0,
+        active: data.active === undefined ? true : data.active,
+    };
 };
 
 export async function createTestimonial(data: Omit<Testimonial, 'id' | 'createdAt' | 'updatedAt'>): Promise<{ id: string }> {
     try {
-        const testimonialData = {
-            ...cleanData(data),
+        const testimonialPayload = {
+            ...prepareTestimonialData(data),
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
         };
-        const docRef = await addDoc(collection(db, 'testimonials'), testimonialData);
+        const docRef = await addDoc(collection(db, 'testimonials'), testimonialPayload);
         return { id: docRef.id };
     } catch (error) {
         console.error("Error creating testimonial: ", error);
@@ -52,11 +44,11 @@ export async function createTestimonial(data: Omit<Testimonial, 'id' | 'createdA
 export async function updateTestimonial(id: string, data: Partial<Testimonial>): Promise<void> {
     try {
         const docRef = doc(db, 'testimonials', id);
-        const testimonialData = {
-            ...cleanData(data),
+        const testimonialPayload = {
+            ...prepareTestimonialData(data),
             updatedAt: Timestamp.now(),
         };
-        await updateDoc(docRef, testimonialData);
+        await updateDoc(docRef, testimonialPayload);
     } catch (error) {
         console.error("Error updating testimonial: ", error);
         throw new Error("Failed to update testimonial.");

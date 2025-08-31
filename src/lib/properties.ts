@@ -19,30 +19,31 @@ import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage
 import { db, storage } from '@/lib/firebase';
 import type { Property } from '@/models/property';
 
-// Helper function to clean data for Firestore
-const cleanData = (obj: any): any => {
-    // Make a shallow copy to avoid modifying the original object
-    const dataToClean = { ...obj };
-    // Don't store agentId directly in the property document
-    delete dataToClean.agentId; 
-    
-    if (dataToClean === null || dataToClean === undefined) return undefined;
-    if (Array.isArray(dataToClean)) return dataToClean.map(v => cleanData(v));
-    if (dataToClean instanceof Timestamp || dataToClean instanceof File) return dataToClean;
-
-    if (typeof dataToClean === 'object' && Object.keys(dataToClean).length > 0) {
-         return Object.entries(dataToClean).reduce((acc, [key, value]) => {
-            const cleanedValue = cleanData(value);
-            // Keep empty strings and zero values, but discard null/undefined
-            if (value === '' || value === 0 || value === false) {
-                 acc[key as keyof typeof acc] = value;
-            } else if (cleanedValue !== undefined && cleanedValue !== null) {
-                acc[key as keyof typeof acc] = cleanedValue;
-            }
-            return acc;
-        }, {} as { [key: string]: any });
-    }
-    return dataToClean;
+// Helper function to prepare data by converting types and handling optionals
+const preparePropertyData = (data: any) => {
+    return {
+        title: data.title || '',
+        description: data.description || '',
+        priceUSD: Number(data.priceUSD) || 0,
+        priceARS: Number(data.priceARS) || 0,
+        type: data.type || 'Casa',
+        operation: data.operation || 'Venta',
+        location: data.location || '',
+        address: data.address || '',
+        bedrooms: Number(data.bedrooms) || 0,
+        bathrooms: Number(data.bathrooms) || 0,
+        area: Number(data.area) || 0,
+        featured: data.featured || false,
+        active: data.active === undefined ? true : data.active,
+        contact: data.contact || { name: '', phone: '', email: '' },
+        features: data.features || {
+            cochera: false,
+            piscina: false,
+            dptoServicio: false,
+            quincho: false,
+            parrillero: false,
+        },
+    };
 };
 
 
@@ -57,14 +58,14 @@ export async function createProperty(data: Omit<Property, 'id' | 'images' | 'cre
             imageUrls.push({ url });
         }
         
-        const propertyData = {
-            ...cleanData(data),
+        const propertyPayload = {
+            ...preparePropertyData(data),
             images: imageUrls,
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
         }
 
-        const docRef = await addDoc(collection(db, 'properties'), propertyData);
+        const docRef = await addDoc(collection(db, 'properties'), propertyPayload);
         return { id: docRef.id };
     } catch (error) {
         console.error("Error creating property: ", error);
@@ -76,8 +77,9 @@ export async function createProperty(data: Omit<Property, 'id' | 'images' | 'cre
 export async function updateProperty(id: string, data: Partial<Property>, newImages?: File[]) {
     try {
         const docRef = doc(db, 'properties', id);
-        const propertyData: any = {
-            ...cleanData(data),
+        
+        const propertyPayload: any = {
+            ...preparePropertyData(data),
             updatedAt: Timestamp.now(),
         };
 
@@ -88,11 +90,13 @@ export async function updateProperty(id: string, data: Partial<Property>, newIma
             // Delete old images from storage
             if (currentProperty?.images && currentProperty.images.length > 0) {
                 for (const image of currentProperty.images) {
-                    try {
-                        const oldImageRef = ref(storage, image.url);
-                        await deleteObject(oldImageRef);
-                    } catch (storageError) {
-                        console.warn(`Could not delete old image ${image.url}:`, storageError);
+                    if (image.url && image.url.startsWith('https://firebasestorage.googleapis.com')) {
+                        try {
+                            const oldImageRef = ref(storage, image.url);
+                            await deleteObject(oldImageRef);
+                        } catch (storageError) {
+                            console.warn(`Could not delete old image ${image.url}:`, storageError);
+                        }
                     }
                 }
             }
@@ -105,10 +109,10 @@ export async function updateProperty(id: string, data: Partial<Property>, newIma
                 const url = await getDownloadURL(imageRef);
                 newImageUrls.push({ url });
             }
-            propertyData.images = newImageUrls;
+            propertyPayload.images = newImageUrls;
         }
 
-        await updateDoc(docRef, propertyData);
+        await updateDoc(docRef, propertyPayload);
     } catch (error) {
         console.error("Error updating property: ", error);
         throw new Error("Failed to update property.");
@@ -169,12 +173,14 @@ export async function deleteProperty(id: string): Promise<void> {
             const property = docSnap.data() as Property;
             if (property.images && property.images.length > 0) {
                 for (const image of property.images) {
-                    try {
-                        const imageRef = ref(storage, image.url);
-                        await deleteObject(imageRef);
-                    } catch (storageError) {
-                        // Log error but don't block deletion if an image fails to delete
-                        console.error(`Failed to delete image ${image.url} from storage:`, storageError);
+                    if (image.url && image.url.startsWith('https://firebasestorage.googleapis.com')) {
+                        try {
+                            const imageRef = ref(storage, image.url);
+                            await deleteObject(imageRef);
+                        } catch (storageError) {
+                            // Log error but don't block deletion if an image fails to delete
+                            console.error(`Failed to delete image ${image.url} from storage:`, storageError);
+                        }
                     }
                 }
             }
