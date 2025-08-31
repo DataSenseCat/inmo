@@ -17,7 +17,7 @@ import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage
 import { db, storage } from '@/lib/firebase';
 import type { Agent } from '@/models/agent';
 
-const cleanAgentData = (data: any) => {
+const cleanData = (data: any) => {
     const cleanedData: { [key: string]: any } = {};
     for (const key in data) {
         if (data[key] !== '' && data[key] !== undefined && data[key] !== null) {
@@ -29,22 +29,34 @@ const cleanAgentData = (data: any) => {
 
 export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'createdAt' | 'updatedAt'>, photoFile?: File) {
     try {
-        let photoUrl = '';
-        if (photoFile) {
-            const imageRef = ref(storage, `agents/${Date.now()}_${photoFile.name}`);
-            await uploadBytes(imageRef, photoFile);
-            photoUrl = await getDownloadURL(imageRef);
-        }
-        
-        const agentData = {
-            ...cleanAgentData(data),
-            photoUrl,
+        console.log("--- SIMULATING AGENT CREATION ---");
+        const agentData: any = {
+            ...cleanData(data),
+            bio: data.bio || '',
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
+        };
+
+        if (photoFile) {
+            console.log("Photo file provided:", photoFile.name);
+            const imageRef = ref(storage, `agents/${Date.now()}_${photoFile.name}`);
+            // await uploadBytes(imageRef, photoFile); // SIMULATED
+            // agentData.photoUrl = await getDownloadURL(imageRef); // SIMULATED
+            agentData.photoUrl = `https://fake-storage.com/agents/${photoFile.name}`;
+            console.log("Simulated photo upload. URL:", agentData.photoUrl);
+        } else {
+            console.log("No photo file provided.");
+            agentData.photoUrl = '';
         }
 
-        const docRef = await addDoc(collection(db, 'agents'), agentData);
-        return { id: docRef.id };
+        console.log("Data that would be sent to Firestore:", agentData);
+
+        // const docRef = await addDoc(collection(db, 'agents'), agentData); // SIMULATED
+        const simulatedId = `sim_${Date.now()}`;
+        console.log("--- AGENT CREATION SIMULATED SUCCESSFULLY ---");
+        console.log("--- Simulated Document ID:", simulatedId, "---");
+
+        return { id: simulatedId };
     } catch (error) {
         console.error("Error creating agent: ", error);
         throw new Error("Failed to create agent.");
