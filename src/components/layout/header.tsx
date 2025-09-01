@@ -1,4 +1,6 @@
 
+'use client';
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -6,12 +8,20 @@ import { Menu, Phone, Mail, User, Heart, Search } from 'lucide-react';
 import { Input } from '../ui/input';
 import Image from 'next/image';
 import type { SiteConfig } from '@/models/site-config';
+import { useEffect, useState } from 'react';
+import { getSiteConfig } from '@/lib/config';
 
-interface HeaderProps {
-  config: SiteConfig | null;
-}
+export function Header() {
+  const [config, setConfig] = useState<SiteConfig | null>(null);
 
-export function Header({ config }: HeaderProps) {
+  useEffect(() => {
+    async function fetchConfig() {
+      const configData = await getSiteConfig();
+      setConfig(configData);
+    }
+    fetchConfig();
+  }, []);
+
   return (
     <header className="sticky top-0 z-50 w-full bg-white shadow-md">
       {/* Top bar */}
@@ -33,7 +43,7 @@ export function Header({ config }: HeaderProps) {
               <Heart size={14} />
               <span>Favoritos</span>
             </Link>
-            <Link href="/admin/login" className="flex items-center gap-1.5 hover:text-primary">
+            <Link href="/admin" className="flex items-center gap-1.5 hover:text-primary">
               <User size={14} />
               <span>Admin</span>
             </Link>
@@ -55,9 +65,6 @@ export function Header({ config }: HeaderProps) {
             <Link href="/tasaciones" className="text-gray-600 hover:text-primary">Tasaciones</Link>
             <Link href="/la-empresa" className="text-gray-600 hover:text-primary">La Empresa</Link>
             <Link href="/contact" className="text-gray-600 hover:text-primary">Contacto</Link>
-            <Button size="sm" asChild>
-              <Link href="/admin">Admin</Link>
-            </Button>
           </nav>
 
           <div className="hidden lg:flex items-center gap-2">
@@ -67,6 +74,9 @@ export function Header({ config }: HeaderProps) {
                 <Search className="h-4 w-4" />
               </Button>
             </div>
+            <Button size="sm" asChild>
+              <Link href="/admin">Publicar</Link>
+            </Button>
           </div>
           
           <div className="lg:hidden">
@@ -88,8 +98,8 @@ export function Header({ config }: HeaderProps) {
                   <Link href="/tasaciones" className="text-muted-foreground hover:text-primary">Tasaciones</Link>
                   <Link href="/la-empresa" className="text-muted-foreground hover:text-primary">La Empresa</Link>
                   <Link href="/contact" className="text-muted-foreground hover:text-primary">Contacto</Link>
-                  <Button asChild>
-                    <Link href="/admin">Admin</Link>
+                   <Button asChild>
+                    <Link href="/admin">Publicar</Link>
                   </Button>
                 </nav>
               </SheetContent>
