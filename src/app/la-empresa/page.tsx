@@ -1,3 +1,4 @@
+'use server';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -57,7 +58,6 @@ const getIconFor = (name: string, iconMap: { [key: string]: React.ElementType })
 
 export default async function AboutUsPage() {
     const agents = await getAgents();
-    const activeAgents = agents.filter(a => a.active);
     const config = await getSiteConfig();
     const testimonials = await getTestimonials(true);
 
@@ -168,7 +168,7 @@ export default async function AboutUsPage() {
                         </p>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {activeAgents.map((agent) => (
+                        {agents.map((agent) => (
                             <Card key={agent.id} className="text-center p-6 hover:shadow-lg transition-shadow">
                                 <Avatar className="h-24 w-24 mx-auto mb-4 ring-4 ring-primary/20">
                                     <AvatarImage src={agent.photoUrl} alt={agent.name} data-ai-hint="person photo" />

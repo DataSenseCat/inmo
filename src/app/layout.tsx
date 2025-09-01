@@ -1,24 +1,31 @@
-import type { Metadata } from 'next';
+
+'use client';
+import { useEffect, useState } from 'react';
 import './globals.css';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { Toaster } from "@/components/ui/toaster";
 import { getSiteConfig } from '@/lib/config';
+import type { SiteConfig } from '@/models/site-config';
 
-export const metadata: Metadata = {
-  title: 'Guerrero Inmobiliaria',
-  description: 'Encuentre su propiedad ideal en Catamarca.',
-  icons: {
-    icon: "/favicon.ico",
-  }
-};
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const siteConfig = await getSiteConfig();
+  const [siteConfig, setSiteConfig] = useState<SiteConfig | null>(null);
+
+  useEffect(() => {
+    // Set a default title on mount
+    document.title = 'Guerrero Inmobiliaria';
+    
+    async function fetchConfig() {
+        const config = await getSiteConfig();
+        setSiteConfig(config);
+    }
+    fetchConfig();
+  }, []);
 
   return (
     <html lang="en" suppressHydrationWarning>

@@ -1,5 +1,5 @@
 
-"use client";
+'use client';
 
 import { useSearchParams } from 'next/navigation';
 import { useMemo, Suspense, useState, useEffect } from 'react';
@@ -43,6 +43,9 @@ function PropertiesList() {
 
   return (
     <>
+      <div className="mb-4">
+        <p className="text-sm text-muted-foreground">Mostrando {filteredProperties.length} de {allProperties.length} propiedades</p>
+      </div>
       {filteredProperties.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProperties.map(property => (
@@ -69,7 +72,9 @@ function PropertiesPageContent() {
           <SearchForm />
         </div>
       </div>
-      <PropertiesList />
+      <Suspense fallback={<PropertiesSkeleton />}>
+        <PropertiesList />
+      </Suspense>
     </div>
   );
 }

@@ -1,4 +1,3 @@
-
 'use server';
 
 import {
@@ -20,7 +19,6 @@ import { db, storage } from '@/lib/firebase';
 import type { Property } from '@/models/property';
 import { firebaseTimestampToString } from './utils';
 
-// This function runs on the server
 const preparePropertyDataForSave = (data: any) => {
     return {
         title: data.title || '',
@@ -48,7 +46,7 @@ const preparePropertyDataForSave = (data: any) => {
     };
 };
 
-// This function now runs on the client
+// This function now runs on the SERVER
 export async function createProperty(data: Omit<Property, 'id' | 'images' | 'createdAt' | 'updatedAt'>, imageFiles: File[]): Promise<{ id: string }> {
     try {
         if (!imageFiles || imageFiles.length === 0) {
@@ -81,7 +79,7 @@ export async function createProperty(data: Omit<Property, 'id' | 'images' | 'cre
     }
 }
 
-// This function now runs on the client
+// This function now runs on the SERVER
 export async function updateProperty(id: string, data: Partial<Property>, newImageFiles?: File[]): Promise<void> {
     try {
         const docRef = doc(db, 'properties', id);
@@ -128,7 +126,7 @@ export async function updateProperty(id: string, data: Partial<Property>, newIma
     }
 }
 
-// This function runs on the server
+// This function runs on server or client
 export async function getProperties(): Promise<Property[]> {
   try {
     const propertiesCol = collection(db, 'properties');
@@ -149,7 +147,7 @@ export async function getProperties(): Promise<Property[]> {
   }
 }
 
-// This function runs on the server
+// This function runs on server or client
 export async function getFeaturedProperties(): Promise<Property[]> {
     try {
         const propertiesCol = collection(db, 'properties');
@@ -193,7 +191,7 @@ export async function getPropertyById(id: string): Promise<Property | null> {
     }
 }
 
-// This function now runs on the client
+// This function now runs on the SERVER
 export async function deleteProperty(id: string): Promise<void> {
     try {
         const docRef = doc(db, 'properties', id);

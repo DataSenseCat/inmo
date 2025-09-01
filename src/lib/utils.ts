@@ -51,3 +51,18 @@ export function fileToDataUri(file: File): Promise<string> {
     reader.readAsDataURL(file);
   });
 }
+
+/**
+ * Converts a Data URI string to a Buffer and extracts the MIME type.
+ * @param dataUri The Data URI string to convert.
+ * @returns An object containing the buffer and the MIME type.
+ */
+export function dataUriToBuffer(dataUri: string): { buffer: Buffer; mimeType: string } {
+    if (!dataUri.includes(',')) {
+        throw new Error('Invalid Data URI format');
+    }
+    const [meta, base64Data] = dataUri.split(',');
+    const mimeType = meta.split(':')[1].split(';')[0];
+    const buffer = Buffer.from(base64Data, 'base64');
+    return { buffer, mimeType };
+}

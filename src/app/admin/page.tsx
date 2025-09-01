@@ -19,7 +19,7 @@ import Link from 'next/link';
 import { deleteProperty, getProperties } from '@/lib/properties';
 import { deleteDevelopment, getDevelopments } from '@/lib/developments';
 import { getLeads } from '@/lib/leads';
-import { getAgents, deleteAgent } from '@/lib/agents';
+import { getAllAgents, deleteAgent } from '@/lib/agents';
 import { getTestimonials, deleteTestimonial } from '@/lib/testimonials';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -57,7 +57,7 @@ function AdminDashboardComponent() {
             getProperties(), 
             getDevelopments(),
             getLeads(),
-            getAgents(),
+            getAllAgents(),
             getSiteConfig(),
             getTestimonials(),
           ]);
@@ -87,7 +87,7 @@ function AdminDashboardComponent() {
     } else {
         loadData();
     }
-  }, [router, toast]);
+  }, [router]);
 
   const handleDeleteProperty = async () => {
     if (!propertyToDelete) return;
