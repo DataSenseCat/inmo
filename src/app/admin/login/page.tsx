@@ -23,13 +23,13 @@ import { AlertCircle } from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().email("Por favor, ingrese un email válido."),
-  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres."),
+  password: z.string().min(1, "La contraseña es requerida."),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-const ADMIN_EMAIL = "rlolin1972@gmail.com";
-const ADMIN_PASS = "RoccoLolo2021?";
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "rlolin1972@gmail.com";
+const ADMIN_PASS = process.env.NEXT_PUBLIC_ADMIN_PASS || "RoccoLolo2021?";
 
 export default function AdminLoginPage() {
   const router = useRouter();
