@@ -1,37 +1,27 @@
 
 'use server';
 
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import type { Admin } from '@/models/admin';
 
 /**
- * Verifica si las credenciales coinciden con un documento en la colección 'admins'.
+ * Autentica al administrador comparando las credenciales proporcionadas
+ * con las variables de entorno seguras.
+ * Este método es simple, directo y evita la complejidad de la base de datos para el login.
  */
 export async function authenticateAdmin({ email, password }: Omit<Admin, 'id'>): Promise<boolean> {
-  try {
-    const adminsCollection = collection(db, 'admins');
-    const q = query(adminsCollection, where('email', '==', email));
-    const querySnapshot = await getDocs(q);
+  const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+  const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
 
-    if (querySnapshot.empty) {
-      console.log('No admin found with that email.');
-      return false;
-    }
+  if (!adminEmail || !adminPassword) {
+    console.error("Las variables de entorno del administrador (EMAIL/PASSWORD) no están configuradas.");
+    return false;
+  }
 
-    const adminDoc = querySnapshot.docs[0];
-    const adminData = adminDoc.data() as Admin;
-
-    // ¡IMPORTANTE! Esta es una comparación de texto plano, no es segura para producción.
-    // En un entorno real, la contraseña debería estar hasheada.
-    if (adminData.password === password) {
-      return true;
-    } else {
-      console.log('Admin password does not match.');
-      return false;
-    }
-  } catch (error) {
-    console.error("Error authenticating admin from Firestore: ", error);
+  if (email === adminEmail && password === adminPassword) {
+    console.log("Autenticación exitosa.");
+    return true;
+  } else {
+    console.log("Fallo de autenticación: las credenciales no coinciden.");
     return false;
   }
 }
