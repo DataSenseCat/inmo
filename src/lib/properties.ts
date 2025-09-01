@@ -1,3 +1,4 @@
+
 import {
   addDoc,
   collection,
@@ -17,32 +18,6 @@ import { db, storage } from '@/lib/firebase';
 import type { Property } from '@/models/property';
 import { firebaseTimestampToString, dataUriToBuffer } from './utils';
 
-const preparePropertyDataForSave = (data: any) => {
-    return {
-        title: data.title || '',
-        description: data.description || '',
-        priceUSD: Number(data.priceUSD) || 0,
-        priceARS: Number(data.priceARS) || 0,
-        type: data.type || 'Casa',
-        operation: data.operation || 'Venta',
-        location: data.location || '',
-        address: data.address || '',
-        bedrooms: Number(data.bedrooms) || 0,
-        bathrooms: Number(data.bathrooms) || 0,
-        area: Number(data.area) || 0,
-        featured: data.featured || false,
-        active: data.active === undefined ? true : data.active,
-        agentId: data.agentId || '',
-        contact: data.contact || { name: '', phone: '', email: '' },
-        features: data.features || {
-            cochera: false,
-            piscina: false,
-            dptoServicio: false,
-            quincho: false,
-            parrillero: false,
-        },
-    };
-};
 
 export async function createProperty(data: Omit<Property, 'id' | 'images' | 'createdAt' | 'updatedAt'>, imageDataUris: string[]): Promise<{ id: string }> {
     try {
@@ -51,7 +26,7 @@ export async function createProperty(data: Omit<Property, 'id' | 'images' | 'cre
         }
 
         const propertyPayload = {
-            ...preparePropertyDataForSave(data),
+            ...data,
             images: [],
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
@@ -83,7 +58,7 @@ export async function updateProperty(id: string, data: Partial<Property>, newIma
         const docRef = doc(db, 'properties', id);
         
         const updatePayload: any = {
-            ...preparePropertyDataForSave(data),
+            ...data,
             updatedAt: Timestamp.now(),
         };
         
@@ -129,9 +104,9 @@ export async function updateProperty(id: string, data: Partial<Property>, newIma
 export async function getProperties(): Promise<Property[]> {
   try {
     const propertiesCol = collection(db, 'properties');
-    const q = query(propertiesCol, where('active', '==', true), orderBy('createdAt', 'desc'));
+    const q = query(propertiesCol, orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => {
+    const allProperties = snapshot.docs.map(doc => {
       const data = doc.data();
       return { 
         id: doc.id,
@@ -140,6 +115,7 @@ export async function getProperties(): Promise<Property[]> {
         updatedAt: firebaseTimestampToString(data.updatedAt),
       } as Property;
     });
+    return allProperties;
   } catch (error) {
     console.error("Error getting properties (the app will proceed with an empty list): ", error);
     return [];
@@ -149,7 +125,7 @@ export async function getProperties(): Promise<Property[]> {
 export async function getFeaturedProperties(): Promise<Property[]> {
     try {
         const propertiesCol = collection(db, 'properties');
-        const q = query(propertiesCol, where('featured', '==', true), orderBy('createdAt', 'desc'), limit(10));
+        const q = query(propertiesCol, where('featured', '==', true), where('active', '==', true), limit(10));
         const snapshot = await getDocs(q);
         
         const featured = snapshot.docs.map(doc => {
@@ -162,8 +138,7 @@ export async function getFeaturedProperties(): Promise<Property[]> {
           } as Property;
         });
 
-        // Filtrar por 'activas' en el lado del cliente y tomar las primeras 4
-        return featured.filter(p => p.active).slice(0, 4);
+        return featured.slice(0, 4);
 
     } catch (error) {
         console.error("Error getting featured properties (the app will proceed with an empty list): ", error);

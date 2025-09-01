@@ -111,9 +111,10 @@ function PropertyForm() {
       operation: 'Venta',
       featured: false,
       active: true,
-      bedrooms: 0,
-      bathrooms: 0,
-      area: 0,
+      bedrooms: '',
+      bathrooms: '',
+      area: '',
+      totalM2: '',
       features: {
         cochera: false,
         piscina: false,
@@ -121,8 +122,8 @@ function PropertyForm() {
         quincho: false,
         parrillero: false,
       },
-      priceUSD: 0,
-      priceARS: 0,
+      priceUSD: '',
+      priceARS: '',
       agentId: '',
     },
   });
@@ -141,6 +142,7 @@ function PropertyForm() {
                     bedrooms: data.bedrooms || '',
                     bathrooms: data.bathrooms || '',
                     area: data.area || '',
+                    totalM2: data.totalM2 || '',
                     priceUSD: data.priceUSD || '',
                     priceARS: data.priceARS || '',
                 }
@@ -193,6 +195,12 @@ function PropertyForm() {
 
         const propertyPayload = {
             ...data,
+            bedrooms: Number(data.bedrooms) || 0,
+            bathrooms: Number(data.bathrooms) || 0,
+            area: Number(data.area) || 0,
+            totalM2: Number(data.totalM2) || 0,
+            priceUSD: Number(data.priceUSD) || 0,
+            priceARS: Number(data.priceARS) || 0,
             contact: {
                 name: selectedAgent.name,
                 phone: selectedAgent.phone,
@@ -217,6 +225,7 @@ function PropertyForm() {
     } catch (error) {
         console.error('Failed to save property:', error);
         toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo guardar la propiedad.' });
+    } finally {
         setIsSubmitting(false);
     }
   }
@@ -338,7 +347,7 @@ function PropertyForm() {
 
             <TabsContent value="details" className="mt-6">
                 <Card><CardContent className="p-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
                     <FormField control={form.control} name="bedrooms" render={({ field }) => (
                         <FormItem>
                             <FormLabel>Habitaciones</FormLabel>
@@ -355,8 +364,15 @@ function PropertyForm() {
                     )}/>
                      <FormField control={form.control} name="area" render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Metros cuadrados</FormLabel>
+                            <FormLabel>M² cubiertos</FormLabel>
                             <FormControl><Input type="number" placeholder="Ej: 120" {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}/>
+                     <FormField control={form.control} name="totalM2" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>M² totales</FormLabel>
+                            <FormControl><Input type="number" placeholder="Ej: 300" {...field} /></FormControl>
                             <FormMessage />
                         </FormItem>
                     )}/>
