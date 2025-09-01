@@ -3,7 +3,7 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Building, DollarSign, Filter, Layers, Search, Trash2, Users, CheckCircle, RefreshCw, Plus, Upload, Pencil, Eye, AlertTriangle, Mail, User, Settings, ExternalLink, Star, MessageSquare } from 'lucide-react';
+import { Building, Filter, Layers, Search, Trash2, Users, CheckCircle, Plus, Pencil, Eye, AlertTriangle, Mail, User, Settings, Star, MessageSquare } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -46,21 +46,27 @@ function AdminDashboardComponent() {
 
   async function loadData() {
       setLoading(true);
-      const [props, devs, leadData, agentData, configData, testimonialData] = await Promise.all([
-        getProperties(), 
-        getDevelopments(),
-        getLeads(),
-        getAllAgents(),
-        getSiteConfig(),
-        getTestimonials(),
-      ]);
-      setProperties(props);
-      setDevelopments(devs);
-      setLeads(leadData);
-      setAgents(agentData);
-      setSiteConfig(configData);
-      setTestimonials(testimonialData);
-      setLoading(false);
+      try {
+        const [props, devs, leadData, agentData, configData, testimonialData] = await Promise.all([
+          getProperties(), 
+          getDevelopments(),
+          getLeads(),
+          getAllAgents(),
+          getSiteConfig(),
+          getTestimonials(),
+        ]);
+        setProperties(props);
+        setDevelopments(devs);
+        setLeads(leadData);
+        setAgents(agentData);
+        setSiteConfig(configData);
+        setTestimonials(testimonialData);
+      } catch (error) {
+        console.error("Failed to load dashboard data:", error);
+        toast({ variant: 'destructive', title: 'Error de Carga', description: 'No se pudieron cargar los datos del panel.' });
+      } finally {
+        setLoading(false);
+      }
   }
   
   useEffect(() => {
@@ -182,7 +188,6 @@ function AdminDashboardComponent() {
             <p className="text-muted-foreground">Gestiona propiedades, leads y operaciones de la inmobiliaria</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline"><Upload className="mr-2 h-4 w-4" /> Exportar</Button>
             <Button asChild>
                 <Link href="/admin/properties/form">
                     <Plus className="mr-2 h-4 w-4" /> Nueva Propiedad
@@ -682,5 +687,3 @@ export default function AdminDashboard() {
         </Suspense>
     )
 }
-
-    
