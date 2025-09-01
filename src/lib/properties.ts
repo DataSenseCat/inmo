@@ -129,9 +129,9 @@ export async function updateProperty(id: string, data: Partial<Property>, newIma
 export async function getProperties(): Promise<Property[]> {
   try {
     const propertiesCol = collection(db, 'properties');
-    const q = query(propertiesCol, where('active', '==', true), orderBy('createdAt', 'desc'));
+    const q = query(propertiesCol, orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => {
+    const allProperties = snapshot.docs.map(doc => {
       const data = doc.data();
       return { 
         id: doc.id,
@@ -140,6 +140,8 @@ export async function getProperties(): Promise<Property[]> {
         updatedAt: firebaseTimestampToString(data.updatedAt),
       } as Property;
     });
+    // Filter active properties on the client-side to avoid complex indexes
+    return allProperties.filter(p => p.active);
   } catch (error) {
     console.error("Error getting properties (the app will proceed with an empty list): ", error);
     return [];
