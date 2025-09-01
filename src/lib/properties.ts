@@ -53,25 +53,29 @@ export async function createProperty(data: Omit<Property, 'id' | 'images' | 'cre
             throw new Error("At least one image is required to create a property.");
         }
 
-        const imageUrls = [];
-        for (const imageFile of imageFiles) {
-            if (imageFile && imageFile.size > 0) {
-                const imageRef = ref(storage, `properties/${Date.now()}_${imageFile.name}`);
-                await uploadBytes(imageRef, imageFile);
-                const url = await getDownloadURL(imageRef);
-                imageUrls.push({ url });
-            }
-        }
-        
+        // 1. Create property with empty images array
         const propertyPayload = {
             ...preparePropertyDataForSave(data),
-            images: imageUrls,
+            images: [], // Initialize empty
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
         }
-
         const docRef = await addDoc(collection(db, 'properties'), propertyPayload);
-        return { id: docRef.id };
+        const propId = docRef.id;
+
+        // 2. Upload images
+        const imageUrls = [];
+        for (const imageFile of imageFiles) {
+            const imageRef = ref(storage, `properties/${propId}/${Date.now()}_${imageFile.name}`);
+            await uploadBytes(imageRef, imageFile);
+            const url = await getDownloadURL(imageRef);
+            imageUrls.push({ url });
+        }
+        
+        // 3. Update property with image URLs
+        await updateDoc(doc(db, 'properties', propId), { images: imageUrls });
+
+        return { id: propId };
     } catch (error) {
         console.error("Error creating property: ", error);
         throw new Error("Failed to create property.");
@@ -93,13 +97,12 @@ export async function updateProperty(id: string, data: Partial<Property>, newIma
             const docSnap = await getDoc(docRef);
             const currentProperty = docSnap.data() as Property | undefined;
 
+            // Delete old images
             if (currentProperty?.images) {
-                // This is a failsafe deletion. It won't throw an error if an old image doesn't exist.
                 await Promise.all(currentProperty.images.map(async (image) => {
                     if (image.url && image.url.startsWith('https://firebasestorage.googleapis.com')) {
                         try {
-                            const oldImageRef = ref(storage, image.url);
-                            await deleteObject(oldImageRef);
+                            await deleteObject(ref(storage, image.url));
                         } catch (storageError: any) {
                             if (storageError.code !== 'storage/object-not-found') {
                                 console.warn(`Could not delete old image ${image.url}:`, storageError);
@@ -109,14 +112,13 @@ export async function updateProperty(id: string, data: Partial<Property>, newIma
                 }));
             }
             
+            // Upload new images
             const newImageUrls = [];
             for (const imageFile of newImageFiles) {
-                 if (imageFile && imageFile.size > 0) {
-                    const imageRef = ref(storage, `properties/${Date.now()}_${imageFile.name}`);
-                    await uploadBytes(imageRef, imageFile);
-                    const url = await getDownloadURL(imageRef);
-                    newImageUrls.push({ url });
-                 }
+                const imageRef = ref(storage, `properties/${id}/${Date.now()}_${imageFile.name}`);
+                await uploadBytes(imageRef, imageFile);
+                const url = await getDownloadURL(imageRef);
+                newImageUrls.push({ url });
             }
             updatePayload.images = newImageUrls;
         }

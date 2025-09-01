@@ -9,28 +9,32 @@ import { firebaseTimestampToString } from './utils';
 
 export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'createdAt' | 'updatedAt'>, photoFile?: File): Promise<{ id: string }> {
   try {
-    let photoUrl = '';
-
-    // Securely handle optional file upload
-    if (photoFile && photoFile.size > 0) {
-        const imageRef = ref(storage, `agents/${Date.now()}_${photoFile.name}`);
-        await uploadBytes(imageRef, photoFile);
-        photoUrl = await getDownloadURL(imageRef);
-    }
-    
+    // 1. Create agent document in Firestore without the photo URL
     const agentPayload = {
       name: data.name,
       email: data.email,
       phone: data.phone,
       active: data.active,
       bio: data.bio || '',
-      photoUrl: photoUrl, // Will be empty string if no file
+      photoUrl: '', // Initialize with an empty string
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     };
 
     const docRef = await addDoc(collection(db, 'agents'), agentPayload);
-    return { id: docRef.id };
+    const agentId = docRef.id;
+
+    // 2. If a photo file exists, upload it
+    if (photoFile) {
+        const imageRef = ref(storage, `agents/${agentId}/${photoFile.name}`);
+        await uploadBytes(imageRef, photoFile);
+        const photoUrl = await getDownloadURL(imageRef);
+        
+        // 3. Update the agent document with the photo URL
+        await updateDoc(doc(db, 'agents', agentId), { photoUrl: photoUrl });
+    }
+
+    return { id: agentId };
 
   } catch (error) {
     console.error("Error creating agent: ", error);
@@ -41,38 +45,34 @@ export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'created
 export async function updateAgent(id: string, data: Partial<Omit<Agent, 'id'>>, photoFile?: File): Promise<void> {
   try {
     const docRef = doc(db, 'agents', id);
-    const currentDoc = await getDoc(docRef);
-
-    if (!currentDoc.exists()) {
-      throw new Error("Agent not found.");
-    }
-    
-    const currentData = currentDoc.data() as Agent;
-    let photoUrl = currentData.photoUrl;
-
-    // Securely handle optional file upload
-    if (photoFile && photoFile.size > 0) {
-        if (photoUrl && photoUrl.startsWith('https://firebasestorage.googleapis.com')) {
-            try {
-                const oldImageRef = ref(storage, photoUrl);
-                await deleteObject(oldImageRef);
-            } catch(e) {
-                console.warn("Failed to delete old image, continuing with update...", e);
-            }
-        }
-        const imageRef = ref(storage, `agents/${Date.now()}_${photoFile.name}`);
-        await uploadBytes(imageRef, photoFile);
-        photoUrl = await getDownloadURL(imageRef);
-    }
-
     const updatePayload: any = {
       ...data,
-      bio: data.bio || '', 
-      photoUrl: photoUrl,
+      bio: data.bio || '',
       updatedAt: Timestamp.now(),
     };
+
+    // If a new photo is provided, upload it and get the URL
+    if (photoFile) {
+      const currentDoc = await getDoc(docRef);
+      if (!currentDoc.exists()) throw new Error("Agent not found.");
+      const currentData = currentDoc.data() as Agent;
+
+      // Delete the old photo if it exists
+      if (currentData.photoUrl && currentData.photoUrl.startsWith('https://firebasestorage.googleapis.com')) {
+        try {
+          await deleteObject(ref(storage, currentData.photoUrl));
+        } catch (e) {
+          console.warn("Failed to delete old image, continuing update.", e);
+        }
+      }
+
+      // Upload new photo
+      const imageRef = ref(storage, `agents/${id}/${photoFile.name}`);
+      await uploadBytes(imageRef, photoFile);
+      updatePayload.photoUrl = await getDownloadURL(imageRef);
+    }
     
-    // Remove id from payload if it exists to avoid Firestore errors
+    // Remove id from payload if it exists
     delete updatePayload.id;
 
     await updateDoc(docRef, updatePayload);

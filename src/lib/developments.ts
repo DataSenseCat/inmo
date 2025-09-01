@@ -38,24 +38,30 @@ const prepareDevelopmentDataForSave = (data: any) => {
 
 export async function createDevelopment(data: Omit<Development, 'id' | 'image' | 'createdAt' | 'updatedAt'>, imageFile: File): Promise<{ id: string }> {
     try {
-        let imageUrl = '';
-        if (imageFile && imageFile.size > 0) {
-            const imageRef = ref(storage, `developments/${Date.now()}_${imageFile.name}`);
-            await uploadBytes(imageRef, imageFile);
-            imageUrl = await getDownloadURL(imageRef);
-        } else {
+        if (!imageFile) {
             throw new Error("Main image is required to create a development.");
         }
         
+        // 1. Create document without image URL
         const developmentPayload = {
             ...prepareDevelopmentDataForSave(data),
-            image: imageUrl,
+            image: '', // Initialize empty
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
         }
-
         const docRef = await addDoc(collection(db, 'developments'), developmentPayload);
-        return { id: docRef.id };
+        const devId = docRef.id;
+
+        // 2. Upload image
+        const imageRef = ref(storage, `developments/${devId}/${imageFile.name}`);
+        await uploadBytes(imageRef, imageFile);
+        const imageUrl = await getDownloadURL(imageRef);
+        
+        // 3. Update document with image URL
+        await updateDoc(doc(db, 'developments', devId), { image: imageUrl });
+
+        return { id: devId };
+
     } catch (error) {
         console.error("Error creating development: ", error);
         throw new Error("Failed to create development.");
@@ -65,34 +71,30 @@ export async function createDevelopment(data: Omit<Development, 'id' | 'image' |
 export async function updateDevelopment(id: string, data: Partial<Development>, newImageFile?: File): Promise<void> {
     try {
         const docRef = doc(db, 'developments', id);
-        const currentDoc = await getDoc(docRef);
-
-        if (!currentDoc.exists()) {
-            throw new Error("Development not found");
-        }
-        
-        const currentData = currentDoc.data() as Development;
-        let imageUrl = currentData.image;
-
-        if (newImageFile && newImageFile.size > 0) {
-            if (imageUrl && imageUrl.startsWith('https://firebasestorage.googleapis.com')) {
-                try {
-                    const oldImageRef = ref(storage, imageUrl);
-                    await deleteObject(oldImageRef);
-                } catch(e) {
-                    console.warn("Failed to delete old image, continuing with update...", e);
-                }
-            }
-            const imageRef = ref(storage, `developments/${Date.now()}_${newImageFile.name}`);
-            await uploadBytes(imageRef, newImageFile);
-            imageUrl = await getDownloadURL(imageRef);
-        }
-
         const updatePayload: any = {
             ...prepareDevelopmentDataForSave(data),
-            image: imageUrl,
             updatedAt: Timestamp.now(),
         };
+
+        if (newImageFile) {
+            const currentDoc = await getDoc(docRef);
+            if (!currentDoc.exists()) throw new Error("Development not found");
+            const currentData = currentDoc.data() as Development;
+
+            // Delete old image
+            if (currentData.image && currentData.image.startsWith('https://firebasestorage.googleapis.com')) {
+                try {
+                    await deleteObject(ref(storage, currentData.image));
+                } catch(e) {
+                    console.warn("Failed to delete old image, continuing update.", e);
+                }
+            }
+
+            // Upload new image
+            const imageRef = ref(storage, `developments/${id}/${newImageFile.name}`);
+            await uploadBytes(imageRef, newImageFile);
+            updatePayload.image = await getDownloadURL(imageRef);
+        }
 
         delete updatePayload.id;
 
