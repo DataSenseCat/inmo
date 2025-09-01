@@ -16,9 +16,9 @@ import {
 import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import type { Development } from '@/models/development';
+import { firebaseTimestampToString } from './utils';
 
-// Helper to prepare data by converting types and handling optionals
-const prepareDevelopmentData = (data: any) => {
+const prepareDevelopmentDataForSave = (data: any) => {
     return {
         title: data.title || '',
         location: data.location || '',
@@ -36,16 +36,14 @@ const prepareDevelopmentData = (data: any) => {
     };
 };
 
-
-// Function to create a new development
-export async function createDevelopment(data: Omit<Development, 'id' | 'image' | 'createdAt' | 'updatedAt'>, image: File) {
+export async function createDevelopment(data: Omit<Development, 'id' | 'image' | 'createdAt' | 'updatedAt'>, image: File): Promise<{ id: string }> {
     try {
         const imageRef = ref(storage, `developments/${Date.now()}_${image.name}`);
         await uploadBytes(imageRef, image);
         const imageUrl = await getDownloadURL(imageRef);
         
         const developmentPayload = {
-            ...prepareDevelopmentData(data),
+            ...prepareDevelopmentDataForSave(data),
             image: imageUrl,
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
@@ -59,8 +57,7 @@ export async function createDevelopment(data: Omit<Development, 'id' | 'image' |
     }
 }
 
-// Function to update an existing development
-export async function updateDevelopment(id: string, data: Partial<Development>, newImage?: File) {
+export async function updateDevelopment(id: string, data: Partial<Development>, newImage?: File): Promise<void> {
     try {
         const docRef = doc(db, 'developments', id);
         const currentDoc = await getDoc(docRef);
@@ -73,55 +70,65 @@ export async function updateDevelopment(id: string, data: Partial<Development>, 
         let imageUrl = currentData.image;
 
         if (newImage) {
-            // Delete old image if it exists
             if (imageUrl && imageUrl.startsWith('https://firebasestorage.googleapis.com')) {
                 try {
                     const oldImageRef = ref(storage, imageUrl);
                     await deleteObject(oldImageRef);
                 } catch(e) {
-                    console.error("Failed to delete old image, continuing with update...", e);
+                    console.warn("Failed to delete old image, continuing with update...", e);
                 }
             }
-            // Upload new image
             const imageRef = ref(storage, `developments/${Date.now()}_${newImage.name}`);
             await uploadBytes(imageRef, newImage);
             imageUrl = await getDownloadURL(imageRef);
         }
 
-        const developmentPayload = {
-            ...prepareDevelopmentData(data),
-            image: imageUrl, // Persist existing or new image URL
+        const updatePayload: Partial<Development> = {
+            ...prepareDevelopmentDataForSave(data),
+            image: imageUrl,
             updatedAt: Timestamp.now(),
         };
 
-        await updateDoc(docRef, developmentPayload);
+        await updateDoc(docRef, updatePayload);
     } catch (error) {
         console.error("Error updating development: ", error);
         throw new Error("Failed to update development.");
     }
 }
 
-// Function to get all developments
 export async function getDevelopments(): Promise<Development[]> {
   try {
     const developmentsCol = collection(db, 'developments');
     const q = query(developmentsCol, orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Development));
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return { 
+            id: doc.id,
+            ...data,
+            createdAt: firebaseTimestampToString(data.createdAt),
+            updatedAt: firebaseTimestampToString(data.updatedAt),
+        } as Development;
+    });
   } catch (error) {
     console.error("Error getting developments (the app will proceed with an empty list): ", error);
     return [];
   }
 }
 
-// Function to get a single development by its ID
 export async function getDevelopmentById(id: string): Promise<Development | null> {
     try {
         const docRef = doc(db, 'developments', id);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-            return { id: docSnap.id, ...docSnap.data() } as Development;
+            const data = docSnap.data();
+            return {
+                id: docSnap.id,
+                ...data,
+                createdAt: firebaseTimestampToString(data.createdAt),
+                updatedAt: firebaseTimestampToString(data.updatedAt),
+            } as Development;
         } else {
             return null;
         }
@@ -131,7 +138,6 @@ export async function getDevelopmentById(id: string): Promise<Development | null
     }
 }
 
-// Function to delete a development by its ID
 export async function deleteDevelopment(id: string): Promise<void> {
     try {
         const docRef = doc(db, 'developments', id);

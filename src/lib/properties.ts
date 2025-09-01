@@ -18,9 +18,9 @@ import {
 import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import type { Property } from '@/models/property';
+import { firebaseTimestampToString } from './utils';
 
-// Helper function to prepare data by converting types and handling optionals
-const preparePropertyData = (data: any) => {
+const preparePropertyDataForSave = (data: any) => {
     return {
         title: data.title || '',
         description: data.description || '',
@@ -35,6 +35,7 @@ const preparePropertyData = (data: any) => {
         area: Number(data.area) || 0,
         featured: data.featured || false,
         active: data.active === undefined ? true : data.active,
+        agentId: data.agentId || '',
         contact: data.contact || { name: '', phone: '', email: '' },
         features: data.features || {
             cochera: false,
@@ -46,9 +47,7 @@ const preparePropertyData = (data: any) => {
     };
 };
 
-
-// Function to create a new property
-export async function createProperty(data: Omit<Property, 'id' | 'images' | 'createdAt' | 'updatedAt'>, images: File[]) {
+export async function createProperty(data: Omit<Property, 'id' | 'images' | 'createdAt' | 'updatedAt'>, images: File[]): Promise<{ id: string }> {
     try {
         const imageUrls = [];
         for (const image of images) {
@@ -59,7 +58,7 @@ export async function createProperty(data: Omit<Property, 'id' | 'images' | 'cre
         }
         
         const propertyPayload = {
-            ...preparePropertyData(data),
+            ...preparePropertyDataForSave(data),
             images: imageUrls,
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
@@ -73,13 +72,12 @@ export async function createProperty(data: Omit<Property, 'id' | 'images' | 'cre
     }
 }
 
-// Function to update an existing property
-export async function updateProperty(id: string, data: Partial<Property>, newImages?: File[]) {
+export async function updateProperty(id: string, data: Partial<Property>, newImages?: File[]): Promise<void> {
     try {
         const docRef = doc(db, 'properties', id);
         
-        const propertyPayload: any = {
-            ...preparePropertyData(data),
+        const updatePayload: any = {
+            ...preparePropertyDataForSave(data),
             updatedAt: Timestamp.now(),
         };
 
@@ -87,8 +85,7 @@ export async function updateProperty(id: string, data: Partial<Property>, newIma
             const docSnap = await getDoc(docRef);
             const currentProperty = docSnap.data() as Property | undefined;
 
-            // Delete old images from storage
-            if (currentProperty?.images && currentProperty.images.length > 0) {
+            if (currentProperty?.images) {
                 for (const image of currentProperty.images) {
                     if (image.url && image.url.startsWith('https://firebasestorage.googleapis.com')) {
                         try {
@@ -101,7 +98,6 @@ export async function updateProperty(id: string, data: Partial<Property>, newIma
                 }
             }
             
-            // Upload new images
             const newImageUrls = [];
             for (const image of newImages) {
                 const imageRef = ref(storage, `properties/${Date.now()}_${image.name}`);
@@ -109,10 +105,10 @@ export async function updateProperty(id: string, data: Partial<Property>, newIma
                 const url = await getDownloadURL(imageRef);
                 newImageUrls.push({ url });
             }
-            propertyPayload.images = newImageUrls;
+            updatePayload.images = newImageUrls;
         }
 
-        await updateDoc(docRef, propertyPayload);
+        await updateDoc(docRef, updatePayload);
     } catch (error) {
         console.error("Error updating property: ", error);
         throw new Error("Failed to update property.");
@@ -120,40 +116,59 @@ export async function updateProperty(id: string, data: Partial<Property>, newIma
 }
 
 
-// Function to get all properties
 export async function getProperties(): Promise<Property[]> {
   try {
     const propertiesCol = collection(db, 'properties');
     const q = query(propertiesCol, orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Property));
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return { 
+        id: doc.id,
+        ...data,
+        createdAt: firebaseTimestampToString(data.createdAt),
+        updatedAt: firebaseTimestampToString(data.updatedAt),
+      } as Property;
+    });
   } catch (error) {
     console.error("Error getting properties (the app will proceed with an empty list): ", error);
     return [];
   }
 }
 
-// Function to get featured properties
 export async function getFeaturedProperties(): Promise<Property[]> {
     try {
         const propertiesCol = collection(db, 'properties');
         const q = query(propertiesCol, where('featured', '==', true), where('active', '==', true), orderBy('createdAt', 'desc'), limit(4));
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Property));
+        return snapshot.docs.map(doc => {
+          const data = doc.data();
+          return { 
+            id: doc.id,
+            ...data,
+            createdAt: firebaseTimestampToString(data.createdAt),
+            updatedAt: firebaseTimestampToString(data.updatedAt),
+          } as Property;
+        });
     } catch (error) {
         console.error("Error getting featured properties (the app will proceed with an empty list): ", error);
         return [];
     }
 }
 
-// Function to get a single property by its ID
 export async function getPropertyById(id: string): Promise<Property | null> {
     try {
         const docRef = doc(db, 'properties', id);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-            return { id: docSnap.id, ...docSnap.data() } as Property;
+            const data = docSnap.data();
+            return {
+              id: docSnap.id,
+              ...data,
+              createdAt: firebaseTimestampToString(data.createdAt),
+              updatedAt: firebaseTimestampToString(data.updatedAt),
+            } as Property;
         } else {
             return null;
         }
@@ -163,11 +178,9 @@ export async function getPropertyById(id: string): Promise<Property | null> {
     }
 }
 
-// Function to delete a property by its ID
 export async function deleteProperty(id: string): Promise<void> {
     try {
         const docRef = doc(db, 'properties', id);
-        // Optionally, get the document first to delete images from storage
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             const property = docSnap.data() as Property;
@@ -178,7 +191,6 @@ export async function deleteProperty(id: string): Promise<void> {
                             const imageRef = ref(storage, image.url);
                             await deleteObject(imageRef);
                         } catch (storageError) {
-                            // Log error but don't block deletion if an image fails to delete
                             console.error(`Failed to delete image ${image.url} from storage:`, storageError);
                         }
                     }

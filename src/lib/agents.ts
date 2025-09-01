@@ -1,51 +1,42 @@
 
 'use server';
 
-import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  getDoc,
-  getDocs,
-  orderBy,
-  query,
-  Timestamp,
-  updateDoc,
-} from 'firebase/firestore';
-import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, Timestamp, updateDoc } from 'firebase/firestore';
+import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import type { Agent } from '@/models/agent';
+import { firebaseTimestampToString } from './utils';
 
-export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'createdAt' | 'updatedAt'>, photoFile?: File) {
+export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'createdAt' | 'updatedAt'>, photoFile?: File): Promise<{ id: string }> {
   try {
-    const agentPayload: Omit<Agent, 'id'> = {
+    let photoUrl = '';
+    if (photoFile) {
+        const imageRef = ref(storage, `agents/${Date.now()}_${photoFile.name}`);
+        await uploadBytes(imageRef, photoFile);
+        photoUrl = await getDownloadURL(imageRef);
+    }
+    
+    const agentPayload = {
       name: data.name,
       email: data.email,
       phone: data.phone,
       active: data.active,
       bio: data.bio || '',
-      photoUrl: '', // Start with no photo URL
+      photoUrl: photoUrl,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     };
 
-    if (photoFile) {
-      const imageRef = ref(storage, `agents/${Date.now()}_${photoFile.name}`);
-      await uploadBytes(imageRef, photoFile);
-      agentPayload.photoUrl = await getDownloadURL(imageRef);
-    }
-
     const docRef = await addDoc(collection(db, 'agents'), agentPayload);
     return { id: docRef.id };
+
   } catch (error) {
     console.error("Error creating agent: ", error);
     throw new Error("Failed to create agent.");
   }
 }
 
-
-export async function updateAgent(id: string, data: Partial<Omit<Agent, 'id'>>, photoFile?: File) {
+export async function updateAgent(id: string, data: Partial<Omit<Agent, 'id'>>, photoFile?: File): Promise<void> {
   try {
     const docRef = doc(db, 'agents', id);
     const currentDoc = await getDoc(docRef);
@@ -53,28 +44,27 @@ export async function updateAgent(id: string, data: Partial<Omit<Agent, 'id'>>, 
     if (!currentDoc.exists()) {
       throw new Error("Agent not found.");
     }
-
+    
     const currentData = currentDoc.data() as Agent;
-    let photoUrl = currentData.photoUrl; // Keep the existing photo URL by default
+    let photoUrl = currentData.photoUrl;
 
     if (photoFile) {
-      // If there's an old photo, delete it
-      if (photoUrl && photoUrl.startsWith('https://firebasestorage.googleapis.com')) {
-        try {
-          const oldImageRef = ref(storage, photoUrl);
-          await deleteObject(oldImageRef);
-        } catch (e) {
-          console.error("Failed to delete old photo, continuing with update...", e);
+        if (photoUrl && photoUrl.startsWith('https://firebasestorage.googleapis.com')) {
+            try {
+                const oldImageRef = ref(storage, photoUrl);
+                await deleteObject(oldImageRef);
+            } catch(e) {
+                console.warn("Failed to delete old image, continuing with update...", e);
+            }
         }
-      }
-      // Upload the new photo
-      const newImageRef = ref(storage, `agents/${Date.now()}_${photoFile.name}`);
-      await uploadBytes(newImageRef, photoFile);
-      photoUrl = await getDownloadURL(newImageRef);
+        const imageRef = ref(storage, `agents/${Date.now()}_${photoFile.name}`);
+        await uploadBytes(imageRef, photoFile);
+        photoUrl = await getDownloadURL(imageRef);
     }
 
-    const updatePayload: Partial<Agent> = {
+    const updatePayload: any = {
       ...data,
+      bio: data.bio || '', 
       photoUrl: photoUrl,
       updatedAt: Timestamp.now(),
     };
@@ -88,10 +78,16 @@ export async function updateAgent(id: string, data: Partial<Omit<Agent, 'id'>>, 
 
 export async function getAgents(): Promise<Agent[]> {
   try {
-    const agentsCol = collection(db, 'agents');
-    const q = query(agentsCol, orderBy('createdAt', 'desc'));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Agent));
+    const snapshot = await getDocs(query(collection(db, 'agents'), orderBy('name', 'asc')));
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return { 
+        id: doc.id,
+        ...data,
+        createdAt: firebaseTimestampToString(data.createdAt),
+        updatedAt: firebaseTimestampToString(data.updatedAt),
+      } as Agent
+    });
   } catch (error) {
     console.error("Error getting agents (the app will proceed with an empty list): ", error);
     return [];
@@ -100,11 +96,15 @@ export async function getAgents(): Promise<Agent[]> {
 
 export async function getAgentById(id: string): Promise<Agent | null> {
   try {
-    const docRef = doc(db, 'agents', id);
-    const docSnap = await getDoc(docRef);
-
+    const docSnap = await getDoc(doc(db, 'agents', id));
     if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() } as Agent;
+      const data = docSnap.data();
+      return {
+        id: docSnap.id,
+        ...data,
+        createdAt: firebaseTimestampToString(data.createdAt),
+        updatedAt: firebaseTimestampToString(data.updatedAt),
+      } as Agent;
     } else {
       return null;
     }
@@ -126,8 +126,7 @@ export async function deleteAgent(id: string): Promise<void> {
           const imageRef = ref(storage, agent.photoUrl);
           await deleteObject(imageRef);
         } catch (storageError) {
-          console.error(`Failed to delete image ${agent.photoUrl} from storage:`, storageError);
-          // Do not rethrow, allow firestore document to be deleted anyway
+          console.error(`Failed to delete image for agent ${id}:`, storageError);
         }
       }
     }

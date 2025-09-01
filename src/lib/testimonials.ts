@@ -16,6 +16,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Testimonial } from '@/models/testimonial';
+import { firebaseTimestampToString } from './utils';
 
 const prepareTestimonialData = (data: any) => {
     return {
@@ -64,7 +65,15 @@ export async function getTestimonials(onlyActive: boolean = false): Promise<Test
         }
         const q = query(testimonialsCol, ...constraints);
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Testimonial));
+        return snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                createdAt: firebaseTimestampToString(data.createdAt),
+                updatedAt: firebaseTimestampToString(data.updatedAt),
+            } as Testimonial
+        });
     } catch (error) {
         console.error("Error getting testimonials: ", error);
         return [];
@@ -75,7 +84,16 @@ export async function getTestimonialById(id: string): Promise<Testimonial | null
     try {
         const docRef = doc(db, 'testimonials', id);
         const docSnap = await getDoc(docRef);
-        return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as Testimonial : null;
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            return {
+                id: docSnap.id,
+                ...data,
+                createdAt: firebaseTimestampToString(data.createdAt),
+                updatedAt: firebaseTimestampToString(data.updatedAt),
+            } as Testimonial;
+        }
+        return null;
     } catch (error) {
         console.error(`Error getting testimonial by ID ${id}: `, error);
         return null;

@@ -1,31 +1,28 @@
 
-// Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getFirestore, Firestore } from "firebase/firestore";
 import { getStorage, FirebaseStorage } from "firebase/storage";
 
-// Your web app's Firebase configuration
-const firebaseConfig = {
-    apiKey: "AIzaSyClnikNK5zuHaS5c1hWnZEepRppHwB6Y4M",
-    authDomain: "catamarca-estates.firebaseapp.com",
-    projectId: "catamarca-estates",
-    storageBucket: "datainmob",
-    messagingSenderId: "826854436736",
-    appId: "1:826854436736:web:21b0f4995ce88ba33a9b65"
+// Client-side config
+const clientCredentials = {
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase for SSR
+// Initialize Firebase for client-side
 let app: FirebaseApp;
-let db: Firestore;
-let storage: FirebaseStorage;
-
 if (getApps().length === 0) {
-    app = initializeApp(firebaseConfig);
+    app = initializeApp(clientCredentials);
 } else {
     app = getApp();
 }
 
-db = getFirestore(app);
-storage = getStorage(app);
+const db: Firestore = getFirestore(app);
+const storage: FirebaseStorage = getStorage(app);
 
+// No admin SDK exports needed anymore
 export { app, db, storage };
