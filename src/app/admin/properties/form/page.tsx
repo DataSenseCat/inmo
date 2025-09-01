@@ -94,7 +94,7 @@ function PropertyForm() {
   const propertyId = searchParams.get('id');
   const isEditing = !!propertyId;
 
-  const [loading, setLoading] = useState(isEditing);
+  const [loading, setLoading] = useState(true);
   const [propertyData, setPropertyData] = useState<Property | null>(null);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -130,44 +130,41 @@ function PropertyForm() {
   });
 
    useEffect(() => {
-    async function loadAgents() {
+    async function loadInitialData() {
         try {
             const agentList = await getAgents();
             setAgents(agentList.filter(a => a.active));
+
+            if (isEditing) {
+              const data = await getPropertyById(propertyId);
+              if (data) {
+                setPropertyData(data);
+                const values = {
+                    ...data,
+                    bedrooms: data.bedrooms || '',
+                    bathrooms: data.bathrooms || '',
+                    area: data.area || '',
+                    priceUSD: data.priceUSD || '',
+                    priceARS: data.priceARS || '',
+                }
+                form.reset(values);
+                if(data.images){
+                    setImagePreviews(data.images.map(img => img.url));
+                }
+              } else {
+                toast({ variant: 'destructive', title: 'Error', description: 'Propiedad no encontrada.' });
+                router.push('/admin?tab=properties');
+              }
+            }
         } catch (error) {
-            console.error("Failed to load agents", error);
-            toast({ variant: "destructive", title: "Error", description: "No se pudieron cargar los agentes."})
+            console.error("Failed to load initial data", error);
+            toast({ variant: "destructive", title: "Error", description: "No se pudieron cargar los datos necesarios."})
+        } finally {
+            setLoading(false);
         }
     }
-
-    loadAgents();
-
-    if (isEditing && !propertyData) {
-      setLoading(true);
-      getPropertyById(propertyId)
-        .then(data => {
-          if (data) {
-            setPropertyData(data);
-            const values = {
-                ...data,
-                bedrooms: data.bedrooms || '',
-                bathrooms: data.bathrooms || '',
-                area: data.area || '',
-                priceUSD: data.priceUSD || '',
-                priceARS: data.priceARS || '',
-            }
-            form.reset(values);
-            if(data.images){
-                setImagePreviews(data.images.map(img => img.url));
-            }
-          } else {
-            toast({ variant: 'destructive', title: 'Error', description: 'Propiedad no encontrada.' });
-            router.push('/admin?tab=properties');
-          }
-        })
-        .finally(() => setLoading(false));
-    }
-   }, [isEditing, propertyId, form, router, toast, propertyData]);
+    loadInitialData();
+   }, [isEditing, propertyId, form, router, toast]);
 
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -180,8 +177,11 @@ function PropertyForm() {
   }
 
   const removeImage = (index: number) => {
-      setImageFiles(files => files.filter((_, i) => i !== index));
+      // For existing images, we don't have the file object, so we just remove the preview
+      // The update logic will handle replacing all images
       setImagePreviews(previews => previews.filter((_, i) => i !== index));
+      // For new images, we remove the file as well
+      setImageFiles(files => files.filter((file) => URL.createObjectURL(file) !== imagePreviews[index]));
   }
 
 
@@ -221,7 +221,7 @@ function PropertyForm() {
     }
   }
 
-  if (loading && isEditing) {
+  if (loading) {
       return (
           <div className="flex justify-center items-center h-[calc(100vh-200px)]">
               <Loader2 className="h-10 w-10 animate-spin" />

@@ -64,7 +64,7 @@ function AgentForm() {
   });
 
   useEffect(() => {
-    if (isEditing && !agentData) {
+    if (isEditing) {
       setLoading(true);
       getAgentById(agentId)
         .then(data => {
@@ -84,7 +84,7 @@ function AgentForm() {
         })
         .finally(() => setLoading(false));
     }
-   }, [isEditing, agentId, form, router, toast, agentData]);
+   }, [isEditing, agentId, form, router, toast]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       if(e.target.files && e.target.files[0]) {
@@ -109,7 +109,7 @@ function AgentForm() {
             toast({ title: 'Agente Creado', description: 'El nuevo agente se ha guardado.' });
         }
         router.push('/admin?tab=agents');
-        router.refresh();
+        router.refresh(); // This will trigger a server-side reload of data on the admin page
     } catch (error) {
         console.error('Failed to save agent:', error);
         toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo guardar el agente.' });

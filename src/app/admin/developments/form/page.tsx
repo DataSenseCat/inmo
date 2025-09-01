@@ -67,7 +67,7 @@ function DevelopmentForm() {
   const developmentId = searchParams.get('id');
   const isEditing = !!developmentId;
 
-  const [loading, setLoading] = useState(isEditing);
+  const [loading, setLoading] = useState(true);
   const [devData, setDevData] = useState<Development | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -89,32 +89,32 @@ function DevelopmentForm() {
   });
 
   useEffect(() => {
-    if (isEditing && !devData) {
-      setLoading(true);
-      getDevelopmentById(developmentId)
-        .then(data => {
-          if (data) {
-            setDevData(data);
-            const values = {
-                ...data,
-                priceFrom: data.priceFrom || '',
-                priceRange: {
-                    min: data.priceRange?.min || '',
-                    max: data.priceRange?.max || '',
-                }
-            }
-            form.reset(values);
-            if(data.image){
-                setImagePreview(data.image);
-            }
-          } else {
-            toast({ variant: 'destructive', title: 'Error', description: 'Emprendimiento no encontrado.' });
-            router.push('/admin?tab=developments');
+    async function loadDev() {
+      if (isEditing) {
+        const data = await getDevelopmentById(developmentId);
+        if (data) {
+          setDevData(data);
+          const values = {
+              ...data,
+              priceFrom: data.priceFrom || '',
+              priceRange: {
+                  min: data.priceRange?.min || '',
+                  max: data.priceRange?.max || '',
+              }
           }
-        })
-        .finally(() => setLoading(false));
+          form.reset(values);
+          if(data.image){
+              setImagePreview(data.image);
+          }
+        } else {
+          toast({ variant: 'destructive', title: 'Error', description: 'Emprendimiento no encontrado.' });
+          router.push('/admin?tab=developments');
+        }
+      }
+      setLoading(false);
     }
-   }, [isEditing, developmentId, form, router, toast, devData]);
+    loadDev();
+   }, [isEditing, developmentId, form, router, toast]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       if(e.target.files && e.target.files[0]) {
@@ -150,7 +150,7 @@ function DevelopmentForm() {
     }
   }
 
-  if (loading && isEditing) {
+  if (loading) {
       return (
           <div className="flex justify-center items-center h-[calc(100vh-200px)]">
               <Loader2 className="h-10 w-10 animate-spin" />

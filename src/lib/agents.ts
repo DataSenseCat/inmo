@@ -7,16 +7,16 @@ import { db, storage } from '@/lib/firebase';
 import type { Agent } from '@/models/agent';
 import { firebaseTimestampToString } from './utils';
 
+// This function now runs on the client
 export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'createdAt' | 'updatedAt'>, photoFile?: File): Promise<{ id: string }> {
   try {
-    // 1. Create agent document in Firestore without the photo URL
     const agentPayload = {
       name: data.name,
       email: data.email,
       phone: data.phone,
       active: data.active,
       bio: data.bio || '',
-      photoUrl: '', // Initialize with an empty string
+      photoUrl: '',
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     };
@@ -24,13 +24,10 @@ export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'created
     const docRef = await addDoc(collection(db, 'agents'), agentPayload);
     const agentId = docRef.id;
 
-    // 2. If a photo file exists, upload it
     if (photoFile) {
         const imageRef = ref(storage, `agents/${agentId}/${photoFile.name}`);
         await uploadBytes(imageRef, photoFile);
         const photoUrl = await getDownloadURL(imageRef);
-        
-        // 3. Update the agent document with the photo URL
         await updateDoc(doc(db, 'agents', agentId), { photoUrl: photoUrl });
     }
 
@@ -42,6 +39,7 @@ export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'created
   }
 }
 
+// This function now runs on the client
 export async function updateAgent(id: string, data: Partial<Omit<Agent, 'id'>>, photoFile?: File): Promise<void> {
   try {
     const docRef = doc(db, 'agents', id);
@@ -51,13 +49,11 @@ export async function updateAgent(id: string, data: Partial<Omit<Agent, 'id'>>, 
       updatedAt: Timestamp.now(),
     };
 
-    // If a new photo is provided, upload it and get the URL
     if (photoFile) {
       const currentDoc = await getDoc(docRef);
       if (!currentDoc.exists()) throw new Error("Agent not found.");
-      const currentData = currentDoc.data() as Agent;
+      const currentData = currentDoc.data();
 
-      // Delete the old photo if it exists
       if (currentData.photoUrl && currentData.photoUrl.startsWith('https://firebasestorage.googleapis.com')) {
         try {
           await deleteObject(ref(storage, currentData.photoUrl));
@@ -66,15 +62,12 @@ export async function updateAgent(id: string, data: Partial<Omit<Agent, 'id'>>, 
         }
       }
 
-      // Upload new photo
       const imageRef = ref(storage, `agents/${id}/${photoFile.name}`);
       await uploadBytes(imageRef, photoFile);
       updatePayload.photoUrl = await getDownloadURL(imageRef);
     }
     
-    // Remove id from payload if it exists
     delete updatePayload.id;
-
     await updateDoc(docRef, updatePayload);
   } catch (error) {
     console.error("Error updating agent: ", error);
@@ -82,6 +75,7 @@ export async function updateAgent(id: string, data: Partial<Omit<Agent, 'id'>>, 
   }
 }
 
+// This function runs on the server
 export async function getAgents(): Promise<Agent[]> {
   try {
     const snapshot = await getDocs(query(collection(db, 'agents'), orderBy('name', 'asc')));
@@ -100,6 +94,7 @@ export async function getAgents(): Promise<Agent[]> {
   }
 }
 
+// This function runs on the server (or client if called from a client component)
 export async function getAgentById(id: string): Promise<Agent | null> {
   try {
     const docSnap = await getDoc(doc(db, 'agents', id));
@@ -120,13 +115,14 @@ export async function getAgentById(id: string): Promise<Agent | null> {
   }
 }
 
+// This function now runs on the client
 export async function deleteAgent(id: string): Promise<void> {
   try {
     const docRef = doc(db, 'agents', id);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
-      const agent = docSnap.data() as Agent;
+      const agent = docSnap.data();
       if (agent.photoUrl && agent.photoUrl.startsWith('https://firebasestorage.googleapis.com')) {
         try {
           const imageRef = ref(storage, agent.photoUrl);
