@@ -1,24 +1,37 @@
 
 'use server';
 
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import type { Admin } from '@/models/admin';
 
-// ¡IMPORTANTE! Esta es una autenticación muy básica solo para fines de demostración.
-// En una aplicación de producción, NUNCA almacenes contraseñas en texto plano
-// ni en variables de entorno del lado del cliente. Utiliza un proveedor de autenticación
-// como Firebase Authentication, Auth0, etc.
-
 /**
- * Verifica si las credenciales coinciden con las variables de entorno.
+ * Verifica si las credenciales coinciden con un documento en la colección 'admins'.
  */
 export async function authenticateAdmin({ email, password }: Omit<Admin, 'id'>): Promise<boolean> {
-  const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-  const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+  try {
+    const adminsCollection = collection(db, 'admins');
+    const q = query(adminsCollection, where('email', '==', email));
+    const querySnapshot = await getDocs(q);
 
-  if (!adminEmail || !adminPassword) {
-    console.error("Las variables de entorno de administrador no están configuradas.");
+    if (querySnapshot.empty) {
+      console.log('No admin found with that email.');
+      return false;
+    }
+
+    const adminDoc = querySnapshot.docs[0];
+    const adminData = adminDoc.data() as Admin;
+
+    // ¡IMPORTANTE! Esta es una comparación de texto plano, no es segura para producción.
+    // En un entorno real, la contraseña debería estar hasheada.
+    if (adminData.password === password) {
+      return true;
+    } else {
+      console.log('Admin password does not match.');
+      return false;
+    }
+  } catch (error) {
+    console.error("Error authenticating admin from Firestore: ", error);
     return false;
   }
-
-  return email === adminEmail && password === adminPassword;
 }
