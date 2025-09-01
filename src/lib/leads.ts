@@ -1,4 +1,3 @@
-
 'use server';
 
 import {
@@ -24,7 +23,7 @@ export async function createLead(data: Omit<Lead, 'id' | 'createdAt'>) {
         }
         await addDoc(collection(db, 'leads'), leadData);
 
-        // After saving, send the notification
+        // After saving, send the notification. This is a server action.
         const config = await getSiteConfig();
         if (config?.leadNotificationEmail) {
             await sendLeadNotification({

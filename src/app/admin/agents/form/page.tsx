@@ -27,6 +27,7 @@ import type { Agent } from '@/models/agent';
 import { createAgent, getAgentById, updateAgent } from '@/lib/agents';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
+import { fileToDataUri } from '@/lib/utils';
 
 
 const agentFormSchema = z.object({
@@ -48,9 +49,9 @@ function AgentForm() {
   const isEditing = !!agentId;
 
   const [loading, setLoading] = useState(isEditing);
-  const [agentData, setAgentData] = useState<Agent | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [photoDataUri, setPhotoDataUri] = useState<string | undefined>(undefined);
   
   const form = useForm<AgentFormValues>({
     resolver: zodResolver(agentFormSchema),
@@ -69,7 +70,6 @@ function AgentForm() {
       getAgentById(agentId)
         .then(data => {
           if (data) {
-            setAgentData(data);
             form.reset({
                 ...data,
                 bio: data.bio || '',
@@ -86,33 +86,37 @@ function AgentForm() {
     }
    }, [isEditing, agentId, form, router, toast]);
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
       if(e.target.files && e.target.files[0]) {
           const file = e.target.files[0];
-          setImageFile(file);
+          const dataUri = await fileToDataUri(file);
+          setPhotoDataUri(dataUri);
           setImagePreview(URL.createObjectURL(file));
       }
   }
 
   const removeImage = () => {
-      setImageFile(null);
+      setPhotoDataUri(undefined);
       setImagePreview(null);
   }
 
   async function onSubmit(data: AgentFormValues) {
+    setIsSubmitting(true);
     try {
         if(isEditing) {
-            await updateAgent(agentId, data, imageFile || undefined);
+            await updateAgent(agentId, data, photoDataUri);
             toast({ title: 'Agente Actualizado', description: 'Los cambios se guardaron correctamente.' });
         } else {
-            await createAgent(data, imageFile || undefined);
+            await createAgent(data, photoDataUri);
             toast({ title: 'Agente Creado', description: 'El nuevo agente se ha guardado.' });
         }
         router.push('/admin?tab=agents');
-        router.refresh(); // This will trigger a server-side reload of data on the admin page
+        router.refresh();
     } catch (error) {
         console.error('Failed to save agent:', error);
         toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo guardar el agente.' });
+    } finally {
+        setIsSubmitting(false);
     }
   }
 
@@ -220,8 +224,8 @@ function AgentForm() {
                     <Button type="button" variant="outline" size="lg" asChild>
                         <Link href="/admin?tab=agents">Cancelar</Link>
                     </Button>
-                    <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
-                        {form.formState.isSubmitting 
+                    <Button type="submit" size="lg" disabled={isSubmitting}>
+                        {isSubmitting
                             ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Guardando...</>
                             : (isEditing ? 'Guardar Cambios' : 'Crear Agente')}
                     </Button>

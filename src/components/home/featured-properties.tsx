@@ -1,8 +1,10 @@
+'use server';
 
 import { getFeaturedProperties } from '@/lib/properties';
 import { PropertyCard } from '@/components/property-card';
 import { Button } from "../ui/button";
 import Link from "next/link";
+import { Skeleton } from '../ui/skeleton';
 
 export async function FeaturedProperties() {
   const featured = await getFeaturedProperties();
@@ -14,6 +16,13 @@ export async function FeaturedProperties() {
              <div className="text-center mb-12">
                 <h2 className="text-3xl md:text-4xl font-bold font-headline">Propiedades Destacadas</h2>
                 <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">Actualmente no hay propiedades destacadas. ¡Vuelve pronto!</p>
+            </div>
+            <div className="text-center mt-12">
+              <Button asChild size="lg">
+                  <Link href="/properties">
+                      Ver Todas las Propiedades
+                  </Link>
+              </Button>
             </div>
           </div>
         </section>

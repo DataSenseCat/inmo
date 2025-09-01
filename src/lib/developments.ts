@@ -1,4 +1,3 @@
-
 'use server';
 
 import {
@@ -36,7 +35,7 @@ const prepareDevelopmentDataForSave = (data: any) => {
     };
 };
 
-// This function now runs on the client
+// This function now runs on the SERVER
 export async function createDevelopment(data: Omit<Development, 'id' | 'image' | 'createdAt' | 'updatedAt'>, imageFile: File): Promise<{ id: string }> {
     try {
         if (!imageFile) {
@@ -66,7 +65,7 @@ export async function createDevelopment(data: Omit<Development, 'id' | 'image' |
     }
 }
 
-// This function now runs on the client
+// This function now runs on the SERVER
 export async function updateDevelopment(id: string, data: Partial<Development>, newImageFile?: File): Promise<void> {
     try {
         const docRef = doc(db, 'developments', id);
@@ -83,8 +82,10 @@ export async function updateDevelopment(id: string, data: Partial<Development>, 
             if (currentData.image && currentData.image.startsWith('https://firebasestorage.googleapis.com')) {
                 try {
                     await deleteObject(ref(storage, currentData.image));
-                } catch(e) {
-                    console.warn("Failed to delete old image, continuing update.", e);
+                } catch(e: any) {
+                    if (e.code !== 'storage/object-not-found') {
+                        console.warn("Failed to delete old image, continuing update.", e);
+                    }
                 }
             }
 
@@ -102,7 +103,7 @@ export async function updateDevelopment(id: string, data: Partial<Development>, 
     }
 }
 
-// This function runs on the server
+// This function runs on the server or client
 export async function getDevelopments(): Promise<Development[]> {
   try {
     const developmentsCol = collection(db, 'developments');
@@ -146,7 +147,7 @@ export async function getDevelopmentById(id: string): Promise<Development | null
     }
 }
 
-// This function now runs on the client
+// This function now runs on the SERVER
 export async function deleteDevelopment(id: string): Promise<void> {
     try {
         const docRef = doc(db, 'developments', id);
@@ -158,8 +159,10 @@ export async function deleteDevelopment(id: string): Promise<void> {
                 try {
                     const imageRef = ref(storage, development.image);
                     await deleteObject(imageRef);
-                } catch (storageError) {
-                    console.warn(`Failed to delete image ${development.image} from storage:`, storageError);
+                } catch (storageError: any) {
+                    if (storageError.code !== 'storage/object-not-found') {
+                        console.warn(`Failed to delete image ${development.image} from storage:`, storageError);
+                    }
                 }
             }
         }

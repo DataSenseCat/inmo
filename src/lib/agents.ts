@@ -1,14 +1,16 @@
-
 'use server';
 
-import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, Timestamp, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, Timestamp, updateDoc, where } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import type { Agent } from '@/models/agent';
-import { firebaseTimestampToString } from './utils';
+import { firebaseTimestampToString, dataUriToBuffer } from './utils';
 
-// This function now runs on the client
-export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'createdAt' | 'updatedAt'>, photoFile?: File): Promise<{ id: string }> {
+// This function now runs on the SERVER
+export async function createAgent(
+  data: Omit<Agent, 'id' | 'photoUrl' | 'createdAt' | 'updatedAt'>,
+  photoDataUri?: string
+): Promise<{ id: string }> {
   try {
     const agentPayload = {
       name: data.name,
@@ -16,7 +18,7 @@ export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'created
       phone: data.phone,
       active: data.active,
       bio: data.bio || '',
-      photoUrl: '',
+      photoUrl: '', // Initialize with empty string
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     };
@@ -24,23 +26,28 @@ export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'created
     const docRef = await addDoc(collection(db, 'agents'), agentPayload);
     const agentId = docRef.id;
 
-    if (photoFile) {
-        const imageRef = ref(storage, `agents/${agentId}/${photoFile.name}`);
-        await uploadBytes(imageRef, photoFile);
+    if (photoDataUri) {
+        const { buffer, mimeType } = dataUriToBuffer(photoDataUri);
+        const fileExtension = mimeType.split('/')[1] || 'jpg';
+        const imageRef = ref(storage, `agents/${agentId}/profile.${fileExtension}`);
+        await uploadBytes(imageRef, buffer, { contentType: mimeType });
         const photoUrl = await getDownloadURL(imageRef);
         await updateDoc(doc(db, 'agents', agentId), { photoUrl: photoUrl });
     }
 
     return { id: agentId };
-
   } catch (error) {
     console.error("Error creating agent: ", error);
     throw new Error("Failed to create agent.");
   }
 }
 
-// This function now runs on the client
-export async function updateAgent(id: string, data: Partial<Omit<Agent, 'id'>>, photoFile?: File): Promise<void> {
+// This function now runs on the SERVER
+export async function updateAgent(
+  id: string,
+  data: Partial<Omit<Agent, 'id'>>,
+  photoDataUri?: string
+): Promise<void> {
   try {
     const docRef = doc(db, 'agents', id);
     const updatePayload: any = {
@@ -48,26 +55,32 @@ export async function updateAgent(id: string, data: Partial<Omit<Agent, 'id'>>, 
       bio: data.bio || '',
       updatedAt: Timestamp.now(),
     };
+    
+    delete updatePayload.id; // Ensure id is not part of the payload
 
-    if (photoFile) {
+    if (photoDataUri) {
       const currentDoc = await getDoc(docRef);
       if (!currentDoc.exists()) throw new Error("Agent not found.");
       const currentData = currentDoc.data();
 
+      // Delete old image if it exists
       if (currentData.photoUrl && currentData.photoUrl.startsWith('https://firebasestorage.googleapis.com')) {
         try {
           await deleteObject(ref(storage, currentData.photoUrl));
-        } catch (e) {
-          console.warn("Failed to delete old image, continuing update.", e);
+        } catch (e: any) {
+           if (e.code !== 'storage/object-not-found') {
+             console.warn("Failed to delete old image, continuing update.", e);
+           }
         }
       }
 
-      const imageRef = ref(storage, `agents/${id}/${photoFile.name}`);
-      await uploadBytes(imageRef, photoFile);
+      const { buffer, mimeType } = dataUriToBuffer(photoDataUri);
+      const fileExtension = mimeType.split('/')[1] || 'jpg';
+      const imageRef = ref(storage, `agents/${id}/profile.${fileExtension}`);
+      await uploadBytes(imageRef, buffer, { contentType: mimeType });
       updatePayload.photoUrl = await getDownloadURL(imageRef);
     }
     
-    delete updatePayload.id;
     await updateDoc(docRef, updatePayload);
   } catch (error) {
     console.error("Error updating agent: ", error);
@@ -75,10 +88,11 @@ export async function updateAgent(id: string, data: Partial<Omit<Agent, 'id'>>, 
   }
 }
 
-// This function runs on the server
+// This function runs on the server or client
 export async function getAgents(): Promise<Agent[]> {
   try {
-    const snapshot = await getDocs(query(collection(db, 'agents'), orderBy('name', 'asc')));
+    const activeAgentsQuery = query(collection(db, 'agents'), where('active', '==', true), orderBy('name', 'asc'));
+    const snapshot = await getDocs(activeAgentsQuery);
     return snapshot.docs.map(doc => {
       const data = doc.data();
       return { 
@@ -93,8 +107,27 @@ export async function getAgents(): Promise<Agent[]> {
     return [];
   }
 }
+export async function getAllAgents(): Promise<Agent[]> {
+    try {
+        const allAgentsQuery = query(collection(db, 'agents'), orderBy('name', 'asc'));
+        const snapshot = await getDocs(allAgentsQuery);
+        return snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                createdAt: firebaseTimestampToString(data.createdAt),
+                updatedAt: firebaseTimestampToString(data.updatedAt),
+            } as Agent
+        });
+    } catch (error) {
+        console.error("Error getting all agents (the app will proceed with an empty list): ", error);
+        return [];
+    }
+}
 
-// This function runs on the server (or client if called from a client component)
+
+// This function runs on the server or client
 export async function getAgentById(id: string): Promise<Agent | null> {
   try {
     const docSnap = await getDoc(doc(db, 'agents', id));
@@ -115,7 +148,7 @@ export async function getAgentById(id: string): Promise<Agent | null> {
   }
 }
 
-// This function now runs on the client
+// This function now runs on the SERVER
 export async function deleteAgent(id: string): Promise<void> {
   try {
     const docRef = doc(db, 'agents', id);
@@ -127,13 +160,16 @@ export async function deleteAgent(id: string): Promise<void> {
         try {
           const imageRef = ref(storage, agent.photoUrl);
           await deleteObject(imageRef);
-        } catch (storageError) {
-          console.warn(`Failed to delete image for agent ${id}:`, storageError);
+        } catch (storageError: any) {
+            if (storageError.code !== 'storage/object-not-found') {
+              console.warn(`Failed to delete image for agent ${id}:`, storageError);
+            }
         }
       }
     }
     await deleteDoc(docRef);
-  } catch (error) {
+  } catch (error)
+ {
     console.error("Error deleting agent: ", error);
     throw new Error("Failed to delete agent.");
   }
