@@ -283,7 +283,7 @@ function AdminDashboardComponent() {
                                       <TableCell className="capitalize">{prop.type}</TableCell>
                                       <TableCell className="capitalize">{prop.operation}</TableCell>
                                       <TableCell>{prop.location}</TableCell>
-                                      <TableCell>{prop.createdAt?.toDate().toLocaleDateString() || '-'}</TableCell>
+                                      <TableCell>{prop.createdAt}</TableCell>
                                       <TableCell>{getStatusBadge(prop.active)}</TableCell>
                                       <TableCell className="text-right">
                                         <div className="flex gap-1 justify-end">
@@ -464,7 +464,7 @@ function AdminDashboardComponent() {
                                   ) : leads.length > 0 ? (
                                     leads.map(lead => (
                                     <TableRow key={lead.id}>
-                                      <TableCell>{lead.createdAt?.toDate().toLocaleDateString()}</TableCell>
+                                      <TableCell>{lead.createdAt}</TableCell>
                                       <TableCell className="font-medium">{lead.name}</TableCell>
                                       <TableCell>{lead.email}</TableCell>
                                       <TableCell>{lead.phone || '-'}</TableCell>
@@ -591,7 +591,7 @@ function AdminDashboardComponent() {
                 <AlertDialogHeader>
                     <AlertDialogTitle>Detalle del Lead</AlertDialogTitle>
                     <AlertDialogDescription>
-                        Recibido el {leadToView?.createdAt?.toDate().toLocaleString()}
+                        Recibido el {leadToView?.createdAt}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 {leadToView && (

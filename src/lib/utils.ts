@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { Timestamp } from "firebase/firestore";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -17,4 +18,20 @@ export async function urlToDataUri(url: string): Promise<string> {
     reader.onerror = reject;
     reader.readAsDataURL(blob);
   });
+}
+
+/**
+ * Converts a Firebase Timestamp to a localized string, or returns a default value.
+ * @param timestamp The Firebase Timestamp object.
+ * @returns A localized date-time string or an empty string if timestamp is invalid.
+ */
+export function firebaseTimestampToString(timestamp: any): string {
+    if (!timestamp || typeof timestamp.toDate !== 'function') {
+        return '';
+    }
+    try {
+        return (timestamp as Timestamp).toDate().toLocaleString();
+    } catch (e) {
+        return '';
+    }
 }

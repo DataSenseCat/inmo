@@ -18,6 +18,7 @@ import {
 import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import type { Property } from '@/models/property';
+import { firebaseTimestampToString } from './utils';
 
 const preparePropertyDataForSave = (data: any) => {
     return {
@@ -120,7 +121,15 @@ export async function getProperties(): Promise<Property[]> {
     const propertiesCol = collection(db, 'properties');
     const q = query(propertiesCol, orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Property));
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return { 
+        id: doc.id,
+        ...data,
+        createdAt: firebaseTimestampToString(data.createdAt),
+        updatedAt: firebaseTimestampToString(data.updatedAt),
+      } as Property;
+    });
   } catch (error) {
     console.error("Error getting properties (the app will proceed with an empty list): ", error);
     return [];
@@ -132,7 +141,15 @@ export async function getFeaturedProperties(): Promise<Property[]> {
         const propertiesCol = collection(db, 'properties');
         const q = query(propertiesCol, where('featured', '==', true), where('active', '==', true), orderBy('createdAt', 'desc'), limit(4));
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Property));
+        return snapshot.docs.map(doc => {
+          const data = doc.data();
+          return { 
+            id: doc.id,
+            ...data,
+            createdAt: firebaseTimestampToString(data.createdAt),
+            updatedAt: firebaseTimestampToString(data.updatedAt),
+          } as Property;
+        });
     } catch (error) {
         console.error("Error getting featured properties (the app will proceed with an empty list): ", error);
         return [];
@@ -145,7 +162,13 @@ export async function getPropertyById(id: string): Promise<Property | null> {
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-            return { id: docSnap.id, ...docSnap.data() } as Property;
+            const data = docSnap.data();
+            return {
+              id: docSnap.id,
+              ...data,
+              createdAt: firebaseTimestampToString(data.createdAt),
+              updatedAt: firebaseTimestampToString(data.updatedAt),
+            } as Property;
         } else {
             return null;
         }

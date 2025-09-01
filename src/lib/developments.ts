@@ -16,6 +16,7 @@ import {
 import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import type { Development } from '@/models/development';
+import { firebaseTimestampToString } from './utils';
 
 const prepareDevelopmentDataForSave = (data: any) => {
     return {
@@ -100,7 +101,15 @@ export async function getDevelopments(): Promise<Development[]> {
     const developmentsCol = collection(db, 'developments');
     const q = query(developmentsCol, orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Development));
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return { 
+            id: doc.id,
+            ...data,
+            createdAt: firebaseTimestampToString(data.createdAt),
+            updatedAt: firebaseTimestampToString(data.updatedAt),
+        } as Development;
+    });
   } catch (error) {
     console.error("Error getting developments (the app will proceed with an empty list): ", error);
     return [];
@@ -113,7 +122,13 @@ export async function getDevelopmentById(id: string): Promise<Development | null
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-            return { id: docSnap.id, ...docSnap.data() } as Development;
+            const data = docSnap.data();
+            return {
+                id: docSnap.id,
+                ...data,
+                createdAt: firebaseTimestampToString(data.createdAt),
+                updatedAt: firebaseTimestampToString(data.updatedAt),
+            } as Development;
         } else {
             return null;
         }

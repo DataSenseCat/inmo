@@ -5,6 +5,7 @@ import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, Ti
 import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import type { Agent } from '@/models/agent';
+import { firebaseTimestampToString } from './utils';
 
 export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'createdAt' | 'updatedAt'>, photoFile?: File): Promise<{ id: string }> {
   try {
@@ -78,7 +79,15 @@ export async function updateAgent(id: string, data: Partial<Omit<Agent, 'id'>>, 
 export async function getAgents(): Promise<Agent[]> {
   try {
     const snapshot = await getDocs(query(collection(db, 'agents'), orderBy('name', 'asc')));
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Agent));
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return { 
+        id: doc.id,
+        ...data,
+        createdAt: firebaseTimestampToString(data.createdAt),
+        updatedAt: firebaseTimestampToString(data.updatedAt),
+      } as Agent
+    });
   } catch (error) {
     console.error("Error getting agents (the app will proceed with an empty list): ", error);
     return [];
@@ -89,7 +98,13 @@ export async function getAgentById(id: string): Promise<Agent | null> {
   try {
     const docSnap = await getDoc(doc(db, 'agents', id));
     if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() } as Agent;
+      const data = docSnap.data();
+      return {
+        id: docSnap.id,
+        ...data,
+        createdAt: firebaseTimestampToString(data.createdAt),
+        updatedAt: firebaseTimestampToString(data.updatedAt),
+      } as Agent;
     } else {
       return null;
     }

@@ -13,6 +13,7 @@ import { db } from '@/lib/firebase';
 import type { Lead } from '@/models/lead';
 import { getSiteConfig } from './config';
 import { sendLeadNotification } from '@/ai/flows/send-lead-notification';
+import { firebaseTimestampToString } from './utils';
 
 // Function to create a new lead
 export async function createLead(data: Omit<Lead, 'id' | 'createdAt'>) {
@@ -44,7 +45,14 @@ export async function getLeads(): Promise<Lead[]> {
     const leadsCol = collection(db, 'leads');
     const q = query(leadsCol, orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead));
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return { 
+        id: doc.id,
+        ...data,
+        createdAt: firebaseTimestampToString(data.createdAt),
+      } as Lead;
+    });
   } catch (error) {
     console.error("Error getting leads (the app will proceed with an empty list): ", error);
     return [];
