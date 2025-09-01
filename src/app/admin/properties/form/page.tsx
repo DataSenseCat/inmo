@@ -5,7 +5,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, Info, Home, ListChecks, DollarSign, Image as ImageIcon, ParkingCircle, Waves, ConciergeBell, Flame, CookingPot, Upload, Trash2, Loader2, User, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Info, Home, ListChecks, DollarSign, Image as ImageIcon, ParkingCircle, Waves, ConciergeBell, Flame, CookingPot, Upload, Trash2, Loader2, User, AlertCircle, AreaChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -144,11 +144,11 @@ function PropertyForm() {
                     bathrooms: data.bathrooms ?? '',
                     area: data.area ?? '',
                     totalM2: data.totalM2 ?? '',
-                    priceUSD: data.priceUSD === 0 ? 0 : data.priceUSD || '',
-                    priceARS: data.priceARS === 0 ? 0 : data.priceARS || '',
+                    priceUSD: data.priceUSD ?? '',
+                    priceARS: data.priceARS ?? '',
                 }
                 form.reset(values);
-                if(data.images && data.images.length > 0){
+                if(Array.isArray(data.images) && data.images.length > 0){
                     setImagePreviews(data.images.map(img => img.url));
                 }
               } else {
@@ -553,5 +553,3 @@ export default function PropertyFormPage() {
         </Suspense>
     )
 }
-
-    
