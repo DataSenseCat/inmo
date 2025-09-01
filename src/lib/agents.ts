@@ -1,8 +1,17 @@
+'use server';
+
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, Timestamp, updateDoc, where } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { db, storage, uploadFile } from '@/lib/firebase';
 import type { Agent } from '@/models/agent';
-import { firebaseTimestampToString, dataUriToBuffer } from './utils';
+import { firebaseTimestampToString } from './utils';
+
+// This is a server-only function
+async function uploadAgentPhoto(agentId: string, photoDataUri: string): Promise<string> {
+    const fileExtension = photoDataUri.substring(photoDataUri.indexOf('/') + 1, photoDataUri.indexOf(';'));
+    const imagePath = `agents/${agentId}/profile.${fileExtension}`;
+    return await uploadFile(photoDataUri, imagePath);
+}
 
 export async function createAgent(
   data: Omit<Agent, 'id' | 'photoUrl' | 'createdAt' | 'updatedAt'>,
@@ -24,12 +33,7 @@ export async function createAgent(
     const agentId = docRef.id;
 
     if (photoDataUri) {
-        const { mimeType } = dataUriToBuffer(photoDataUri);
-        const fileExtension = mimeType.split('/')[1] || 'jpg';
-        const imagePath = `agents/${agentId}/profile.${fileExtension}`;
-        
-        const photoUrl = await uploadFile(photoDataUri, imagePath);
-        
+        const photoUrl = await uploadAgentPhoto(agentId, photoDataUri);
         await updateDoc(doc(db, 'agents', agentId), { photoUrl: photoUrl, updatedAt: Timestamp.now() });
     }
 
@@ -69,11 +73,7 @@ export async function updateAgent(
            }
         }
       }
-
-      const { mimeType } = dataUriToBuffer(photoDataUri);
-      const fileExtension = mimeType.split('/')[1] || 'jpg';
-      const imagePath = `agents/${id}/profile.${fileExtension}`;
-      updatePayload.photoUrl = await uploadFile(photoDataUri, imagePath);
+      updatePayload.photoUrl = await uploadAgentPhoto(id, photoDataUri);
     }
     
     await updateDoc(docRef, updatePayload);
