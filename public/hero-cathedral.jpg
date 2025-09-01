@@ -1,0 +1,4 @@
+// NOT-A-FILE: This is a placeholder for the hero image.
+// The build system will download the image from:
+// https://images.unsplash.com/photo-1628045353515-b74f34691456?q=80&w=2070&auto=format&fit=crop
+// and save it as hero-cathedral.jpg in the /public directory.
