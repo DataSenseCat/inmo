@@ -5,7 +5,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, Info, Home, ListChecks, DollarSign, Image as ImageIcon, ParkingCircle, Waves, ConciergeBell, Flame, CookingPot, Upload, Trash2, Loader2, User } from 'lucide-react';
+import { ArrowLeft, Info, Home, ListChecks, DollarSign, Image as ImageIcon, ParkingCircle, Waves, ConciergeBell, Flame, CookingPot, Upload, Trash2, Loader2, User, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -37,6 +37,7 @@ import type { Property } from '@/models/property';
 import type { Agent } from '@/models/agent';
 import { getAgents } from '@/lib/agents';
 import { fileToDataUri } from '@/lib/utils';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 // Esquema de validación con Zod para todo el formulario
 const propertyFormSchema = z.object({
@@ -143,8 +144,8 @@ function PropertyForm() {
                     bathrooms: data.bathrooms ?? '',
                     area: data.area ?? '',
                     totalM2: data.totalM2 ?? '',
-                    priceUSD: data.priceUSD ?? '',
-                    priceARS: data.priceARS ?? '',
+                    priceUSD: data.priceUSD === 0 ? 0 : data.priceUSD || '',
+                    priceARS: data.priceARS === 0 ? 0 : data.priceARS || '',
                 }
                 form.reset(values);
                 if(data.images){
@@ -188,7 +189,11 @@ function PropertyForm() {
     try {
         const selectedAgent = agents.find(agent => agent.id === data.agentId);
         if (!selectedAgent) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Agente seleccionado no es válido.' });
+            toast({ 
+                variant: 'destructive', 
+                title: 'Agente no válido', 
+                description: 'Por favor, seleccione un agente de la lista para poder guardar la propiedad.' 
+            });
             setIsSubmitting(false);
             return;
         }
@@ -246,6 +251,21 @@ function PropertyForm() {
               <Loader2 className="h-10 w-10 animate-spin" />
           </div>
       )
+  }
+
+  if (!loading && agents.length === 0) {
+    return (
+        <div className="container mx-auto px-4 md:px-6 py-8">
+             <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>No hay agentes activos</AlertTitle>
+                <AlertDescription>
+                    No se puede crear o editar una propiedad porque no hay agentes activos en el sistema. 
+                    Por favor, <Link href="/admin/agents/form" className="underline font-bold">crea un agente</Link> primero.
+                </AlertDescription>
+            </Alert>
+        </div>
+    )
   }
   
   return (
@@ -533,3 +553,5 @@ export default function PropertyFormPage() {
         </Suspense>
     )
 }
+
+    
