@@ -1,3 +1,5 @@
+'use server';
+
 import {
   addDoc,
   collection,
@@ -13,7 +15,13 @@ import {
 import { ref, deleteObject } from 'firebase/storage';
 import { db, storage, uploadFile } from '@/lib/firebase';
 import type { Development } from '@/models/development';
-import { firebaseTimestampToString, dataUriToBuffer } from './utils';
+import { firebaseTimestampToString } from './utils';
+
+async function uploadDevelopmentImage(devId: string, imageDataUri: string): Promise<string> {
+    const fileExtension = imageDataUri.substring(imageDataUri.indexOf('/') + 1, imageDataUri.indexOf(';'));
+    const imagePath = `developments/${devId}/main.${fileExtension}`;
+    return await uploadFile(imageDataUri, imagePath);
+}
 
 const prepareDevelopmentDataForSave = (data: any) => {
     return {
@@ -48,10 +56,7 @@ export async function createDevelopment(data: Omit<Development, 'id' | 'image' |
         const docRef = await addDoc(collection(db, 'developments'), developmentPayload);
         const devId = docRef.id;
 
-        const { mimeType } = dataUriToBuffer(imageDataUri);
-        const fileExtension = mimeType.split('/')[1] || 'jpg';
-        const imagePath = `developments/${devId}/main.${fileExtension}`;
-        const imageUrl = await uploadFile(imageDataUri, imagePath);
+        const imageUrl = await uploadDevelopmentImage(devId, imageDataUri);
         
         await updateDoc(doc(db, 'developments', devId), { image: imageUrl, updatedAt: Timestamp.now() });
 
@@ -86,10 +91,7 @@ export async function updateDevelopment(id: string, data: Partial<Development>, 
                 }
             }
             
-            const { mimeType } = dataUriToBuffer(newImageDataUri);
-            const fileExtension = mimeType.split('/')[1] || 'jpg';
-            const imagePath = `developments/${id}/main.${fileExtension}`;
-            updatePayload.image = await uploadFile(newImageDataUri, imagePath);
+            updatePayload.image = await uploadDevelopmentImage(id, newImageDataUri);
         }
 
         delete updatePayload.id;

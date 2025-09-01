@@ -1,3 +1,4 @@
+'use server';
 
 import {
   addDoc,
@@ -16,9 +17,19 @@ import {
 import { ref, deleteObject } from 'firebase/storage';
 import { db, storage, uploadFile } from '@/lib/firebase';
 import type { Property } from '@/models/property';
-import { firebaseTimestampToString, dataUriToBuffer } from './utils';
+import { firebaseTimestampToString } from './utils';
 
 type PropertyCreationPayload = Omit<Property, 'id' | 'images' | 'createdAt' | 'updatedAt'>;
+
+async function uploadPropertyImages(propId: string, imageDataUris: string[]): Promise<{ url: string }[]> {
+    const imageUrls = await Promise.all(imageDataUris.map(async (dataUri, index) => {
+        const fileExtension = dataUri.substring(dataUri.indexOf('/') + 1, dataUri.indexOf(';'));
+        const imagePath = `properties/${propId}/${Date.now()}_${index}.${fileExtension}`;
+        const url = await uploadFile(dataUri, imagePath);
+        return { url };
+    }));
+    return imageUrls;
+}
 
 export async function createProperty(data: PropertyCreationPayload, imageDataUris: string[]): Promise<{ id: string }> {
     if (!imageDataUris || imageDataUris.length === 0) {
@@ -62,13 +73,7 @@ export async function createProperty(data: PropertyCreationPayload, imageDataUri
         const docRef = await addDoc(collection(db, 'properties'), propertyPayload);
         const propId = docRef.id;
 
-        const imageUrls = await Promise.all(imageDataUris.map(async (dataUri, index) => {
-            const { mimeType } = dataUriToBuffer(dataUri);
-            const fileExtension = mimeType.split('/')[1] || 'jpg';
-            const imagePath = `properties/${propId}/${Date.now()}_${index}.${fileExtension}`;
-            const url = await uploadFile(dataUri, imagePath);
-            return { url };
-        }));
+        const imageUrls = await uploadPropertyImages(propId, imageDataUris);
         
         await updateDoc(doc(db, 'properties', propId), { images: imageUrls, updatedAt: Timestamp.now() });
 
@@ -106,13 +111,7 @@ export async function updateProperty(id: string, data: Partial<PropertyCreationP
                 }));
             }
             
-            const newImageUrls = await Promise.all(newImageDataUris.map(async (dataUri, index) => {
-                const { mimeType } = dataUriToBuffer(dataUri);
-                const fileExtension = mimeType.split('/')[1] || 'jpg';
-                const imagePath = `properties/${id}/${Date.now()}_${index}.${fileExtension}`;
-                const url = await uploadFile(dataUri, imagePath);
-                return { url };
-            }));
+            const newImageUrls = await uploadPropertyImages(id, newImageDataUris);
             updatePayload.images = newImageUrls;
         }
 
