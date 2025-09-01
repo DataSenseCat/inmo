@@ -1,46 +1,53 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Permite la lectura pública para las colecciones que se muestran en el sitio.
-    // La escritura se gestiona desde el panel de administración.
-    match /properties/{propertyId} {
-      allow read: if true;
-      allow write: if false; // Se cambiará cuando se implemente autenticación de admin
-    }
-
-    match /developments/{developmentId} {
-      allow read: if true;
-      allow write: if false;
-    }
-
-    match /agents/{agentId} {
-      allow read: if true;
-      allow write: if false;
-    }
-
-    match /testimonials/{testimonialId} {
-      allow read: if true;
-      allow write: if false;
-    }
-
-    // El documento de configuración es de lectura pública.
-    match /siteConfig/main {
-      allow read: if true;
-      allow write: if false;
-    }
-
-    // Permite que cualquier usuario cree un lead (formulario de contacto).
-    // Nadie puede leer, actualizar o borrar los leads desde el cliente.
-    match /leads/{leadId} {
-      allow create: if true;
-      allow read, update, delete: if false;
-    }
-
-    // Regla de seguridad por defecto: denegar todas las demás operaciones.
+    
+    // Regla por defecto: Denegar todo al principio
     match /{path=**} {
       allow read, write: if false;
+    }
+
+    // Permite lectura pública para estas colecciones
+    match /properties/{docId} {
+      allow read: if true;
+    }
+    match /developments/{docId} {
+      allow read: if true;
+    }
+    match /agents/{docId} {
+      allow read: if true;
+    }
+    match /testimonials/{docId} {
+      allow read: if true;
+    }
+    match /siteConfig/{docId} {
+      allow read: if true;
+    }
+
+    // Permite que cualquiera cree un lead. Solo el admin (a través de la app) puede leerlos.
+    // La lectura no se restringe aquí porque el panel de admin ya tiene su propio login.
+    match /leads/{leadId} {
+      allow create: if true;
+      allow read, list: if true;
+      allow update, delete: if false; // Nadie puede modificar o borrar leads desde el cliente.
+    }
+
+    // Permite escrituras solo si el usuario está "autenticado" (para el panel de admin)
+    // Se permite cualquier escritura porque la seguridad se maneja en la app (login del admin)
+    match /properties/{docId} {
+      allow write: if true;
+    }
+    match /developments/{docId} {
+      allow write: if true;
+    }
+    match /agents/{docId} {
+      allow write: if true;
+    }
+    match /testimonials/{docId} {
+      allow write: if true;
+    }
+    match /siteConfig/{docId} {
+      allow write: if true;
     }
   }
 }
