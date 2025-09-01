@@ -1,6 +1,6 @@
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, Timestamp, updateDoc, where } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
-import { db, storage } from '@/lib/firebase';
+import { ref, deleteObject } from 'firebase/storage';
+import { db, storage, uploadFile } from '@/lib/firebase';
 import type { Agent } from '@/models/agent';
 import { firebaseTimestampToString, dataUriToBuffer } from './utils';
 
@@ -9,14 +9,13 @@ export async function createAgent(
   photoDataUri?: string
 ): Promise<{ id: string }> {
   try {
-    // 1. Create the agent document first (without the photo)
     const agentPayload = {
       name: data.name,
       email: data.email,
       phone: data.phone,
       active: data.active,
       bio: data.bio || '',
-      photoUrl: '', // Initialize with empty string
+      photoUrl: '',
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     };
@@ -24,16 +23,13 @@ export async function createAgent(
     const docRef = await addDoc(collection(db, 'agents'), agentPayload);
     const agentId = docRef.id;
 
-    // 2. If a photo is provided, upload it and update the document
     if (photoDataUri) {
-        const { buffer, mimeType } = dataUriToBuffer(photoDataUri);
+        const { mimeType } = dataUriToBuffer(photoDataUri);
         const fileExtension = mimeType.split('/')[1] || 'jpg';
-        const imageRef = ref(storage, `agents/${agentId}/profile.${fileExtension}`);
+        const imagePath = `agents/${agentId}/profile.${fileExtension}`;
         
-        await uploadBytes(imageRef, buffer, { contentType: mimeType });
-        const photoUrl = await getDownloadURL(imageRef);
+        const photoUrl = await uploadFile(photoDataUri, imagePath);
         
-        // 3. Update the agent document with the photo URL
         await updateDoc(doc(db, 'agents', agentId), { photoUrl: photoUrl, updatedAt: Timestamp.now() });
     }
 
@@ -74,11 +70,10 @@ export async function updateAgent(
         }
       }
 
-      const { buffer, mimeType } = dataUriToBuffer(photoDataUri);
+      const { mimeType } = dataUriToBuffer(photoDataUri);
       const fileExtension = mimeType.split('/')[1] || 'jpg';
-      const imageRef = ref(storage, `agents/${id}/profile.${fileExtension}`);
-      await uploadBytes(imageRef, buffer, { contentType: mimeType });
-      updatePayload.photoUrl = await getDownloadURL(imageRef);
+      const imagePath = `agents/${id}/profile.${fileExtension}`;
+      updatePayload.photoUrl = await uploadFile(photoDataUri, imagePath);
     }
     
     await updateDoc(docRef, updatePayload);
@@ -172,5 +167,3 @@ export async function deleteAgent(id: string): Promise<void> {
     throw new Error("Failed to delete agent.");
   }
 }
-
-    
