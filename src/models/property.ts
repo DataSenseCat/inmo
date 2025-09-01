@@ -11,6 +11,7 @@ export type Property = {
     bedrooms: number;
     bathrooms: number;
     area: number;
+    totalM2: number;
     images: { url: string }[];
     featured: boolean;
     active: boolean;

@@ -30,6 +30,7 @@ const preparePropertyDataForSave = (data: any) => {
         bedrooms: Number(data.bedrooms) || 0,
         bathrooms: Number(data.bathrooms) || 0,
         area: Number(data.area) || 0,
+        totalM2: Number(data.totalM2) || 0,
         featured: data.featured || false,
         active: data.active === undefined ? true : data.active,
         agentId: data.agentId || '',

@@ -114,6 +114,7 @@ function PropertyForm() {
       bedrooms: 0,
       bathrooms: 0,
       area: 0,
+      totalM2: 0,
       features: {
         cochera: false,
         piscina: false,
@@ -141,6 +142,7 @@ function PropertyForm() {
                     bedrooms: data.bedrooms || '',
                     bathrooms: data.bathrooms || '',
                     area: data.area || '',
+                    totalM2: data.totalM2 || '',
                     priceUSD: data.priceUSD || '',
                     priceARS: data.priceARS || '',
                 }
@@ -338,7 +340,7 @@ function PropertyForm() {
 
             <TabsContent value="details" className="mt-6">
                 <Card><CardContent className="p-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
                     <FormField control={form.control} name="bedrooms" render={({ field }) => (
                         <FormItem>
                             <FormLabel>Habitaciones</FormLabel>
@@ -355,8 +357,15 @@ function PropertyForm() {
                     )}/>
                      <FormField control={form.control} name="area" render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Metros cuadrados</FormLabel>
+                            <FormLabel>M² cubiertos</FormLabel>
                             <FormControl><Input type="number" placeholder="Ej: 120" {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}/>
+                     <FormField control={form.control} name="totalM2" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>M² totales</FormLabel>
+                            <FormControl><Input type="number" placeholder="Ej: 300" {...field} /></FormControl>
                             <FormMessage />
                         </FormItem>
                     )}/>
