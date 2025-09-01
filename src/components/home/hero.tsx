@@ -6,9 +6,9 @@ export function Hero() {
     <section className="relative w-full h-[60vh] min-h-[500px] flex items-center justify-center">
       <div className="absolute inset-0 -z-20">
         <Image
-          src="/hero-cathedral.jpg"
-          alt="Cathedral Basílica de Nuestra Señora del Valle, Catamarca"
-          data-ai-hint="cathedral catamarca"
+          src="https://picsum.photos/1920/1080"
+          alt="Paisaje de Catamarca"
+          data-ai-hint="mountain landscape"
           fill
           className="object-cover"
           priority
