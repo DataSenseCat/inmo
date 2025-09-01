@@ -1,4 +1,5 @@
-'use server';
+
+'use client';
 
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, Timestamp, updateDoc, where } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
@@ -6,7 +7,7 @@ import { db, storage } from '@/lib/firebase';
 import type { Agent } from '@/models/agent';
 import { firebaseTimestampToString, dataUriToBuffer } from './utils';
 
-// This function now runs on the SERVER
+// This function now runs on the CLIENT
 export async function createAgent(
   data: Omit<Agent, 'id' | 'photoUrl' | 'createdAt' | 'updatedAt'>,
   photoDataUri?: string
@@ -42,7 +43,7 @@ export async function createAgent(
   }
 }
 
-// This function now runs on the SERVER
+// This function now runs on the CLIENT
 export async function updateAgent(
   id: string,
   data: Partial<Omit<Agent, 'id'>>,
@@ -88,7 +89,7 @@ export async function updateAgent(
   }
 }
 
-// This function runs on the server or client
+// This function runs on the client
 export async function getAgents(): Promise<Agent[]> {
   try {
     const activeAgentsQuery = query(collection(db, 'agents'), where('active', '==', true), orderBy('name', 'asc'));
@@ -107,6 +108,8 @@ export async function getAgents(): Promise<Agent[]> {
     return [];
   }
 }
+
+// This function runs on the client
 export async function getAllAgents(): Promise<Agent[]> {
     try {
         const allAgentsQuery = query(collection(db, 'agents'), orderBy('name', 'asc'));
@@ -127,7 +130,7 @@ export async function getAllAgents(): Promise<Agent[]> {
 }
 
 
-// This function runs on the server or client
+// This function runs on the client
 export async function getAgentById(id: string): Promise<Agent | null> {
   try {
     const docSnap = await getDoc(doc(db, 'agents', id));
@@ -148,7 +151,7 @@ export async function getAgentById(id: string): Promise<Agent | null> {
   }
 }
 
-// This function now runs on the SERVER
+// This function now runs on the CLIENT
 export async function deleteAgent(id: string): Promise<void> {
   try {
     const docRef = doc(db, 'agents', id);

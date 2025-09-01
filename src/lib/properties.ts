@@ -1,4 +1,5 @@
-'use server';
+
+'use client';
 
 import {
   addDoc,
@@ -46,7 +47,7 @@ const preparePropertyDataForSave = (data: any) => {
     };
 };
 
-// This function now runs on the SERVER
+// This function now runs on the CLIENT
 export async function createProperty(data: Omit<Property, 'id' | 'images' | 'createdAt' | 'updatedAt'>, imageFiles: File[]): Promise<{ id: string }> {
     try {
         if (!imageFiles || imageFiles.length === 0) {
@@ -79,7 +80,7 @@ export async function createProperty(data: Omit<Property, 'id' | 'images' | 'cre
     }
 }
 
-// This function now runs on the SERVER
+// This function now runs on the CLIENT
 export async function updateProperty(id: string, data: Partial<Property>, newImageFiles?: File[]): Promise<void> {
     try {
         const docRef = doc(db, 'properties', id);
@@ -126,7 +127,7 @@ export async function updateProperty(id: string, data: Partial<Property>, newIma
     }
 }
 
-// This function runs on server or client
+// This function runs on CLIENT
 export async function getProperties(): Promise<Property[]> {
   try {
     const propertiesCol = collection(db, 'properties');
@@ -147,7 +148,7 @@ export async function getProperties(): Promise<Property[]> {
   }
 }
 
-// This function runs on server or client
+// This function runs on CLIENT
 export async function getFeaturedProperties(): Promise<Property[]> {
     try {
         const propertiesCol = collection(db, 'properties');
@@ -168,7 +169,7 @@ export async function getFeaturedProperties(): Promise<Property[]> {
     }
 }
 
-// This function can be called from client or server
+// This function can be called from client
 export async function getPropertyById(id: string): Promise<Property | null> {
     try {
         const docRef = doc(db, 'properties', id);
@@ -191,7 +192,7 @@ export async function getPropertyById(id: string): Promise<Property | null> {
     }
 }
 
-// This function now runs on the SERVER
+// This function now runs on the CLIENT
 export async function deleteProperty(id: string): Promise<void> {
     try {
         const docRef = doc(db, 'properties', id);

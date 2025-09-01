@@ -1,4 +1,7 @@
 
+'use client';
+
+import { useEffect, useState } from 'react';
 import { getDevelopmentById } from '@/lib/developments';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
@@ -8,6 +11,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { getSiteConfig } from '@/lib/config';
+import type { Development } from '@/models/development';
+import type { SiteConfig } from '@/models/site-config';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const statusConfig = {
     planning: { label: "En Planificación", icon: Clock, className: "bg-blue-100 text-blue-800 border-blue-200" },
@@ -25,12 +31,66 @@ const DetailItem = ({ icon: Icon, label, value }: { icon: React.ElementType, lab
     </div>
 );
 
-export default async function DevelopmentDetailPage({ params }: { params: { id: string } }) {
-  const development = await getDevelopmentById(params.id);
-  const config = await getSiteConfig();
+function DevelopmentDetailSkeleton() {
+    return (
+        <div className="container mx-auto px-4 md:px-6 py-8 lg:py-12">
+            <div className="mb-8">
+                <Skeleton className="h-6 w-32 mb-2" />
+                <Skeleton className="h-12 w-3/4" />
+                <Skeleton className="h-6 w-1/2 mt-2" />
+            </div>
+            <div className="grid lg:grid-cols-5 gap-8 xl:gap-12">
+                <div className="lg:col-span-3">
+                    <Skeleton className="aspect-[16/10] w-full mb-8" />
+                    <Skeleton className="h-8 w-1/3 mb-4" />
+                    <Skeleton className="h-24 w-full" />
+                </div>
+                <div className="lg:col-span-2 space-y-8">
+                    <Skeleton className="h-96 w-full" />
+                    <Skeleton className="h-64 w-full" />
+                </div>
+            </div>
+        </div>
+    )
+}
+
+export default function DevelopmentDetailPage({ params }: { params: { id: string } }) {
+  const [development, setDevelopment] = useState<Development | null>(null);
+  const [config, setConfig] = useState<SiteConfig | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+        setLoading(true);
+        try {
+            const [devData, configData] = await Promise.all([
+                getDevelopmentById(params.id),
+                getSiteConfig()
+            ]);
+            
+            if (!devData) {
+                notFound();
+            }
+
+            setDevelopment(devData);
+            setConfig(configData);
+        } catch(error) {
+            console.error("Failed to load development data", error);
+            notFound();
+        } finally {
+            setLoading(false);
+        }
+    }
+    loadData();
+  }, [params.id]);
+
+
+  if (loading) {
+    return <DevelopmentDetailSkeleton />;
+  }
 
   if (!development) {
-    notFound();
+    return null; // or notFound(), but loading handles this.
   }
 
   const status = statusConfig[development.status];

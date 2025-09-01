@@ -1,4 +1,7 @@
 
+'use client';
+
+import { useEffect, useState } from 'react';
 import { getPropertyById } from '@/lib/properties';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
@@ -15,6 +18,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { VirtualTour } from './virtual-tour';
 import { Separator } from '@/components/ui/separator';
+import type { Property } from '@/models/property';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const featureIcons = {
     cochera: ParkingCircle,
@@ -32,12 +37,61 @@ const featureLabels = {
     parrillero: "Parrillero",
 };
 
+function PropertyDetailSkeleton() {
+    return (
+      <div className="container mx-auto px-4 md:px-6 py-8 lg:py-12">
+        <div className="grid lg:grid-cols-3 gap-8 xl:gap-12">
+          <div className="lg:col-span-2">
+            <Skeleton className="aspect-[16/10] w-full" />
+            <div className="mt-8">
+                <Skeleton className="h-6 w-24 mb-2" />
+                <Skeleton className="h-10 w-3/4 mb-4" />
+                <Skeleton className="h-5 w-1/2" />
+                <Separator className="my-6" />
+                <Skeleton className="h-6 w-full mb-4" />
+                <Separator className="my-6" />
+                <Skeleton className="h-8 w-1/3 mb-4" />
+                <Skeleton className="h-24 w-full" />
+            </div>
+          </div>
+          <div className="lg:col-span-1 space-y-8">
+            <Skeleton className="h-96 w-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-export default async function PropertyDetailPage({ params }: { params: { id: string } }) {
-  const property = await getPropertyById(params.id);
+export default function PropertyDetailPage({ params }: { params: { id: string } }) {
+  const [property, setProperty] = useState<Property | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  if (!property || !property.active) {
-    notFound();
+  useEffect(() => {
+    async function loadProperty() {
+        setLoading(true);
+        try {
+            const propData = await getPropertyById(params.id);
+            if (!propData || !propData.active) {
+                notFound();
+            }
+            setProperty(propData);
+        } catch(error) {
+            console.error("Failed to load property", error);
+            notFound();
+        } finally {
+            setLoading(false);
+        }
+    }
+    loadProperty();
+  }, [params.id]);
+
+
+  if (loading) {
+    return <PropertyDetailSkeleton />;
+  }
+
+  if (!property) {
+    return null;
   }
 
   const isSale = property.operation === 'Venta';

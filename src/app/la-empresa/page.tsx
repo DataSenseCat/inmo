@@ -1,5 +1,7 @@
-'use server';
 
+'use client';
+
+import { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +12,11 @@ import { getTestimonials } from "@/lib/testimonials";
 import { Award, Briefcase, Check, Handshake, Heart, Home, KeyRound, Landmark, Library, Mail, Phone, Scale, Search, ShieldCheck, Smile, Star, Users, FileText } from "lucide-react";
 import Image from "next/image";
 import Link from 'next/link';
+import type { Agent } from '@/models/agent';
+import type { SiteConfig } from '@/models/site-config';
+import type { Testimonial } from '@/models/testimonial';
+import { Skeleton } from '@/components/ui/skeleton';
+
 
 const stats = [
     { value: "15+", label: "Años de experiencia", icon: Award },
@@ -56,10 +63,32 @@ const getIconFor = (name: string, iconMap: { [key: string]: React.ElementType })
 };
 
 
-export default async function AboutUsPage() {
-    const agents = await getAgents();
-    const config = await getSiteConfig();
-    const testimonials = await getTestimonials(true);
+export default function AboutUsPage() {
+    const [agents, setAgents] = useState<Agent[]>([]);
+    const [config, setConfig] = useState<SiteConfig | null>(null);
+    const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function loadData() {
+            setLoading(true);
+            try {
+                const [agentData, configData, testimonialData] = await Promise.all([
+                    getAgents(),
+                    getSiteConfig(),
+                    getTestimonials(true)
+                ]);
+                setAgents(agentData);
+                setConfig(configData);
+                setTestimonials(testimonialData);
+            } catch (error) {
+                console.error("Failed to load about us page data", error);
+            } finally {
+                setLoading(false);
+            }
+        }
+        loadData();
+    }, []);
 
     return (
         <div className="bg-gray-50/50">
@@ -129,7 +158,7 @@ export default async function AboutUsPage() {
             </section>
 
              {/* Services Section */}
-             {config?.services && config.services.length > 0 && (
+             {loading ? <Skeleton className="h-48 w-full" /> : config?.services && config.services.length > 0 && (
                 <section className="py-20 bg-white">
                     <div className="container mx-auto px-4">
                         <div className="text-center max-w-3xl mx-auto mb-12">
@@ -167,19 +196,25 @@ export default async function AboutUsPage() {
                             Profesionales capacitados y comprometidos con darte el mejor servicio.
                         </p>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {agents.map((agent) => (
-                            <Card key={agent.id} className="text-center p-6 hover:shadow-lg transition-shadow">
-                                <Avatar className="h-24 w-24 mx-auto mb-4 ring-4 ring-primary/20">
-                                    <AvatarImage src={agent.photoUrl} alt={agent.name} data-ai-hint="person photo" />
-                                    <AvatarFallback>{agent.name.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <h3 className="font-semibold text-lg">{agent.name}</h3>
-                                <p className="text-primary text-sm font-medium">Agente Inmobiliario</p>
-                                {agent.bio && <p className="text-muted-foreground text-xs mt-3 border-t pt-3">{agent.bio}</p>}
-                            </Card>
-                        ))}
-                    </div>
+                    {loading ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                             {[...Array(4)].map((_,i) => <Skeleton key={i} className="h-64 w-full" />)}
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                            {agents.map((agent) => (
+                                <Card key={agent.id} className="text-center p-6 hover:shadow-lg transition-shadow">
+                                    <Avatar className="h-24 w-24 mx-auto mb-4 ring-4 ring-primary/20">
+                                        <AvatarImage src={agent.photoUrl} alt={agent.name} data-ai-hint="person photo" />
+                                        <AvatarFallback>{agent.name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <h3 className="font-semibold text-lg">{agent.name}</h3>
+                                    <p className="text-primary text-sm font-medium">Agente Inmobiliario</p>
+                                    {agent.bio && <p className="text-muted-foreground text-xs mt-3 border-t pt-3">{agent.bio}</p>}
+                                </Card>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </section>
 
@@ -192,7 +227,11 @@ export default async function AboutUsPage() {
                             Testimonios reales de personas que confían en nosotros.
                         </p>
                     </div>
-                    {testimonials.length > 0 ? (
+                    {loading ? (
+                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {[...Array(3)].map((_,i) => <Skeleton key={i} className="h-48 w-full" />)}
+                        </div>
+                    ) : testimonials.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                             {testimonials.map((testimonial) => (
                                 <Card key={testimonial.id} className="p-8 bg-gray-50/70 border-l-4 border-primary">
@@ -216,7 +255,7 @@ export default async function AboutUsPage() {
             </section>
 
              {/* Certifications Section */}
-            {config?.certifications && config.certifications.length > 0 && (
+            {loading ? <Skeleton className="h-32 w-full" /> : config?.certifications && config.certifications.length > 0 && (
                 <section className="py-20">
                     <div className="container mx-auto px-4">
                         <div className="text-center max-w-3xl mx-auto mb-12">

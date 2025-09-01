@@ -1,4 +1,5 @@
-'use server';
+
+'use client';
 
 import {
   addDoc,
@@ -35,7 +36,7 @@ const prepareDevelopmentDataForSave = (data: any) => {
     };
 };
 
-// This function now runs on the SERVER
+// This function now runs on the CLIENT
 export async function createDevelopment(data: Omit<Development, 'id' | 'image' | 'createdAt' | 'updatedAt'>, imageFile: File): Promise<{ id: string }> {
     try {
         if (!imageFile) {
@@ -65,7 +66,7 @@ export async function createDevelopment(data: Omit<Development, 'id' | 'image' |
     }
 }
 
-// This function now runs on the SERVER
+// This function now runs on the CLIENT
 export async function updateDevelopment(id: string, data: Partial<Development>, newImageFile?: File): Promise<void> {
     try {
         const docRef = doc(db, 'developments', id);
@@ -103,7 +104,7 @@ export async function updateDevelopment(id: string, data: Partial<Development>, 
     }
 }
 
-// This function runs on the server or client
+// This function runs on the CLIENT
 export async function getDevelopments(): Promise<Development[]> {
   try {
     const developmentsCol = collection(db, 'developments');
@@ -147,7 +148,7 @@ export async function getDevelopmentById(id: string): Promise<Development | null
     }
 }
 
-// This function now runs on the SERVER
+// This function now runs on the CLIENT
 export async function deleteDevelopment(id: string): Promise<void> {
     try {
         const docRef = doc(db, 'developments', id);

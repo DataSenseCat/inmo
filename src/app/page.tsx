@@ -1,3 +1,6 @@
+
+'use client';
+
 import { Suspense } from 'react';
 import { Hero } from '@/components/home/hero';
 import { FeaturedProperties } from '@/components/home/featured-properties';
