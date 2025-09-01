@@ -28,6 +28,7 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
+// Las credenciales se leen desde las variables de entorno
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 const ADMIN_PASS = process.env.NEXT_PUBLIC_ADMIN_PASS;
 
@@ -43,7 +44,7 @@ export default function AdminLoginPage() {
 
   function onSubmit(data: LoginFormValues) {
     if (!ADMIN_EMAIL || !ADMIN_PASS) {
-        setError("La configuración de administrador no está definida. Contacte al soporte.");
+        setError("Las credenciales de administrador no están configuradas en el archivo .env. Por favor, contacte al soporte.");
         return;
     }
 
@@ -76,35 +77,47 @@ export default function AdminLoginPage() {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="admin@email.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Contraseña</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="********" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? "Ingresando..." : "Ingresar"}
-              </Button>
+               {!ADMIN_EMAIL || !ADMIN_PASS ? (
+                 <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Configuración Requerida</AlertTitle>
+                    <AlertDescription>
+                        Las credenciales de administrador no están definidas. Por favor, configura las variables NEXT_PUBLIC_ADMIN_EMAIL y NEXT_PUBLIC_ADMIN_PASS en tu archivo .env.
+                    </AlertDescription>
+                </Alert>
+               ) : (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input placeholder="admin@email.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Contraseña</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="********" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting ? "Ingresando..." : "Ingresar"}
+                  </Button>
+                </>
+               )}
             </form>
           </Form>
         </CardContent>
