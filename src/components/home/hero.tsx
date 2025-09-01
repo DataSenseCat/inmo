@@ -7,7 +7,7 @@ export function Hero() {
       {/* Background Image and Overlay */}
       <div className="absolute inset-0">
         <Image
-          src="https://firebasestorage.googleapis.com/v0/b/catamarca-estates.appspot.com/o/hero-catamarca.jpg?alt=media"
+          src="public/hero-cathedral.jpg"
           alt="Catedral Basílica de Nuestra Señora del Valle, Catamarca"
           data-ai-hint="cathedral catamarca"
           fill
