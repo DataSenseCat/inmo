@@ -10,8 +10,8 @@ import {
   updateDoc,
   Timestamp,
 } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
-import { db, storage } from '@/lib/firebase';
+import { ref, deleteObject } from 'firebase/storage';
+import { db, storage, uploadFile } from '@/lib/firebase';
 import type { Development } from '@/models/development';
 import { firebaseTimestampToString, dataUriToBuffer } from './utils';
 
@@ -48,11 +48,10 @@ export async function createDevelopment(data: Omit<Development, 'id' | 'image' |
         const docRef = await addDoc(collection(db, 'developments'), developmentPayload);
         const devId = docRef.id;
 
-        const { buffer, mimeType } = dataUriToBuffer(imageDataUri);
+        const { mimeType } = dataUriToBuffer(imageDataUri);
         const fileExtension = mimeType.split('/')[1] || 'jpg';
-        const imageRef = ref(storage, `developments/${devId}/main.${fileExtension}`);
-        await uploadBytes(imageRef, buffer, { contentType: mimeType });
-        const imageUrl = await getDownloadURL(imageRef);
+        const imagePath = `developments/${devId}/main.${fileExtension}`;
+        const imageUrl = await uploadFile(imageDataUri, imagePath);
         
         await updateDoc(doc(db, 'developments', devId), { image: imageUrl, updatedAt: Timestamp.now() });
 
@@ -87,11 +86,10 @@ export async function updateDevelopment(id: string, data: Partial<Development>, 
                 }
             }
             
-            const { buffer, mimeType } = dataUriToBuffer(newImageDataUri);
+            const { mimeType } = dataUriToBuffer(newImageDataUri);
             const fileExtension = mimeType.split('/')[1] || 'jpg';
-            const imageRef = ref(storage, `developments/${id}/main.${fileExtension}`);
-            await uploadBytes(imageRef, buffer, { contentType: mimeType });
-            updatePayload.image = await getDownloadURL(imageRef);
+            const imagePath = `developments/${id}/main.${fileExtension}`;
+            updatePayload.image = await uploadFile(newImageDataUri, imagePath);
         }
 
         delete updatePayload.id;
