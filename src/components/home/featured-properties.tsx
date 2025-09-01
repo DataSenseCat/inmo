@@ -20,7 +20,7 @@ export function FeaturedProperties() {
             const props = await getFeaturedProperties();
             setFeatured(props);
         } catch (error) {
-            console.error("Failed to load featured properties:", error);
+            console.error("Error getting featured properties (the app will proceed with an empty list): ", error);
         } finally {
             setLoading(false);
         }
