@@ -64,7 +64,8 @@ export async function updateAgent(
       const currentDoc = await getDoc(docRef);
       if (currentDoc.exists()) {
           const currentData = currentDoc.data();
-          if (currentData.photoUrl && currentData.photoUrl.startsWith('https://firebasestorage.googleapis.com')) {
+          // Safely attempt to delete the old photo only if a URL exists
+          if (currentData && currentData.photoUrl && currentData.photoUrl.startsWith('https://firebasestorage.googleapis.com')) {
             try {
               await deleteObject(ref(storage, currentData.photoUrl));
             } catch (e: any) {
