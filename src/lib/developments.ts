@@ -83,7 +83,7 @@ export async function updateDevelopment(id: string, data: Partial<Development>, 
             imageUrl = await getDownloadURL(imageRef);
         }
 
-        const updatePayload: Partial<Development> = {
+        const updatePayload: Partial<Development> & { updatedAt: Timestamp } = {
             ...prepareDevelopmentDataForSave(data),
             image: imageUrl,
             updatedAt: Timestamp.now(),
