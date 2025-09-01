@@ -1,46 +1,32 @@
 
 'use server';
 
-import { Timestamp } from 'firebase-admin/firestore';
-import { adminDb, adminStorage } from '@/lib/firebase';
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, Timestamp, updateDoc } from 'firebase/firestore';
+import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
+import { db, storage } from '@/lib/firebase';
 import type { Agent } from '@/models/agent';
 
-const BUCKET_NAME = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
-
 export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'createdAt' | 'updatedAt'>, photoFile?: File): Promise<{ id: string }> {
-  if (!adminDb || !adminStorage) {
-    throw new Error("Firebase Admin SDK not initialized. Check server environment variables.");
-  }
-  
   try {
-    const agentPayload: any = {
+    let photoUrl = '';
+    if (photoFile) {
+        const imageRef = ref(storage, `agents/${Date.now()}_${photoFile.name}`);
+        await uploadBytes(imageRef, photoFile);
+        photoUrl = await getDownloadURL(imageRef);
+    }
+    
+    const agentPayload = {
       name: data.name,
       email: data.email,
       phone: data.phone,
       active: data.active,
       bio: data.bio || '',
+      photoUrl: photoUrl,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     };
 
-    if (photoFile && BUCKET_NAME) {
-      const bucket = adminStorage.bucket(BUCKET_NAME);
-      const filePath = `agents/${Date.now()}_${photoFile.name}`;
-      const buffer = Buffer.from(await photoFile.arrayBuffer());
-      
-      const file = bucket.file(filePath);
-      await file.save(buffer, {
-        metadata: {
-          contentType: photoFile.type,
-        },
-      });
-
-      agentPayload.photoUrl = file.publicUrl();
-    } else {
-      agentPayload.photoUrl = ''; // Default empty if no photo
-    }
-
-    const docRef = await adminDb.collection('agents').add(agentPayload);
+    const docRef = await addDoc(collection(db, 'agents'), agentPayload);
     return { id: docRef.id };
 
   } catch (error) {
@@ -50,48 +36,39 @@ export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'created
 }
 
 export async function updateAgent(id: string, data: Partial<Omit<Agent, 'id'>>, photoFile?: File): Promise<void> {
-  if (!adminDb || !adminStorage) {
-    throw new Error("Firebase Admin SDK not initialized. Check server environment variables.");
-  }
   try {
-    const docRef = adminDb.collection('agents').doc(id);
-    const currentDoc = await docRef.get();
+    const docRef = doc(db, 'agents', id);
+    const currentDoc = await getDoc(docRef);
 
-    if (!currentDoc.exists) {
+    if (!currentDoc.exists()) {
       throw new Error("Agent not found.");
+    }
+    
+    const currentData = currentDoc.data() as Agent;
+    let photoUrl = currentData.photoUrl;
+
+    if (photoFile) {
+        if (photoUrl && photoUrl.startsWith('https://firebasestorage.googleapis.com')) {
+            try {
+                const oldImageRef = ref(storage, photoUrl);
+                await deleteObject(oldImageRef);
+            } catch(e) {
+                console.warn("Failed to delete old image, continuing with update...", e);
+            }
+        }
+        const imageRef = ref(storage, `agents/${Date.now()}_${photoFile.name}`);
+        await uploadBytes(imageRef, photoFile);
+        photoUrl = await getDownloadURL(imageRef);
     }
 
     const updatePayload: any = {
       ...data,
-      bio: data.bio || '', // Ensure bio is not undefined
+      bio: data.bio || '', 
+      photoUrl: photoUrl,
       updatedAt: Timestamp.now(),
     };
 
-    if (photoFile && BUCKET_NAME) {
-      const bucket = adminStorage.bucket(BUCKET_NAME);
-
-      const oldData = currentDoc.data() as Agent;
-      if (oldData.photoUrl && oldData.photoUrl.includes(BUCKET_NAME)) {
-          try {
-            const oldFileName = oldData.photoUrl.split(`/o/`)[1].split('?')[0].replace(/%2F/g, "/");
-            await bucket.file(decodeURIComponent(oldFileName)).delete();
-          } catch (e) {
-             console.warn("Failed to delete old photo, continuing with update...", e);
-          }
-      }
-      
-      const filePath = `agents/${Date.now()}_${photoFile.name}`;
-      const buffer = Buffer.from(await photoFile.arrayBuffer());
-      const file = bucket.file(filePath);
-      await file.save(buffer, {
-        metadata: {
-          contentType: photoFile.type,
-        },
-      });
-      updatePayload.photoUrl = file.publicUrl();
-    }
-
-    await docRef.update(updatePayload);
+    await updateDoc(docRef, updatePayload);
   } catch (error) {
     console.error("Error updating agent: ", error);
     throw new Error("Failed to update agent.");
@@ -99,13 +76,8 @@ export async function updateAgent(id: string, data: Partial<Omit<Agent, 'id'>>, 
 }
 
 export async function getAgents(): Promise<Agent[]> {
-  // Reading can be done via client SDK if needed, but for consistency we use admin if available
-  if (!adminDb) {
-    console.warn("Admin SDK not available for getAgents. Returning empty array.");
-    return [];
-  }
   try {
-    const snapshot = await adminDb.collection('agents').orderBy('name', 'asc').get();
+    const snapshot = await getDocs(query(collection(db, 'agents'), orderBy('name', 'asc')));
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Agent));
   } catch (error) {
     console.error("Error getting agents (the app will proceed with an empty list): ", error);
@@ -114,13 +86,9 @@ export async function getAgents(): Promise<Agent[]> {
 }
 
 export async function getAgentById(id: string): Promise<Agent | null> {
-  if (!adminDb) {
-    console.warn(`Admin SDK not available for getAgentById(${id}). Returning null.`);
-    return null;
-  }
   try {
-    const docSnap = await adminDb.collection('agents').doc(id).get();
-    if (docSnap.exists) {
+    const docSnap = await getDoc(doc(db, 'agents', id));
+    if (docSnap.exists()) {
       return { id: docSnap.id, ...docSnap.data() } as Agent;
     } else {
       return null;
@@ -132,26 +100,22 @@ export async function getAgentById(id: string): Promise<Agent | null> {
 }
 
 export async function deleteAgent(id: string): Promise<void> {
-  if (!adminDb || !adminStorage) {
-    throw new Error("Firebase Admin SDK not initialized. Check server environment variables.");
-  }
   try {
-    const docRef = adminDb.collection('agents').doc(id);
-    const docSnap = await docRef.get();
+    const docRef = doc(db, 'agents', id);
+    const docSnap = await getDoc(docRef);
 
-    if (docSnap.exists && BUCKET_NAME) {
+    if (docSnap.exists()) {
       const agent = docSnap.data() as Agent;
-      if (agent.photoUrl && agent.photoUrl.includes(BUCKET_NAME)) {
+      if (agent.photoUrl && agent.photoUrl.startsWith('https://firebasestorage.googleapis.com')) {
         try {
-          const bucket = adminStorage.bucket(BUCKET_NAME);
-          const oldFileName = agent.photoUrl.split(`/o/`)[1].split('?')[0].replace(/%2F/g, "/");
-          await bucket.file(decodeURIComponent(oldFileName)).delete();
+          const imageRef = ref(storage, agent.photoUrl);
+          await deleteObject(imageRef);
         } catch (storageError) {
           console.error(`Failed to delete image for agent ${id}:`, storageError);
         }
       }
     }
-    await docRef.delete();
+    await deleteDoc(docRef);
   } catch (error) {
     console.error("Error deleting agent: ", error);
     throw new Error("Failed to delete agent.");

@@ -80,7 +80,6 @@ export async function updateProperty(id: string, data: Partial<Property>, newIma
             updatedAt: Timestamp.now(),
         };
 
-        // Handle image updates
         if (newImages && newImages.length > 0) {
             const docSnap = await getDoc(docRef);
             const currentProperty = docSnap.data() as Property | undefined;
