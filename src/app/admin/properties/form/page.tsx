@@ -139,12 +139,12 @@ function PropertyForm() {
               if (data) {
                 const values = {
                     ...data,
-                    bedrooms: data.bedrooms || '',
-                    bathrooms: data.bathrooms || '',
-                    area: data.area || '',
-                    totalM2: data.totalM2 || '',
-                    priceUSD: data.priceUSD || '',
-                    priceARS: data.priceARS || '',
+                    bedrooms: data.bedrooms ?? '',
+                    bathrooms: data.bathrooms ?? '',
+                    area: data.area ?? '',
+                    totalM2: data.totalM2 ?? '',
+                    priceUSD: data.priceUSD ?? '',
+                    priceARS: data.priceARS ?? '',
                 }
                 form.reset(values);
                 if(data.images){
@@ -533,5 +533,3 @@ export default function PropertyFormPage() {
         </Suspense>
     )
 }
-
-    
