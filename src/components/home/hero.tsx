@@ -6,9 +6,9 @@ export function Hero() {
     <section className="relative w-full h-[60vh] min-h-[500px] flex items-center justify-center">
       <div className="absolute inset-0 -z-20">
         <Image
-          src="https://images.unsplash.com/photo-1628045353515-b74f34691456?q=80&w=2070&auto=format&fit=crop"
+          src="https://firebasestorage.googleapis.com/v0/b/catamarca-estates.appspot.com/o/public%2Fhero-cathedral.jpg?alt=media"
           alt="Catedral Basílica de Nuestra Señora del Valle, Catamarca"
-          data-ai-hint="cathedral landscape"
+          data-ai-hint="cathedral catamarca"
           fill
           className="object-cover"
           priority
