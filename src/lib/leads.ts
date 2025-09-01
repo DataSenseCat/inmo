@@ -1,4 +1,3 @@
-
 import {
   addDoc,
   collection,
@@ -13,7 +12,6 @@ import { getSiteConfig } from './config';
 import { sendLeadNotification } from '@/ai/flows/send-lead-notification';
 import { firebaseTimestampToString } from './utils';
 
-// Function to create a new lead
 export async function createLead(data: Omit<Lead, 'id' | 'createdAt'>) {
     try {
         const leadData = {
@@ -22,13 +20,19 @@ export async function createLead(data: Omit<Lead, 'id' | 'createdAt'>) {
         }
         await addDoc(collection(db, 'leads'), leadData);
 
-        // After saving, send the notification. This is a server action.
-        const config = await getSiteConfig();
-        if (config?.leadNotificationEmail) {
-            await sendLeadNotification({
-                to: config.leadNotificationEmail,
-                lead: data,
-            });
+        // After saving, attempt to send a notification.
+        // This runs on the server, but the createLead function is called from the client.
+        // This might require a separate server action if it causes issues.
+        try {
+            const config = await getSiteConfig();
+            if (config?.leadNotificationEmail) {
+                await sendLeadNotification({
+                    to: config.leadNotificationEmail,
+                    lead: data,
+                });
+            }
+        } catch (notificationError) {
+            console.error("Failed to send lead notification, but lead was saved:", notificationError);
         }
 
     } catch (error) {
@@ -37,7 +41,6 @@ export async function createLead(data: Omit<Lead, 'id' | 'createdAt'>) {
     }
 }
 
-// Function to get all leads
 export async function getLeads(): Promise<Lead[]> {
   try {
     const leadsCol = collection(db, 'leads');

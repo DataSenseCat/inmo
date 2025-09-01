@@ -1,5 +1,3 @@
-
-// This file can be used from the client
 import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { SiteConfig } from '@/models/site-config';
@@ -7,7 +5,6 @@ import { firebaseTimestampToString } from './utils';
 
 const CONFIG_DOC_ID = 'main'; 
 
-// This function runs on the client
 export async function getSiteConfig(): Promise<SiteConfig | null> {
     try {
         const docRef = doc(db, 'siteConfig', CONFIG_DOC_ID);
@@ -40,8 +37,7 @@ export async function getSiteConfig(): Promise<SiteConfig | null> {
         }
     } catch (error) {
         console.error("CRITICAL: Error getting site config. This might be due to Firestore permissions or the database not being created.", error);
-        // Return a default object to prevent crashes on the client
-         const defaultConfig: SiteConfig = {
+        const defaultConfig: SiteConfig = {
             contactPhone: 'Error',
             contactEmail: 'Error',
             leadNotificationEmail: '',
@@ -56,7 +52,6 @@ export async function getSiteConfig(): Promise<SiteConfig | null> {
     }
 }
 
-// This function now runs on the CLIENT
 export async function updateSiteConfig(data: Partial<Omit<SiteConfig, 'logoUrl' | 'id'>>): Promise<void> {
     try {
         const docRef = doc(db, 'siteConfig', CONFIG_DOC_ID);

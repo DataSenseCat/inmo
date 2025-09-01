@@ -1,4 +1,3 @@
-
 import {
   addDoc,
   collection,
@@ -34,7 +33,6 @@ const prepareDevelopmentDataForSave = (data: any) => {
     };
 };
 
-// This function now runs on the CLIENT
 export async function createDevelopment(data: Omit<Development, 'id' | 'image' | 'createdAt' | 'updatedAt'>, imageDataUri: string): Promise<{ id: string }> {
     try {
         if (!imageDataUri) {
@@ -56,7 +54,7 @@ export async function createDevelopment(data: Omit<Development, 'id' | 'image' |
         await uploadBytes(imageRef, buffer, { contentType: mimeType });
         const imageUrl = await getDownloadURL(imageRef);
         
-        await updateDoc(doc(db, 'developments', devId), { image: imageUrl });
+        await updateDoc(doc(db, 'developments', devId), { image: imageUrl, updatedAt: Timestamp.now() });
 
         return { id: devId };
 
@@ -66,7 +64,6 @@ export async function createDevelopment(data: Omit<Development, 'id' | 'image' |
     }
 }
 
-// This function now runs on the CLIENT
 export async function updateDevelopment(id: string, data: Partial<Development>, newImageDataUri?: string): Promise<void> {
     try {
         const docRef = doc(db, 'developments', id);
@@ -106,7 +103,6 @@ export async function updateDevelopment(id: string, data: Partial<Development>, 
     }
 }
 
-// This function runs on the CLIENT
 export async function getDevelopments(): Promise<Development[]> {
   try {
     const developmentsCol = collection(db, 'developments');
@@ -127,7 +123,6 @@ export async function getDevelopments(): Promise<Development[]> {
   }
 }
 
-// This function can be called from client or server
 export async function getDevelopmentById(id: string): Promise<Development | null> {
     try {
         const docRef = doc(db, 'developments', id);
@@ -150,7 +145,6 @@ export async function getDevelopmentById(id: string): Promise<Development | null
     }
 }
 
-// This function now runs on the CLIENT
 export async function deleteDevelopment(id: string): Promise<void> {
     try {
         const docRef = doc(db, 'developments', id);
