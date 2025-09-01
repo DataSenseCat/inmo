@@ -1,3 +1,4 @@
+
 import { SearchForm } from '@/components/search-form';
 import Image from 'next/image';
 
@@ -5,7 +6,7 @@ export function Hero() {
   return (
     <section className="relative w-full h-[60vh] min-h-[500px] flex items-center justify-center text-white">
       {/* Background Image and Overlay */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 z-[-1]">
         <Image
           src="/hero-cathedral.jpg"
           alt="Catedral Basílica de Nuestra Señora del Valle, Catamarca"
@@ -18,7 +19,7 @@ export function Hero() {
       </div>
 
       {/* Content */}
-      <div className="container relative z-10 px-4 md:px-6 text-center">
+      <div className="container px-4 md:px-6 text-center">
         <div className="max-w-3xl mx-auto space-y-4">
           <h1 className="text-4xl md:text-6xl font-bold font-headline tracking-tight">
             Encontrá la propiedad de tus sueños
