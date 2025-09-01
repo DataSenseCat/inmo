@@ -156,7 +156,8 @@ export async function deleteAgent(id: string): Promise<void> {
       }
     }
     await deleteDoc(docRef);
-  } catch (error) {
+  } catch (error)
+ {
     console.error("Error deleting agent: ", error);
     throw new Error("Failed to delete agent.");
   }
