@@ -115,8 +115,7 @@ export async function getProperties(): Promise<Property[]> {
         updatedAt: firebaseTimestampToString(data.updatedAt),
       } as Property;
     });
-    // Filter active properties on the client-side to avoid complex indexes
-    return allProperties.filter(p => p.active);
+    return allProperties;
   } catch (error) {
     console.error("Error getting properties (the app will proceed with an empty list): ", error);
     return [];
@@ -126,7 +125,7 @@ export async function getProperties(): Promise<Property[]> {
 export async function getFeaturedProperties(): Promise<Property[]> {
     try {
         const propertiesCol = collection(db, 'properties');
-        const q = query(propertiesCol, where('featured', '==', true), limit(10));
+        const q = query(propertiesCol, where('featured', '==', true), where('active', '==', true), limit(10));
         const snapshot = await getDocs(q);
         
         const featured = snapshot.docs.map(doc => {
@@ -139,8 +138,7 @@ export async function getFeaturedProperties(): Promise<Property[]> {
           } as Property;
         });
 
-        // Filtrar por 'activas' en el lado del cliente y tomar las primeras 4
-        return featured.filter(p => p.active).slice(0, 4);
+        return featured.slice(0, 4);
 
     } catch (error) {
         console.error("Error getting featured properties (the app will proceed with an empty list): ", error);
