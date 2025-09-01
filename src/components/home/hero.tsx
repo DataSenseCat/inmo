@@ -5,9 +5,9 @@ export function Hero() {
   return (
     <section className="relative w-full h-[60vh] min-h-[500px] flex items-center justify-center text-white">
       {/* Background Image and Overlay */}
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0">
         <Image
-          src="https://images.unsplash.com/photo-1628045353515-b74f34691456?q=80&w=2070&auto=format&fit=crop"
+          src="/hero-cathedral.jpg"
           alt="Catedral Basílica de Nuestra Señora del Valle, Catamarca"
           data-ai-hint="cathedral catamarca"
           fill
