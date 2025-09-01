@@ -10,7 +10,9 @@ import { firebaseTimestampToString } from './utils';
 export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'createdAt' | 'updatedAt'>, photoFile?: File): Promise<{ id: string }> {
   try {
     let photoUrl = '';
-    if (photoFile) {
+
+    // Securely handle optional file upload
+    if (photoFile && photoFile.size > 0) {
         const imageRef = ref(storage, `agents/${Date.now()}_${photoFile.name}`);
         await uploadBytes(imageRef, photoFile);
         photoUrl = await getDownloadURL(imageRef);
@@ -22,7 +24,7 @@ export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'created
       phone: data.phone,
       active: data.active,
       bio: data.bio || '',
-      photoUrl: photoUrl,
+      photoUrl: photoUrl, // Will be empty string if no file
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     };
@@ -48,7 +50,8 @@ export async function updateAgent(id: string, data: Partial<Omit<Agent, 'id'>>, 
     const currentData = currentDoc.data() as Agent;
     let photoUrl = currentData.photoUrl;
 
-    if (photoFile) {
+    // Securely handle optional file upload
+    if (photoFile && photoFile.size > 0) {
         if (photoUrl && photoUrl.startsWith('https://firebasestorage.googleapis.com')) {
             try {
                 const oldImageRef = ref(storage, photoUrl);
@@ -68,6 +71,9 @@ export async function updateAgent(id: string, data: Partial<Omit<Agent, 'id'>>, 
       photoUrl: photoUrl,
       updatedAt: Timestamp.now(),
     };
+    
+    // Remove id from payload if it exists to avoid Firestore errors
+    delete updatePayload.id;
 
     await updateDoc(docRef, updatePayload);
   } catch (error) {
@@ -126,7 +132,7 @@ export async function deleteAgent(id: string): Promise<void> {
           const imageRef = ref(storage, agent.photoUrl);
           await deleteObject(imageRef);
         } catch (storageError) {
-          console.error(`Failed to delete image for agent ${id}:`, storageError);
+          console.warn(`Failed to delete image for agent ${id}:`, storageError);
         }
       }
     }

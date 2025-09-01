@@ -36,11 +36,16 @@ const prepareDevelopmentDataForSave = (data: any) => {
     };
 };
 
-export async function createDevelopment(data: Omit<Development, 'id' | 'image' | 'createdAt' | 'updatedAt'>, image: File): Promise<{ id: string }> {
+export async function createDevelopment(data: Omit<Development, 'id' | 'image' | 'createdAt' | 'updatedAt'>, imageFile: File): Promise<{ id: string }> {
     try {
-        const imageRef = ref(storage, `developments/${Date.now()}_${image.name}`);
-        await uploadBytes(imageRef, image);
-        const imageUrl = await getDownloadURL(imageRef);
+        let imageUrl = '';
+        if (imageFile && imageFile.size > 0) {
+            const imageRef = ref(storage, `developments/${Date.now()}_${imageFile.name}`);
+            await uploadBytes(imageRef, imageFile);
+            imageUrl = await getDownloadURL(imageRef);
+        } else {
+            throw new Error("Main image is required to create a development.");
+        }
         
         const developmentPayload = {
             ...prepareDevelopmentDataForSave(data),
@@ -57,7 +62,7 @@ export async function createDevelopment(data: Omit<Development, 'id' | 'image' |
     }
 }
 
-export async function updateDevelopment(id: string, data: Partial<Development>, newImage?: File): Promise<void> {
+export async function updateDevelopment(id: string, data: Partial<Development>, newImageFile?: File): Promise<void> {
     try {
         const docRef = doc(db, 'developments', id);
         const currentDoc = await getDoc(docRef);
@@ -69,7 +74,7 @@ export async function updateDevelopment(id: string, data: Partial<Development>, 
         const currentData = currentDoc.data() as Development;
         let imageUrl = currentData.image;
 
-        if (newImage) {
+        if (newImageFile && newImageFile.size > 0) {
             if (imageUrl && imageUrl.startsWith('https://firebasestorage.googleapis.com')) {
                 try {
                     const oldImageRef = ref(storage, imageUrl);
@@ -78,16 +83,18 @@ export async function updateDevelopment(id: string, data: Partial<Development>, 
                     console.warn("Failed to delete old image, continuing with update...", e);
                 }
             }
-            const imageRef = ref(storage, `developments/${Date.now()}_${newImage.name}`);
-            await uploadBytes(imageRef, newImage);
+            const imageRef = ref(storage, `developments/${Date.now()}_${newImageFile.name}`);
+            await uploadBytes(imageRef, newImageFile);
             imageUrl = await getDownloadURL(imageRef);
         }
 
-        const updatePayload: Partial<Development> & { updatedAt: Timestamp } = {
+        const updatePayload: any = {
             ...prepareDevelopmentDataForSave(data),
             image: imageUrl,
             updatedAt: Timestamp.now(),
         };
+
+        delete updatePayload.id;
 
         await updateDoc(docRef, updatePayload);
     } catch (error) {
@@ -150,7 +157,7 @@ export async function deleteDevelopment(id: string): Promise<void> {
                     const imageRef = ref(storage, development.image);
                     await deleteObject(imageRef);
                 } catch (storageError) {
-                    console.error(`Failed to delete image ${development.image} from storage:`, storageError);
+                    console.warn(`Failed to delete image ${development.image} from storage:`, storageError);
                 }
             }
         }
