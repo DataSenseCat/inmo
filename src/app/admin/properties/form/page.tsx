@@ -148,7 +148,7 @@ function PropertyForm() {
                     priceARS: data.priceARS === 0 ? 0 : data.priceARS || '',
                 }
                 form.reset(values);
-                if(data.images){
+                if(data.images && data.images.length > 0){
                     setImagePreviews(data.images.map(img => img.url));
                 }
               } else {
@@ -553,3 +553,5 @@ export default function PropertyFormPage() {
         </Suspense>
     )
 }
+
+    
