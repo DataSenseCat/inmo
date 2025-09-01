@@ -42,12 +42,6 @@ function AdminDashboardComponent() {
   const [siteConfig, setSiteConfig] = useState<SiteConfig | null>(null);
   const [loading, setLoading] = useState(true);
   
-  const [propertyToDelete, setPropertyToDelete] = useState<Property | null>(null);
-  const [developmentToDelete, setDevelopmentToDelete] = useState<Development | null>(null);
-  const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
-  const [testimonialToDelete, setTestimonialToDelete] = useState<Testimonial | null>(null);
-  const [leadToView, setLeadToView] = useState<Lead | null>(null);
-  
   const activeTab = searchParams.get('tab') || 'properties';
 
   async function loadData() {
@@ -79,15 +73,13 @@ function AdminDashboardComponent() {
     }
   }, [router]);
 
-  const handleDeleteProperty = async () => {
-    if (!propertyToDelete) return;
+  const handleDeleteProperty = async (propertyId: string, propertyTitle: string) => {
     try {
-      await deleteProperty(propertyToDelete.id);
+      await deleteProperty(propertyId);
       toast({
         title: "Propiedad Eliminada",
-        description: `La propiedad "${propertyToDelete.title}" ha sido eliminada.`,
+        description: `La propiedad "${propertyTitle}" ha sido eliminada.`,
       });
-      setPropertyToDelete(null);
       loadData(); 
     } catch (error) {
        console.error("Failed to delete property:", error);
@@ -99,15 +91,13 @@ function AdminDashboardComponent() {
     }
   };
 
-  const handleDeleteDevelopment = async () => {
-    if (!developmentToDelete) return;
+  const handleDeleteDevelopment = async (developmentId: string, developmentTitle: string) => {
     try {
-      await deleteDevelopment(developmentToDelete.id);
+      await deleteDevelopment(developmentId);
       toast({
         title: "Emprendimiento Eliminado",
-        description: `El emprendimiento "${developmentToDelete.title}" ha sido eliminado.`,
+        description: `El emprendimiento "${developmentTitle}" ha sido eliminado.`,
       });
-      setDevelopmentToDelete(null);
       loadData();
     } catch (error) {
        console.error("Failed to delete development:", error);
@@ -119,15 +109,13 @@ function AdminDashboardComponent() {
     }
   };
 
-  const handleDeleteAgent = async () => {
-    if (!agentToDelete) return;
+  const handleDeleteAgent = async (agentId: string, agentName: string) => {
     try {
-      await deleteAgent(agentToDelete.id);
+      await deleteAgent(agentId);
       toast({
         title: "Agente Eliminado",
-        description: `El agente "${agentToDelete.name}" ha sido eliminado.`,
+        description: `El agente "${agentName}" ha sido eliminado.`,
       });
-      setAgentToDelete(null);
       loadData();
     } catch (error) {
        console.error("Failed to delete agent:", error);
@@ -139,15 +127,13 @@ function AdminDashboardComponent() {
     }
   };
 
-  const handleDeleteTestimonial = async () => {
-    if (!testimonialToDelete) return;
+  const handleDeleteTestimonial = async (testimonialId: string, testimonialName: string) => {
     try {
-      await deleteTestimonial(testimonialToDelete.id);
+      await deleteTestimonial(testimonialId);
       toast({
         title: "Testimonio Eliminado",
-        description: `El testimonio de "${testimonialToDelete.name}" ha sido eliminado.`,
+        description: `El testimonio de "${testimonialName}" ha sido eliminado.`,
       });
-      setTestimonialToDelete(null);
       loadData();
     } catch (error) {
        console.error("Failed to delete testimonial:", error);
@@ -283,11 +269,25 @@ function AdminDashboardComponent() {
                                           <Button asChild variant="ghost" size="icon">
                                             <Link href={`/admin/properties/form?id=${prop.id}`}><Pencil className="h-4 w-4"/></Link>
                                           </Button>
-                                          <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setPropertyToDelete(prop)}>
-                                                <Trash2 className="h-4 w-4"/>
-                                            </Button>
-                                          </AlertDialogTrigger>
+                                          <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                                    <Trash2 className="h-4 w-4"/>
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>¿Estás seguro de que deseas eliminar esta propiedad?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        Esta acción no se puede deshacer. Esto eliminará permanentemente la propiedad <span className="font-semibold">"{prop.title}"</span> de la base de datos.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteProperty(prop.id, prop.title)} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                          </AlertDialog>
                                         </div>
                                       </TableCell>
                                     </TableRow>
@@ -348,11 +348,25 @@ function AdminDashboardComponent() {
                                           <Button asChild variant="ghost" size="icon">
                                             <Link href={`/admin/developments/form?id=${dev.id}&tab=developments`}><Pencil className="h-4 w-4"/></Link>
                                           </Button>
-                                          <AlertDialogTrigger asChild>
-                                              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setDevelopmentToDelete(dev)}>
-                                                  <Trash2 className="h-4 w-4"/>
-                                              </Button>
-                                          </AlertDialogTrigger>
+                                          <AlertDialog>
+                                              <AlertDialogTrigger asChild>
+                                                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                                      <Trash2 className="h-4 w-4"/>
+                                                  </Button>
+                                              </AlertDialogTrigger>
+                                              <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>¿Estás seguro de que deseas eliminar este emprendimiento?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        Esta acción no se puede deshacer. Esto eliminará permanentemente el emprendimiento <span className="font-semibold">"{dev.title}"</span> de la base de datos y su imagen asociada.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteDevelopment(dev.id, dev.title)} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                              </AlertDialogContent>
+                                          </AlertDialog>
                                         </div>
                                       </TableCell>
                                     </TableRow>
@@ -414,11 +428,25 @@ function AdminDashboardComponent() {
                                           <Button asChild variant="ghost" size="icon">
                                             <Link href={`/admin/agents/form?id=${agent.id}&tab=agents`}><Pencil className="h-4 w-4"/></Link>
                                           </Button>
-                                          <AlertDialogTrigger asChild>
-                                              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setAgentToDelete(agent)}>
-                                                  <Trash2 className="h-4 w-4"/>
-                                              </Button>
-                                          </AlertDialogTrigger>
+                                          <AlertDialog>
+                                              <AlertDialogTrigger asChild>
+                                                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                                      <Trash2 className="h-4 w-4"/>
+                                                  </Button>
+                                              </AlertDialogTrigger>
+                                              <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>¿Estás seguro de que deseas eliminar a este agente?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        Esta acción no se puede deshacer. Esto eliminará permanentemente al agente <span className="font-semibold">"{agent.name}"</span> de la base de datos.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteAgent(agent.id, agent.name)} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                              </AlertDialogContent>
+                                          </AlertDialog>
                                         </div>
                                       </TableCell>
                                     </TableRow>
@@ -460,11 +488,64 @@ function AdminDashboardComponent() {
                                       <TableCell>{lead.phone || '-'}</TableCell>
                                       <TableCell className="max-w-xs truncate">{lead.subject}</TableCell>
                                       <TableCell className="text-right">
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="outline" size="sm" onClick={() => setLeadToView(lead)}>
-                                                <Eye className="mr-2 h-4 w-4"/> Ver Detalle
-                                            </Button>
-                                        </AlertDialogTrigger>
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="outline" size="sm">
+                                                    <Eye className="mr-2 h-4 w-4"/> Ver Detalle
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Detalle del Lead</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        Recibido el {lead.createdAt}
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <div className="text-sm space-y-4">
+                                                    <div>
+                                                        <h4 className="font-semibold">Nombre</h4>
+                                                        <p className="text-muted-foreground">{lead.name}</p>
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-semibold">Email</h4>
+                                                        <p className="text-muted-foreground">{lead.email}</p>
+                                                    </div>
+                                                    {lead.phone && (
+                                                        <div>
+                                                            <h4 className="font-semibold">Teléfono</h4>
+                                                            <p className="text-muted-foreground">{lead.phone}</p>
+                                                        </div>
+                                                    )}
+                                                    <div>
+                                                        <h4 className="font-semibold">Preferencia de Contacto</h4>
+                                                        <p className="text-muted-foreground capitalize">{lead.contactPreference}</p>
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-semibold">Asunto</h4>
+                                                        <p className="text-muted-foreground">{lead.subject}</p>
+                                                    </div>
+                                                    <div className="p-3 bg-muted/50 rounded-md border">
+                                                        <h4 className="font-semibold">Mensaje</h4>
+                                                        <p className="text-muted-foreground whitespace-pre-wrap">{lead.message}</p>
+                                                    </div>
+                                                </div>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cerrar</AlertDialogCancel>
+                                                    <div className="flex gap-2">
+                                                         <Button asChild variant="secondary">
+                                                            <a href={`https://wa.me/${(lead.phone || siteConfig?.contactPhone)?.replace(/\s|-/g, '')}`} target="_blank">
+                                                                <MessageSquare className="mr-2 h-4 w-4"/> WhatsApp
+                                                            </a>
+                                                        </Button>
+                                                        <Button asChild>
+                                                            <a href={`mailto:${lead.email}`}>
+                                                                <Mail className="mr-2 h-4 w-4"/> Responder Email
+                                                            </a>
+                                                        </Button>
+                                                    </div>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
                                       </TableCell>
                                     </TableRow>
                                   ))) : (
@@ -520,11 +601,25 @@ function AdminDashboardComponent() {
                                           <Button asChild variant="ghost" size="icon">
                                             <Link href={`/admin/testimonials/form?id=${testimonial.id}&tab=testimonials`}><Pencil className="h-4 w-4"/></Link>
                                           </Button>
-                                          <AlertDialogTrigger asChild>
-                                              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setTestimonialToDelete(testimonial)}>
-                                                  <Trash2 className="h-4 w-4"/>
-                                              </Button>
-                                          </AlertDialogTrigger>
+                                          <AlertDialog>
+                                              <AlertDialogTrigger asChild>
+                                                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                                      <Trash2 className="h-4 w-4"/>
+                                                  </Button>
+                                              </AlertDialogTrigger>
+                                              <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>¿Estás seguro de que deseas eliminar este testimonio?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        Esta acción no se puede deshacer. Esto eliminará permanentemente el testimonio de <span className="font-semibold">"{testimonial.name}"</span>.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteTestimonial(testimonial.id, testimonial.name)} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                              </AlertDialogContent>
+                                          </AlertDialog>
                                         </div>
                                       </TableCell>
                                     </TableRow>
@@ -575,124 +670,6 @@ function AdminDashboardComponent() {
             </CardContent>
         </Card>
       </div>
-
-        <AlertDialog open={!!leadToView} onOpenChange={(open) => !open && setLeadToView(null)}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Detalle del Lead</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        Recibido el {leadToView?.createdAt}
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                {leadToView && (
-                    <div className="text-sm space-y-4">
-                        <div>
-                            <h4 className="font-semibold">Nombre</h4>
-                            <p className="text-muted-foreground">{leadToView.name}</p>
-                        </div>
-                        <div>
-                            <h4 className="font-semibold">Email</h4>
-                            <p className="text-muted-foreground">{leadToView.email}</p>
-                        </div>
-                        {leadToView.phone && (
-                            <div>
-                                <h4 className="font-semibold">Teléfono</h4>
-                                <p className="text-muted-foreground">{leadToView.phone}</p>
-                            </div>
-                        )}
-                        <div>
-                            <h4 className="font-semibold">Preferencia de Contacto</h4>
-                            <p className="text-muted-foreground capitalize">{leadToView.contactPreference}</p>
-                        </div>
-                        <div>
-                            <h4 className="font-semibold">Asunto</h4>
-                            <p className="text-muted-foreground">{leadToView.subject}</p>
-                        </div>
-                        <div className="p-3 bg-muted/50 rounded-md border">
-                            <h4 className="font-semibold">Mensaje</h4>
-                            <p className="text-muted-foreground whitespace-pre-wrap">{leadToView.message}</p>
-                        </div>
-                    </div>
-                )}
-                <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => setLeadToView(null)}>Cerrar</AlertDialogCancel>
-                    {leadToView && (
-                        <div className="flex gap-2">
-                             <Button asChild variant="secondary">
-                                <a href={`https://wa.me/${(leadToView.phone || siteConfig?.contactPhone)?.replace(/\s|-/g, '')}`} target="_blank">
-                                    <MessageSquare className="mr-2 h-4 w-4"/> WhatsApp
-                                </a>
-                            </Button>
-                            <Button asChild>
-                                <a href={`mailto:${leadToView.email}`}>
-                                    <Mail className="mr-2 h-4 w-4"/> Responder Email
-                                </a>
-                            </Button>
-                        </div>
-                    )}
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-
-       <AlertDialog open={!!propertyToDelete} onOpenChange={(open) => !open && setPropertyToDelete(null)}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>¿Estás seguro de que deseas eliminar esta propiedad?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        Esta acción no se puede deshacer. Esto eliminará permanentemente la propiedad <span className="font-semibold">"{propertyToDelete?.title}"</span> de la base de datos.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => setPropertyToDelete(null)}>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDeleteProperty} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-
-        <AlertDialog open={!!developmentToDelete} onOpenChange={(open) => !open && setDevelopmentToDelete(null)}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>¿Estás seguro de que deseas eliminar este emprendimiento?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        Esta acción no se puede deshacer. Esto eliminará permanentemente el emprendimiento <span className="font-semibold">"{developmentToDelete?.title}"</span> de la base de datos y su imagen asociada.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => setDevelopmentToDelete(null)}>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDeleteDevelopment} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-
-        <AlertDialog open={!!agentToDelete} onOpenChange={(open) => !open && setAgentToDelete(null)}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>¿Estás seguro de que deseas eliminar a este agente?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        Esta acción no se puede deshacer. Esto eliminará permanentemente al agente <span className="font-semibold">"{agentToDelete?.name}"</span> de la base de datos.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => setAgentToDelete(null)}>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDeleteAgent} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-
-        <AlertDialog open={!!testimonialToDelete} onOpenChange={(open) => !open && setTestimonialToDelete(null)}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>¿Estás seguro de que deseas eliminar este testimonio?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        Esta acción no se puede deshacer. Esto eliminará permanentemente el testimonio de <span className="font-semibold">"{testimonialToDelete?.name}"</span>.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => setTestimonialToDelete(null)}>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDeleteTestimonial} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
     </div>
   );
 }
@@ -705,3 +682,4 @@ export default function AdminDashboard() {
         </Suspense>
     )
 }
+
