@@ -47,6 +47,16 @@ export function VirtualTour({ property }: VirtualTourProps) {
   }, [api]);
 
   const handleStartTour = async () => {
+    // CRITICAL FIX: Check for images before starting
+    if (!property.images || property.images.length === 0) {
+        toast({
+            variant: "destructive",
+            title: "No se puede iniciar el Tour",
+            description: "Esta propiedad no tiene imágenes cargadas para generar un tour virtual.",
+        });
+        return;
+    }
+      
     setOpen(true);
     if (narratives.length > 0) return;
 
@@ -109,7 +119,7 @@ export function VirtualTour({ property }: VirtualTourProps) {
                     <div className="relative bg-muted rounded-lg flex items-center justify-center">
                         <Carousel setApi={setApi} className="w-full h-full flex items-center">
                             <CarouselContent>
-                                {property.images.map((img, index) => (
+                                {property.images && property.images.map((img, index) => (
                                 <CarouselItem key={index}>
                                     <div className="aspect-video relative h-full">
                                         <Image src={img.url} alt={`View ${index+1}`} fill className="object-contain rounded-md" data-ai-hint="property room" />
@@ -122,7 +132,7 @@ export function VirtualTour({ property }: VirtualTourProps) {
                         </Carousel>
                     </div>
                     <div className="flex flex-col">
-                        <h3 className="font-semibold text-lg font-headline mb-2">Vista {current + 1} de {property.images.length}</h3>
+                        <h3 className="font-semibold text-lg font-headline mb-2">Vista {current + 1} de {property.images?.length || 0}</h3>
                         <div className="bg-muted/50 p-4 rounded-md flex-grow overflow-y-auto border">
                             {narratives.length > 0 ? (
                                 <p className="leading-relaxed text-muted-foreground">{narratives[current]}</p>
