@@ -1,6 +1,4 @@
 
-'use client';
-
 // This file can be used from the client
 import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';

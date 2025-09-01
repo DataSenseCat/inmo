@@ -1,6 +1,4 @@
 
-'use client';
-
 import {
   addDoc,
   collection,
@@ -18,7 +16,7 @@ import {
 import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import type { Property } from '@/models/property';
-import { firebaseTimestampToString } from './utils';
+import { firebaseTimestampToString, dataUriToBuffer } from './utils';
 
 const preparePropertyDataForSave = (data: any) => {
     return {
@@ -48,9 +46,9 @@ const preparePropertyDataForSave = (data: any) => {
 };
 
 // This function now runs on the CLIENT
-export async function createProperty(data: Omit<Property, 'id' | 'images' | 'createdAt' | 'updatedAt'>, imageFiles: File[]): Promise<{ id: string }> {
+export async function createProperty(data: Omit<Property, 'id' | 'images' | 'createdAt' | 'updatedAt'>, imageDataUris: string[]): Promise<{ id: string }> {
     try {
-        if (!imageFiles || imageFiles.length === 0) {
+        if (!imageDataUris || imageDataUris.length === 0) {
             throw new Error("At least one image is required to create a property.");
         }
 
@@ -64,9 +62,11 @@ export async function createProperty(data: Omit<Property, 'id' | 'images' | 'cre
         const propId = docRef.id;
 
         const imageUrls = [];
-        for (const imageFile of imageFiles) {
-            const imageRef = ref(storage, `properties/${propId}/${Date.now()}_${imageFile.name}`);
-            await uploadBytes(imageRef, imageFile);
+        for (const [index, dataUri] of imageDataUris.entries()) {
+            const { buffer, mimeType } = dataUriToBuffer(dataUri);
+            const fileExtension = mimeType.split('/')[1] || 'jpg';
+            const imageRef = ref(storage, `properties/${propId}/${Date.now()}_${index}.${fileExtension}`);
+            await uploadBytes(imageRef, buffer, { contentType: mimeType });
             const url = await getDownloadURL(imageRef);
             imageUrls.push({ url });
         }
@@ -81,7 +81,7 @@ export async function createProperty(data: Omit<Property, 'id' | 'images' | 'cre
 }
 
 // This function now runs on the CLIENT
-export async function updateProperty(id: string, data: Partial<Property>, newImageFiles?: File[]): Promise<void> {
+export async function updateProperty(id: string, data: Partial<Property>, newImageDataUris?: string[]): Promise<void> {
     try {
         const docRef = doc(db, 'properties', id);
         
@@ -92,7 +92,7 @@ export async function updateProperty(id: string, data: Partial<Property>, newIma
         
         delete updatePayload.id;
 
-        if (newImageFiles && newImageFiles.length > 0) {
+        if (newImageDataUris && newImageDataUris.length > 0) {
             const docSnap = await getDoc(docRef);
             const currentProperty = docSnap.data() as Property | undefined;
 
@@ -111,9 +111,11 @@ export async function updateProperty(id: string, data: Partial<Property>, newIma
             }
             
             const newImageUrls = [];
-            for (const imageFile of newImageFiles) {
-                const imageRef = ref(storage, `properties/${id}/${Date.now()}_${imageFile.name}`);
-                await uploadBytes(imageRef, imageFile);
+            for (const [index, dataUri] of newImageDataUris.entries()) {
+                const { buffer, mimeType } = dataUriToBuffer(dataUri);
+                const fileExtension = mimeType.split('/')[1] || 'jpg';
+                const imageRef = ref(storage, `properties/${id}/${Date.now()}_${index}.${fileExtension}`);
+                await uploadBytes(imageRef, buffer, { contentType: mimeType });
                 const url = await getDownloadURL(imageRef);
                 newImageUrls.push({ url });
             }

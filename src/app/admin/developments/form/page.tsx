@@ -33,6 +33,7 @@ import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import type { Development } from '@/models/development';
 import { createDevelopment, getDevelopmentById, updateDevelopment } from '@/lib/developments';
+import { fileToDataUri } from '@/lib/utils';
 
 const developmentFormSchema = z.object({
   title: z.string().min(1, 'El título es requerido.'),
@@ -68,8 +69,8 @@ function DevelopmentForm() {
   const isEditing = !!developmentId;
 
   const [loading, setLoading] = useState(true);
-  const [devData, setDevData] = useState<Development | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imageDataUri, setImageDataUri] = useState<string | undefined>(undefined);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   
   const form = useForm<DevelopmentFormValues>({
@@ -93,7 +94,6 @@ function DevelopmentForm() {
       if (isEditing) {
         const data = await getDevelopmentById(developmentId);
         if (data) {
-          setDevData(data);
           const values = {
               ...data,
               priceFrom: data.priceFrom || '',
@@ -116,30 +116,33 @@ function DevelopmentForm() {
     loadDev();
    }, [isEditing, developmentId, form, router, toast]);
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
       if(e.target.files && e.target.files[0]) {
           const file = e.target.files[0];
-          setImageFile(file);
+          const dataUri = await fileToDataUri(file);
+          setImageDataUri(dataUri);
           setImagePreview(URL.createObjectURL(file));
       }
   }
 
   const removeImage = () => {
-      setImageFile(null);
+      setImageDataUri(undefined);
       setImagePreview(null);
   }
 
   async function onSubmit(data: DevelopmentFormValues) {
+    setIsSubmitting(true);
     try {
         if(isEditing) {
-            await updateDevelopment(developmentId, data, imageFile || undefined);
+            await updateDevelopment(developmentId, data, imageDataUri);
             toast({ title: 'Emprendimiento Actualizado', description: 'Los cambios se guardaron correctamente.' });
         } else {
-            if (!imageFile) {
+            if (!imageDataUri) {
               toast({ variant: 'destructive', title: 'Error', description: 'Debes subir una imagen.' });
+              setIsSubmitting(false);
               return;
             }
-            await createDevelopment(data, imageFile);
+            await createDevelopment(data, imageDataUri);
             toast({ title: 'Emprendimiento Creado', description: 'El nuevo emprendimiento se ha guardado.' });
         }
         router.push('/admin?tab=developments');
@@ -147,6 +150,8 @@ function DevelopmentForm() {
     } catch (error) {
         console.error('Failed to save development:', error);
         toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo guardar el emprendimiento.' });
+    } finally {
+        setIsSubmitting(false);
     }
   }
 
@@ -313,8 +318,8 @@ function DevelopmentForm() {
                     <Button type="button" variant="outline" size="lg" asChild>
                         <Link href="/admin?tab=developments">Cancelar</Link>
                     </Button>
-                    <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
-                        {form.formState.isSubmitting 
+                    <Button type="submit" size="lg" disabled={isSubmitting}>
+                        {isSubmitting
                             ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Guardando...</>
                             : (isEditing ? 'Guardar Cambios' : 'Crear Emprendimiento')}
                     </Button>
@@ -333,5 +338,3 @@ export default function DevelopmentFormPage() {
         </Suspense>
     )
 }
-
-    
