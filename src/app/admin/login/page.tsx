@@ -28,8 +28,8 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "rlolin1972@gmail.com";
-const ADMIN_PASS = process.env.NEXT_PUBLIC_ADMIN_PASS || "RoccoLolo2021?";
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+const ADMIN_PASS = process.env.NEXT_PUBLIC_ADMIN_PASS;
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -42,6 +42,11 @@ export default function AdminLoginPage() {
   });
 
   function onSubmit(data: LoginFormValues) {
+    if (!ADMIN_EMAIL || !ADMIN_PASS) {
+        setError("La configuración de administrador no está definida. Contacte al soporte.");
+        return;
+    }
+
     if (data.email === ADMIN_EMAIL && data.password === ADMIN_PASS) {
       sessionStorage.setItem('isAdminAuthenticated', 'true');
       toast({
