@@ -1,3 +1,4 @@
+
 'use server';
 
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, Timestamp, updateDoc, where } from 'firebase/firestore';
@@ -61,17 +62,20 @@ export async function updateAgent(
 
     if (photoDataUri) {
       const currentDoc = await getDoc(docRef);
-      if (!currentDoc.exists()) throw new Error("Agent not found.");
-      
-      const currentData = currentDoc.data();
-      if (currentData.photoUrl && currentData.photoUrl.startsWith('https://firebasestorage.googleapis.com')) {
-        try {
-          await deleteObject(ref(storage, currentData.photoUrl));
-        } catch (e: any) {
-           if (e.code !== 'storage/object-not-found') {
-             console.warn("Failed to delete old image, continuing update.", e);
-           }
-        }
+      if (currentDoc.exists()) {
+          const currentData = currentDoc.data();
+          // Safely attempt to delete the old photo only if a URL exists
+          if (currentData && currentData.photoUrl && currentData.photoUrl.startsWith('https://firebasestorage.googleapis.com')) {
+            try {
+              await deleteObject(ref(storage, currentData.photoUrl));
+            } catch (e: any) {
+               if (e.code !== 'storage/object-not-found') {
+                 console.warn("Failed to delete old image, continuing update.", e);
+               }
+            }
+          }
+      } else {
+         throw new Error("Agent not found.");
       }
       updatePayload.photoUrl = await uploadAgentPhoto(id, photoDataUri);
     }
