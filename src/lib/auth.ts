@@ -1,64 +1,24 @@
 
 'use server';
 
-import { collection, getDocs, query, where, limit, addDoc, Timestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import type { Admin } from '@/models/admin';
 
-// Nota: En una aplicación de producción, las contraseñas DEBEN ser hasheadas
-// usando una librería como bcrypt. Por simplicidad aquí se guardan en texto plano.
+// ¡IMPORTANTE! Esta es una autenticación muy básica solo para fines de demostración.
+// En una aplicación de producción, NUNCA almacenes contraseñas en texto plano
+// ni en variables de entorno del lado del cliente. Utiliza un proveedor de autenticación
+// como Firebase Authentication, Auth0, etc.
 
 /**
- * Verifica si existe un administrador con el email y contraseña proporcionados.
+ * Verifica si las credenciales coinciden con las variables de entorno.
  */
 export async function authenticateAdmin({ email, password }: Omit<Admin, 'id'>): Promise<boolean> {
-  try {
-    const q = query(
-      collection(db, 'admins'),
-      where('email', '==', email),
-      where('password', '==', password), // ¡NO SEGURO PARA PRODUCCIÓN!
-      limit(1)
-    );
-    const querySnapshot = await getDocs(q);
-    return !querySnapshot.empty;
-  } catch (error) {
-    console.error("Error authenticating admin:", error);
+  const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+  const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+
+  if (!adminEmail || !adminPassword) {
+    console.error("Las variables de entorno de administrador no están configuradas.");
     return false;
   }
-}
 
-/**
- * Verifica si la colección de 'admins' está vacía.
- */
-export async function isFirstAdmin(): Promise<boolean> {
-  try {
-    const q = query(collection(db, 'admins'), limit(1));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.empty;
-  } catch (error) {
-    console.error("Error checking for first admin:", error);
-    // En caso de error, asumir que no es el primer admin para evitar bloqueos.
-    return false; 
-  }
-}
-
-/**
- * Crea el primer documento de administrador.
- */
-export async function createFirstAdmin({ email, password }: Omit<Admin, 'id'>): Promise<void> {
-  try {
-    const isAdminFirst = await isFirstAdmin();
-    if (!isAdminFirst) {
-      throw new Error("Ya existe un administrador. No se puede crear uno nuevo por este método.");
-    }
-    
-    await addDoc(collection(db, 'admins'), {
-      email,
-      password, // ¡NO SEGURO PARA PRODUCCIÓN!
-      createdAt: Timestamp.now(),
-    });
-  } catch (error) {
-    console.error("Error creating first admin:", error);
-    throw error; // Propagar el error para que la UI lo maneje
-  }
+  return email === adminEmail && password === adminPassword;
 }
