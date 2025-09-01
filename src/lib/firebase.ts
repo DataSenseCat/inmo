@@ -12,13 +12,15 @@ const clientCredentials = {
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-let app: FirebaseApp;
-if (getApps().length === 0) {
-    app = initializeApp(clientCredentials);
-} else {
-    app = getApp();
+// Singleton pattern to ensure Firebase is initialized only once
+function getFirebaseApp(): FirebaseApp {
+    if (getApps().length > 0) {
+        return getApp();
+    }
+    return initializeApp(clientCredentials);
 }
 
+const app: FirebaseApp = getFirebaseApp();
 const db: Firestore = getFirestore(app);
 const storage: FirebaseStorage = getStorage(app);
 
