@@ -20,6 +20,7 @@ import { db, storage } from '@/lib/firebase';
 import type { Property } from '@/models/property';
 import { firebaseTimestampToString } from './utils';
 
+// This function runs on the server
 const preparePropertyDataForSave = (data: any) => {
     return {
         title: data.title || '',
@@ -47,23 +48,22 @@ const preparePropertyDataForSave = (data: any) => {
     };
 };
 
+// This function now runs on the client
 export async function createProperty(data: Omit<Property, 'id' | 'images' | 'createdAt' | 'updatedAt'>, imageFiles: File[]): Promise<{ id: string }> {
     try {
         if (!imageFiles || imageFiles.length === 0) {
             throw new Error("At least one image is required to create a property.");
         }
 
-        // 1. Create property with empty images array
         const propertyPayload = {
             ...preparePropertyDataForSave(data),
-            images: [], // Initialize empty
+            images: [],
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
         }
         const docRef = await addDoc(collection(db, 'properties'), propertyPayload);
         const propId = docRef.id;
 
-        // 2. Upload images
         const imageUrls = [];
         for (const imageFile of imageFiles) {
             const imageRef = ref(storage, `properties/${propId}/${Date.now()}_${imageFile.name}`);
@@ -72,7 +72,6 @@ export async function createProperty(data: Omit<Property, 'id' | 'images' | 'cre
             imageUrls.push({ url });
         }
         
-        // 3. Update property with image URLs
         await updateDoc(doc(db, 'properties', propId), { images: imageUrls });
 
         return { id: propId };
@@ -82,6 +81,7 @@ export async function createProperty(data: Omit<Property, 'id' | 'images' | 'cre
     }
 }
 
+// This function now runs on the client
 export async function updateProperty(id: string, data: Partial<Property>, newImageFiles?: File[]): Promise<void> {
     try {
         const docRef = doc(db, 'properties', id);
@@ -97,7 +97,6 @@ export async function updateProperty(id: string, data: Partial<Property>, newIma
             const docSnap = await getDoc(docRef);
             const currentProperty = docSnap.data() as Property | undefined;
 
-            // Delete old images
             if (currentProperty?.images) {
                 await Promise.all(currentProperty.images.map(async (image) => {
                     if (image.url && image.url.startsWith('https://firebasestorage.googleapis.com')) {
@@ -112,7 +111,6 @@ export async function updateProperty(id: string, data: Partial<Property>, newIma
                 }));
             }
             
-            // Upload new images
             const newImageUrls = [];
             for (const imageFile of newImageFiles) {
                 const imageRef = ref(storage, `properties/${id}/${Date.now()}_${imageFile.name}`);
@@ -130,7 +128,7 @@ export async function updateProperty(id: string, data: Partial<Property>, newIma
     }
 }
 
-
+// This function runs on the server
 export async function getProperties(): Promise<Property[]> {
   try {
     const propertiesCol = collection(db, 'properties');
@@ -151,6 +149,7 @@ export async function getProperties(): Promise<Property[]> {
   }
 }
 
+// This function runs on the server
 export async function getFeaturedProperties(): Promise<Property[]> {
     try {
         const propertiesCol = collection(db, 'properties');
@@ -171,6 +170,7 @@ export async function getFeaturedProperties(): Promise<Property[]> {
     }
 }
 
+// This function can be called from client or server
 export async function getPropertyById(id: string): Promise<Property | null> {
     try {
         const docRef = doc(db, 'properties', id);
@@ -193,6 +193,7 @@ export async function getPropertyById(id: string): Promise<Property | null> {
     }
 }
 
+// This function now runs on the client
 export async function deleteProperty(id: string): Promise<void> {
     try {
         const docRef = doc(db, 'properties', id);

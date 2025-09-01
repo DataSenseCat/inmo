@@ -27,6 +27,7 @@ const prepareTestimonialData = (data: any) => {
     };
 };
 
+// This function now runs on the client
 export async function createTestimonial(data: Omit<Testimonial, 'id' | 'createdAt' | 'updatedAt'>): Promise<{ id: string }> {
     try {
         const testimonialPayload = {
@@ -42,6 +43,7 @@ export async function createTestimonial(data: Omit<Testimonial, 'id' | 'createdA
     }
 }
 
+// This function now runs on the client
 export async function updateTestimonial(id: string, data: Partial<Testimonial>): Promise<void> {
     try {
         const docRef = doc(db, 'testimonials', id);
@@ -56,6 +58,7 @@ export async function updateTestimonial(id: string, data: Partial<Testimonial>):
     }
 }
 
+// This function runs on the server
 export async function getTestimonials(onlyActive: boolean = false): Promise<Testimonial[]> {
     try {
         const testimonialsCol = collection(db, 'testimonials');
@@ -80,6 +83,7 @@ export async function getTestimonials(onlyActive: boolean = false): Promise<Test
     }
 }
 
+// This can be called from client or server
 export async function getTestimonialById(id: string): Promise<Testimonial | null> {
     try {
         const docRef = doc(db, 'testimonials', id);
@@ -100,6 +104,7 @@ export async function getTestimonialById(id: string): Promise<Testimonial | null
     }
 }
 
+// This function now runs on the client
 export async function deleteTestimonial(id: string): Promise<void> {
     try {
         const docRef = doc(db, 'testimonials', id);

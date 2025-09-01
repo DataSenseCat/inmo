@@ -44,7 +44,6 @@ function TestimonialForm() {
   const isEditing = !!testimonialId;
 
   const [loading, setLoading] = useState(isEditing);
-  const [testimonialData, setTestimonialData] = useState<Testimonial | null>(null);
   
   const form = useForm<TestimonialFormValues>({
     resolver: zodResolver(testimonialFormSchema),
@@ -57,12 +56,11 @@ function TestimonialForm() {
   });
 
   useEffect(() => {
-    if (isEditing && !testimonialData) {
+    if (isEditing) {
       setLoading(true);
       getTestimonialById(testimonialId)
         .then(data => {
           if (data) {
-            setTestimonialData(data);
             form.reset(data);
           } else {
             toast({ variant: 'destructive', title: 'Error', description: 'Testimonio no encontrado.' });
@@ -71,7 +69,7 @@ function TestimonialForm() {
         })
         .finally(() => setLoading(false));
     }
-  }, [isEditing, testimonialId, form, router, toast, testimonialData]);
+  }, [isEditing, testimonialId, form, router, toast]);
 
   async function onSubmit(data: TestimonialFormValues) {
     try {

@@ -83,26 +83,33 @@ function ConfigForm() {
   });
 
   useEffect(() => {
-    setLoading(true);
-    getSiteConfig()
-      .then(data => {
-        if (data) {
-            form.reset({
-                contactPhone: data.contactPhone || '',
-                contactEmail: data.contactEmail || '',
-                leadNotificationEmail: data.leadNotificationEmail || '',
-                address: data.address || '',
-                officeHours: data.officeHours || '',
-                facebookUrl: data.socials?.facebook || '',
-                instagramUrl: data.socials?.instagram || '',
-                twitterUrl: data.socials?.twitter || '',
-                services: data.services || [],
-                certifications: data.certifications || [],
-            });
+    async function loadConfig() {
+        setLoading(true);
+        try {
+            const data = await getSiteConfig();
+            if (data) {
+                form.reset({
+                    contactPhone: data.contactPhone || '',
+                    contactEmail: data.contactEmail || '',
+                    leadNotificationEmail: data.leadNotificationEmail || '',
+                    address: data.address || '',
+                    officeHours: data.officeHours || '',
+                    facebookUrl: data.socials?.facebook || '',
+                    instagramUrl: data.socials?.instagram || '',
+                    twitterUrl: data.socials?.twitter || '',
+                    services: data.services || [],
+                    certifications: data.certifications || [],
+                });
+            }
+        } catch (error) {
+            console.error("Failed to load site config", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'No se pudo cargar la configuración.' });
+        } finally {
+            setLoading(false);
         }
-      })
-      .finally(() => setLoading(false));
-   }, [form]);
+    }
+    loadConfig();
+   }, [form, toast]);
 
   async function onSubmit(data: ConfigFormValues) {
     try {
@@ -293,7 +300,7 @@ function ConfigForm() {
                             </Button>
                         </div>
                     ))}
-                    {certificationFields.length === 0 && <p className="text-sm text-muted-foreground">No hay certificaciones añadidas.</p>}
+                    {certificationFields.length === 0 && <p className="text-sm text-muted-foreground">No hay certificaciones añadidos.</p>}
                 </CardContent>
             </Card>
 

@@ -36,28 +36,26 @@ const prepareDevelopmentDataForSave = (data: any) => {
     };
 };
 
+// This function now runs on the client
 export async function createDevelopment(data: Omit<Development, 'id' | 'image' | 'createdAt' | 'updatedAt'>, imageFile: File): Promise<{ id: string }> {
     try {
         if (!imageFile) {
             throw new Error("Main image is required to create a development.");
         }
         
-        // 1. Create document without image URL
         const developmentPayload = {
             ...prepareDevelopmentDataForSave(data),
-            image: '', // Initialize empty
+            image: '',
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
         }
         const docRef = await addDoc(collection(db, 'developments'), developmentPayload);
         const devId = docRef.id;
 
-        // 2. Upload image
         const imageRef = ref(storage, `developments/${devId}/${imageFile.name}`);
         await uploadBytes(imageRef, imageFile);
         const imageUrl = await getDownloadURL(imageRef);
         
-        // 3. Update document with image URL
         await updateDoc(doc(db, 'developments', devId), { image: imageUrl });
 
         return { id: devId };
@@ -68,6 +66,7 @@ export async function createDevelopment(data: Omit<Development, 'id' | 'image' |
     }
 }
 
+// This function now runs on the client
 export async function updateDevelopment(id: string, data: Partial<Development>, newImageFile?: File): Promise<void> {
     try {
         const docRef = doc(db, 'developments', id);
@@ -79,9 +78,8 @@ export async function updateDevelopment(id: string, data: Partial<Development>, 
         if (newImageFile) {
             const currentDoc = await getDoc(docRef);
             if (!currentDoc.exists()) throw new Error("Development not found");
-            const currentData = currentDoc.data() as Development;
+            const currentData = currentDoc.data();
 
-            // Delete old image
             if (currentData.image && currentData.image.startsWith('https://firebasestorage.googleapis.com')) {
                 try {
                     await deleteObject(ref(storage, currentData.image));
@@ -90,7 +88,6 @@ export async function updateDevelopment(id: string, data: Partial<Development>, 
                 }
             }
 
-            // Upload new image
             const imageRef = ref(storage, `developments/${id}/${newImageFile.name}`);
             await uploadBytes(imageRef, newImageFile);
             updatePayload.image = await getDownloadURL(imageRef);
@@ -105,6 +102,7 @@ export async function updateDevelopment(id: string, data: Partial<Development>, 
     }
 }
 
+// This function runs on the server
 export async function getDevelopments(): Promise<Development[]> {
   try {
     const developmentsCol = collection(db, 'developments');
@@ -125,6 +123,7 @@ export async function getDevelopments(): Promise<Development[]> {
   }
 }
 
+// This function can be called from client or server
 export async function getDevelopmentById(id: string): Promise<Development | null> {
     try {
         const docRef = doc(db, 'developments', id);
@@ -147,13 +146,14 @@ export async function getDevelopmentById(id: string): Promise<Development | null
     }
 }
 
+// This function now runs on the client
 export async function deleteDevelopment(id: string): Promise<void> {
     try {
         const docRef = doc(db, 'developments', id);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-            const development = docSnap.data() as Development;
+            const development = docSnap.data();
             if (development.image && development.image.startsWith('https://firebasestorage.googleapis.com')) {
                 try {
                     const imageRef = ref(storage, development.image);
