@@ -1,31 +1,52 @@
 
-// Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getFirestore, Firestore } from "firebase/firestore";
 import { getStorage, FirebaseStorage } from "firebase/storage";
+import admin from 'firebase-admin';
 
-// Your web app's Firebase configuration
-const firebaseConfig = {
-    apiKey: "AIzaSyClnikNK5zuHaS5c1hWnZEepRppHwB6Y4M",
-    authDomain: "catamarca-estates.firebaseapp.com",
-    projectId: "catamarca-estates",
-    storageBucket: "datainmob",
-    messagingSenderId: "826854436736",
-    appId: "1:826854436736:web:21b0f4995ce88ba33a9b65"
+const clientCredentials = {
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase for SSR
+function initializeAdminApp() {
+    if (admin.apps.length > 0) {
+        return admin.app();
+    }
+    
+    const serviceAccount = JSON.parse(
+        process.env.FIREBASE_SERVICE_ACCOUNT_KEY as string
+    );
+
+    return admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        storageBucket: clientCredentials.storageBucket,
+    });
+}
+
 let app: FirebaseApp;
 let db: Firestore;
 let storage: FirebaseStorage;
+let adminDb: admin.firestore.Firestore;
+let adminStorage: admin.storage.Storage;
 
-if (getApps().length === 0) {
-    app = initializeApp(firebaseConfig);
+if (typeof window === "undefined") {
+    // Server-side initialization
+    initializeAdminApp();
+    app = getApps().length > 0 ? getApp() : initializeApp(clientCredentials);
+    db = getFirestore(app);
+    storage = getStorage(app);
+    adminDb = admin.firestore();
+    adminStorage = admin.storage();
 } else {
-    app = getApp();
+    // Client-side initialization
+    app = getApps().length > 0 ? getApp() : initializeApp(clientCredentials);
+    db = getFirestore(app);
+    storage = getStorage(app);
 }
 
-db = getFirestore(app);
-storage = getStorage(app);
-
-export { app, db, storage };
+export { app, db, storage, adminDb, adminStorage };
