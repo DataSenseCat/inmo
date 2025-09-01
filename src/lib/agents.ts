@@ -8,6 +8,10 @@ import type { Agent } from '@/models/agent';
 const BUCKET_NAME = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
 
 export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'createdAt' | 'updatedAt'>, photoFile?: File): Promise<{ id: string }> {
+  if (!adminDb || !adminStorage) {
+    throw new Error("Firebase Admin SDK not initialized. Check server environment variables.");
+  }
+  
   try {
     const agentPayload: any = {
       name: data.name,
@@ -15,7 +19,6 @@ export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'created
       phone: data.phone,
       active: data.active,
       bio: data.bio || '',
-      photoUrl: '', // Default empty
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     };
@@ -33,6 +36,8 @@ export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'created
       });
 
       agentPayload.photoUrl = file.publicUrl();
+    } else {
+      agentPayload.photoUrl = ''; // Default empty if no photo
     }
 
     const docRef = await adminDb.collection('agents').add(agentPayload);
@@ -45,6 +50,9 @@ export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'created
 }
 
 export async function updateAgent(id: string, data: Partial<Omit<Agent, 'id'>>, photoFile?: File): Promise<void> {
+  if (!adminDb || !adminStorage) {
+    throw new Error("Firebase Admin SDK not initialized. Check server environment variables.");
+  }
   try {
     const docRef = adminDb.collection('agents').doc(id);
     const currentDoc = await docRef.get();
@@ -55,13 +63,13 @@ export async function updateAgent(id: string, data: Partial<Omit<Agent, 'id'>>, 
 
     const updatePayload: any = {
       ...data,
+      bio: data.bio || '', // Ensure bio is not undefined
       updatedAt: Timestamp.now(),
     };
 
     if (photoFile && BUCKET_NAME) {
       const bucket = adminStorage.bucket(BUCKET_NAME);
 
-      // Delete old photo if it exists
       const oldData = currentDoc.data() as Agent;
       if (oldData.photoUrl && oldData.photoUrl.includes(BUCKET_NAME)) {
           try {
@@ -72,7 +80,6 @@ export async function updateAgent(id: string, data: Partial<Omit<Agent, 'id'>>, 
           }
       }
       
-      // Upload new photo
       const filePath = `agents/${Date.now()}_${photoFile.name}`;
       const buffer = Buffer.from(await photoFile.arrayBuffer());
       const file = bucket.file(filePath);
@@ -92,6 +99,11 @@ export async function updateAgent(id: string, data: Partial<Omit<Agent, 'id'>>, 
 }
 
 export async function getAgents(): Promise<Agent[]> {
+  // Reading can be done via client SDK if needed, but for consistency we use admin if available
+  if (!adminDb) {
+    console.warn("Admin SDK not available for getAgents. Returning empty array.");
+    return [];
+  }
   try {
     const snapshot = await adminDb.collection('agents').orderBy('name', 'asc').get();
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Agent));
@@ -102,6 +114,10 @@ export async function getAgents(): Promise<Agent[]> {
 }
 
 export async function getAgentById(id: string): Promise<Agent | null> {
+  if (!adminDb) {
+    console.warn(`Admin SDK not available for getAgentById(${id}). Returning null.`);
+    return null;
+  }
   try {
     const docSnap = await adminDb.collection('agents').doc(id).get();
     if (docSnap.exists) {
@@ -116,6 +132,9 @@ export async function getAgentById(id: string): Promise<Agent | null> {
 }
 
 export async function deleteAgent(id: string): Promise<void> {
+  if (!adminDb || !adminStorage) {
+    throw new Error("Firebase Admin SDK not initialized. Check server environment variables.");
+  }
   try {
     const docRef = adminDb.collection('agents').doc(id);
     const docSnap = await docRef.get();
