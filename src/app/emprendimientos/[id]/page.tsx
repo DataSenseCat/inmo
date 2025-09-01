@@ -62,24 +62,19 @@ export default function DevelopmentDetailPage({ params }: { params: { id: string
   useEffect(() => {
     async function loadData() {
         setLoading(true);
-        try {
-            const [devData, configData] = await Promise.all([
-                getDevelopmentById(params.id),
-                getSiteConfig()
-            ]);
-            
-            if (!devData) {
-                notFound();
-            }
-
-            setDevelopment(devData);
-            setConfig(configData);
-        } catch(error) {
-            console.error("Failed to load development data", error);
+        const [devData, configData] = await Promise.all([
+            getDevelopmentById(params.id),
+            getSiteConfig()
+        ]);
+        
+        if (!devData) {
             notFound();
-        } finally {
-            setLoading(false);
+            return;
         }
+
+        setDevelopment(devData);
+        setConfig(configData);
+        setLoading(false);
     }
     loadData();
   }, [params.id]);
