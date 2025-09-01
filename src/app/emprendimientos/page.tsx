@@ -1,13 +1,51 @@
 
+'use client';
+
+import { useEffect, useState } from 'react';
 import { DevelopmentCard } from '@/components/emprendimientos/development-card';
 import { getDevelopments } from '@/lib/developments';
 import type { Development } from '@/models/development';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { Skeleton } from '@/components/ui/skeleton';
 
-export default async function EmprendimientosPage() {
-  const developments: Development[] = await getDevelopments();
+function DevelopmentsPageSkeleton() {
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {[...Array(4)].map((_, i) => (
+                <div key={i} className="rounded-lg border bg-card text-card-foreground shadow-sm">
+                    <Skeleton className="h-[250px] w-full" />
+                    <div className="p-6 space-y-4">
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                        <Skeleton className="h-16 w-full" />
+                        <Skeleton className="h-10 w-full mt-4" />
+                    </div>
+                </div>
+            ))}
+        </div>
+    )
+}
+
+export default function EmprendimientosPage() {
+  const [developments, setDevelopments] = useState<Development[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+        setLoading(true);
+        try {
+            const devData = await getDevelopments();
+            setDevelopments(devData);
+        } catch (error) {
+            console.error("Failed to load developments", error);
+        } finally {
+            setLoading(false);
+        }
+    }
+    loadData();
+  }, []);
 
   const filteredDevelopments = (status: 'planning' | 'construction' | 'finished' | null) => {
     if (!status) return developments;
@@ -16,6 +54,9 @@ export default async function EmprendimientosPage() {
   };
   
   const renderDevelopments = (devs: Development[] | null) => {
+    if (loading) {
+        return <DevelopmentsPageSkeleton />;
+    }
     if (!devs || devs.length === 0) {
       return (
         <div className="col-span-full text-center py-16 border-dashed border-2 rounded-lg">

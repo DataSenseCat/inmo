@@ -1,6 +1,7 @@
-'use server';
 
-// This file can be used from server or client
+'use client';
+
+// This file can be used from the client
 import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { SiteConfig } from '@/models/site-config';
@@ -8,7 +9,7 @@ import { firebaseTimestampToString } from './utils';
 
 const CONFIG_DOC_ID = 'main'; 
 
-// This function can run on server or client
+// This function runs on the client
 export async function getSiteConfig(): Promise<SiteConfig | null> {
     try {
         const docRef = doc(db, 'siteConfig', CONFIG_DOC_ID);
@@ -57,7 +58,7 @@ export async function getSiteConfig(): Promise<SiteConfig | null> {
     }
 }
 
-// This function now runs on the SERVER
+// This function now runs on the CLIENT
 export async function updateSiteConfig(data: Partial<Omit<SiteConfig, 'logoUrl' | 'id'>>): Promise<void> {
     try {
         const docRef = doc(db, 'siteConfig', CONFIG_DOC_ID);

@@ -1,4 +1,5 @@
-'use server';
+
+'use client';
 
 import {
   addDoc,
