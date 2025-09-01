@@ -1,7 +1,4 @@
 
-'use client';
-
-// This file can be used from the client
 import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { SiteConfig } from '@/models/site-config';
@@ -9,11 +6,22 @@ import { firebaseTimestampToString } from './utils';
 
 const CONFIG_DOC_ID = 'main'; 
 
-// This function runs on the client
 export async function getSiteConfig(): Promise<SiteConfig | null> {
     try {
         const docRef = doc(db, 'siteConfig', CONFIG_DOC_ID);
         const docSnap = await getDoc(docRef);
+
+        const defaultConfig: SiteConfig = {
+            contactPhone: 'Configurar teléfono',
+            contactEmail: 'Configurar email',
+            leadNotificationEmail: '',
+            address: 'Configurar dirección',
+            officeHours: 'Configurar horarios',
+            socials: { facebook: '', instagram: '', twitter: '' },
+            services: [],
+            certifications: [],
+            logoUrl: '/logo.png'
+        };
 
         if (docSnap.exists()) {
             const data = docSnap.data();
@@ -26,24 +34,22 @@ export async function getSiteConfig(): Promise<SiteConfig | null> {
             };
             return configData as SiteConfig;
         } else {
-            console.warn(`Config document 'siteConfig/${CONFIG_DOC_ID}' not found. This is normal on first run. A default will be created if needed.`);
-            const defaultConfig: SiteConfig = {
-                contactPhone: '',
-                contactEmail: '',
-                leadNotificationEmail: '',
-                address: '',
-                officeHours: '',
-                socials: { facebook: '', instagram: '', twitter: '' },
-                services: [],
-                certifications: [],
-                logoUrl: '/logo.png'
+            console.log(`Config document 'siteConfig/${CONFIG_DOC_ID}' not found. Creating a default one.`);
+            const configToSave = {
+                ...defaultConfig,
+                updatedAt: Timestamp.now()
             };
-            return defaultConfig;
+            await setDoc(docRef, configToSave);
+            console.log("Default config created.");
+            return {
+                ...configToSave,
+                updatedAt: firebaseTimestampToString(configToSave.updatedAt)
+            } as SiteConfig;
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error("CRITICAL: Error getting site config. This might be due to Firestore permissions or the database not being created.", error);
-        // Return a default object to prevent crashes on the client
-         const defaultConfig: SiteConfig = {
+        // Return a safe default object to prevent app crashes
+        const safeDefault: SiteConfig = {
             contactPhone: 'Error',
             contactEmail: 'Error',
             leadNotificationEmail: '',
@@ -54,11 +60,10 @@ export async function getSiteConfig(): Promise<SiteConfig | null> {
             certifications: [],
             logoUrl: '/logo.png'
         };
-        return defaultConfig;
+        return safeDefault;
     }
 }
 
-// This function now runs on the CLIENT
 export async function updateSiteConfig(data: Partial<Omit<SiteConfig, 'logoUrl' | 'id'>>): Promise<void> {
     try {
         const docRef = doc(db, 'siteConfig', CONFIG_DOC_ID);

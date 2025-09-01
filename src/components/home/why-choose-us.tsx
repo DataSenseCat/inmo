@@ -43,7 +43,7 @@ export function WhyChooseUs() {
                     ))}
                 </ul>
                 <Button asChild variant="outline" className="mt-8">
-                    <Link href="/contact">
+                    <Link href="/la-empresa">
                         Conoce Más Sobre Nosotros
                     </Link>
                 </Button>

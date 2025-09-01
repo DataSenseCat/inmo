@@ -36,6 +36,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { Property } from '@/models/property';
 import type { Agent } from '@/models/agent';
 import { getAgents } from '@/lib/agents';
+import { fileToDataUri } from '@/lib/utils';
 
 // Esquema de validación con Zod para todo el formulario
 const propertyFormSchema = z.object({
@@ -71,8 +72,6 @@ const propertyFormSchema = z.object({
   // Agente
   agentId: z.string().min(1, "Debe seleccionar un agente."),
 
-  // Imágenes (la lógica de subida se manejará por separado)
-  images: z.array(z.any()).default([]),
 });
 
 type PropertyFormValues = z.infer<typeof propertyFormSchema>;
@@ -95,8 +94,8 @@ function PropertyForm() {
   const isEditing = !!propertyId;
 
   const [loading, setLoading] = useState(true);
-  const [propertyData, setPropertyData] = useState<Property | null>(null);
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imageDataUris, setImageDataUris] = useState<string[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   
@@ -125,7 +124,6 @@ function PropertyForm() {
       priceUSD: 0,
       priceARS: 0,
       agentId: '',
-      images: [],
     },
   });
 
@@ -138,7 +136,6 @@ function PropertyForm() {
             if (isEditing) {
               const data = await getPropertyById(propertyId);
               if (data) {
-                setPropertyData(data);
                 const values = {
                     ...data,
                     bedrooms: data.bedrooms || '',
@@ -167,29 +164,30 @@ function PropertyForm() {
    }, [isEditing, propertyId, form, router, toast]);
 
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
       if(e.target.files) {
           const files = Array.from(e.target.files);
-          setImageFiles(files);
+          const dataUris = await Promise.all(files.map(fileToDataUri));
+          setImageDataUris(dataUris);
+          
           const newPreviews = files.map(file => URL.createObjectURL(file));
           setImagePreviews(newPreviews);
       }
   }
 
   const removeImage = (index: number) => {
-      // For existing images, we don't have the file object, so we just remove the preview
-      // The update logic will handle replacing all images
       setImagePreviews(previews => previews.filter((_, i) => i !== index));
-      // For new images, we remove the file as well
-      setImageFiles(files => files.filter((file) => URL.createObjectURL(file) !== imagePreviews[index]));
+      setImageDataUris(dataUris => dataUris.filter((_, i) => i !== index));
   }
 
 
   async function onSubmit(data: PropertyFormValues) {
+    setIsSubmitting(true);
     try {
         const selectedAgent = agents.find(agent => agent.id === data.agentId);
         if (!selectedAgent) {
             toast({ variant: 'destructive', title: 'Error', description: 'Agente seleccionado no es válido.' });
+            setIsSubmitting(false);
             return;
         }
 
@@ -203,14 +201,15 @@ function PropertyForm() {
         };
 
         if(isEditing) {
-            await updateProperty(propertyId, propertyPayload, imageFiles);
+            await updateProperty(propertyId, propertyPayload, imageDataUris.length > 0 ? imageDataUris : undefined);
             toast({ title: 'Propiedad Actualizada', description: 'Los cambios se guardaron correctamente.' });
         } else {
-            if (imageFiles.length === 0) {
+            if (imageDataUris.length === 0) {
               toast({ variant: 'destructive', title: 'Error', description: 'Debes subir al menos una imagen.' });
+              setIsSubmitting(false);
               return;
             }
-            await createProperty(propertyPayload, imageFiles);
+            await createProperty(propertyPayload, imageDataUris);
             toast({ title: 'Propiedad Creada', description: 'La nueva propiedad se ha guardado.' });
         }
         router.push('/admin?tab=properties');
@@ -218,6 +217,7 @@ function PropertyForm() {
     } catch (error) {
         console.error('Failed to save property:', error);
         toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo guardar la propiedad.' });
+        setIsSubmitting(false);
     }
   }
 
@@ -486,8 +486,8 @@ function PropertyForm() {
                     <Button type="button" variant="outline" size="lg" asChild>
                         <Link href="/admin?tab=properties">Cancelar</Link>
                     </Button>
-                    <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
-                        {form.formState.isSubmitting 
+                    <Button type="submit" size="lg" disabled={isSubmitting}>
+                        {isSubmitting 
                             ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Guardando...</>
                             : (isEditing ? 'Guardar Cambios' : 'Crear Propiedad')}
                     </Button>

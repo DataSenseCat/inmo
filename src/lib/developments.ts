@@ -1,6 +1,3 @@
-
-'use client';
-
 import {
   addDoc,
   collection,
@@ -16,7 +13,7 @@ import {
 import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import type { Development } from '@/models/development';
-import { firebaseTimestampToString } from './utils';
+import { firebaseTimestampToString, dataUriToBuffer } from './utils';
 
 const prepareDevelopmentDataForSave = (data: any) => {
     return {
@@ -36,10 +33,9 @@ const prepareDevelopmentDataForSave = (data: any) => {
     };
 };
 
-// This function now runs on the CLIENT
-export async function createDevelopment(data: Omit<Development, 'id' | 'image' | 'createdAt' | 'updatedAt'>, imageFile: File): Promise<{ id: string }> {
+export async function createDevelopment(data: Omit<Development, 'id' | 'image' | 'createdAt' | 'updatedAt'>, imageDataUri: string): Promise<{ id: string }> {
     try {
-        if (!imageFile) {
+        if (!imageDataUri) {
             throw new Error("Main image is required to create a development.");
         }
         
@@ -52,11 +48,13 @@ export async function createDevelopment(data: Omit<Development, 'id' | 'image' |
         const docRef = await addDoc(collection(db, 'developments'), developmentPayload);
         const devId = docRef.id;
 
-        const imageRef = ref(storage, `developments/${devId}/${imageFile.name}`);
-        await uploadBytes(imageRef, imageFile);
+        const { buffer, mimeType } = dataUriToBuffer(imageDataUri);
+        const fileExtension = mimeType.split('/')[1] || 'jpg';
+        const imageRef = ref(storage, `developments/${devId}/main.${fileExtension}`);
+        await uploadBytes(imageRef, buffer, { contentType: mimeType });
         const imageUrl = await getDownloadURL(imageRef);
         
-        await updateDoc(doc(db, 'developments', devId), { image: imageUrl });
+        await updateDoc(doc(db, 'developments', devId), { image: imageUrl, updatedAt: Timestamp.now() });
 
         return { id: devId };
 
@@ -66,8 +64,7 @@ export async function createDevelopment(data: Omit<Development, 'id' | 'image' |
     }
 }
 
-// This function now runs on the CLIENT
-export async function updateDevelopment(id: string, data: Partial<Development>, newImageFile?: File): Promise<void> {
+export async function updateDevelopment(id: string, data: Partial<Development>, newImageDataUri?: string): Promise<void> {
     try {
         const docRef = doc(db, 'developments', id);
         const updatePayload: any = {
@@ -75,7 +72,7 @@ export async function updateDevelopment(id: string, data: Partial<Development>, 
             updatedAt: Timestamp.now(),
         };
 
-        if (newImageFile) {
+        if (newImageDataUri) {
             const currentDoc = await getDoc(docRef);
             if (!currentDoc.exists()) throw new Error("Development not found");
             const currentData = currentDoc.data();
@@ -89,9 +86,11 @@ export async function updateDevelopment(id: string, data: Partial<Development>, 
                     }
                 }
             }
-
-            const imageRef = ref(storage, `developments/${id}/${newImageFile.name}`);
-            await uploadBytes(imageRef, newImageFile);
+            
+            const { buffer, mimeType } = dataUriToBuffer(newImageDataUri);
+            const fileExtension = mimeType.split('/')[1] || 'jpg';
+            const imageRef = ref(storage, `developments/${id}/main.${fileExtension}`);
+            await uploadBytes(imageRef, buffer, { contentType: mimeType });
             updatePayload.image = await getDownloadURL(imageRef);
         }
 
@@ -104,7 +103,6 @@ export async function updateDevelopment(id: string, data: Partial<Development>, 
     }
 }
 
-// This function runs on the CLIENT
 export async function getDevelopments(): Promise<Development[]> {
   try {
     const developmentsCol = collection(db, 'developments');
@@ -125,7 +123,6 @@ export async function getDevelopments(): Promise<Development[]> {
   }
 }
 
-// This function can be called from client or server
 export async function getDevelopmentById(id: string): Promise<Development | null> {
     try {
         const docRef = doc(db, 'developments', id);
@@ -148,7 +145,6 @@ export async function getDevelopmentById(id: string): Promise<Development | null
     }
 }
 
-// This function now runs on the CLIENT
 export async function deleteDevelopment(id: string): Promise<void> {
     try {
         const docRef = doc(db, 'developments', id);
