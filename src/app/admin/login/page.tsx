@@ -19,44 +19,68 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Info } from "lucide-react";
+import { authenticateAdmin, isFirstAdmin, createFirstAdmin } from "@/lib/auth";
 
 const loginSchema = z.object({
   email: z.string().email("Por favor, ingrese un email válido."),
-  password: z.string().min(1, "La contraseña es requerida."),
+  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres."),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
-
-// Las credenciales se leen desde las variables de entorno
-const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-const ADMIN_PASS = process.env.NEXT_PUBLIC_ADMIN_PASS;
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
+  const [isCheckingFirstAdmin, setIsCheckingFirstAdmin] = useState(true);
+  const [isFirstRun, setIsFirstRun] = useState(false);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
   });
 
-  function onSubmit(data: LoginFormValues) {
-    if (!ADMIN_EMAIL || !ADMIN_PASS) {
-        setError("Las credenciales de administrador no están configuradas en el archivo .env. Por favor, contacte al soporte.");
-        return;
+  useState(() => {
+    async function checkFirstAdmin() {
+      const first = await isFirstAdmin();
+      setIsFirstRun(first);
+      setIsCheckingFirstAdmin(false);
     }
+    checkFirstAdmin();
+  });
 
-    if (data.email === ADMIN_EMAIL && data.password === ADMIN_PASS) {
-      sessionStorage.setItem('isAdminAuthenticated', 'true');
-      toast({
-        title: "Inicio de Sesión Exitoso",
-        description: "Bienvenido al panel de administración.",
-      });
-      router.replace('/admin');
-    } else {
-      setError("Las credenciales son incorrectas. Por favor, intente de nuevo.");
+  async function onSubmit(data: LoginFormValues) {
+    setError(null);
+    try {
+      let authenticated = false;
+      if (isFirstRun) {
+        await createFirstAdmin(data);
+        toast({
+          title: "Administrador Creado",
+          description: "Tu cuenta de administrador ha sido creada exitosamente. Ahora puedes iniciar sesión.",
+        });
+        // Re-check to update UI
+        const first = await isFirstAdmin();
+        setIsFirstRun(first);
+        authenticated = true; 
+      } else {
+        authenticated = await authenticateAdmin(data);
+      }
+
+      if (authenticated) {
+        sessionStorage.setItem('isAdminAuthenticated', 'true');
+        toast({
+          title: "Inicio de Sesión Exitoso",
+          description: "Bienvenido al panel de administración.",
+        });
+        router.replace('/admin');
+      } else {
+        setError("Las credenciales son incorrectas. Por favor, intente de nuevo.");
+      }
+    } catch (e: any) {
+       console.error("Login error:", e);
+       setError(e.message || "Ocurrió un error inesperado durante el inicio de sesión.");
     }
   }
 
@@ -65,7 +89,9 @@ export default function AdminLoginPage() {
       <Card className="w-full max-w-md mx-4">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-headline">Panel de Administración</CardTitle>
-          <CardDescription>Inicia sesión para gestionar la inmobiliaria.</CardDescription>
+          <CardDescription>
+            {isFirstRun ? "Crea tu cuenta de administrador" : "Inicia sesión para gestionar la inmobiliaria."}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -77,15 +103,15 @@ export default function AdminLoginPage() {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-               {!ADMIN_EMAIL || !ADMIN_PASS ? (
-                 <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Configuración Requerida</AlertTitle>
-                    <AlertDescription>
-                        Las credenciales de administrador no están definidas. Por favor, configura las variables NEXT_PUBLIC_ADMIN_EMAIL y NEXT_PUBLIC_ADMIN_PASS en tu archivo .env.
+               {isFirstRun && !isCheckingFirstAdmin && (
+                 <Alert variant="default" className="bg-blue-50 border-blue-200">
+                    <Info className="h-4 w-4 text-blue-700" />
+                    <AlertTitle className="text-blue-800">¡Configuración Inicial!</AlertTitle>
+                    <AlertDescription className="text-blue-700">
+                        No se han encontrado administradores. Ingresa el email y la contraseña que deseas usar para crear tu primera cuenta de administrador.
                     </AlertDescription>
                 </Alert>
-               ) : (
+               )}
                 <>
                   <FormField
                     control={form.control}
@@ -113,11 +139,13 @@ export default function AdminLoginPage() {
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                    {form.formState.isSubmitting ? "Ingresando..." : "Ingresar"}
+                  <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || isCheckingFirstAdmin}>
+                    {form.formState.isSubmitting 
+                        ? "Procesando..." 
+                        : (isFirstRun ? "Crear Administrador" : "Ingresar")
+                    }
                   </Button>
                 </>
-               )}
             </form>
           </Form>
         </CardContent>
