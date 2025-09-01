@@ -1,42 +1,46 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Allow public read access to collections needed for the website to display content.
-    // Writes are disallowed from the client, except for leads.
+    // Permite la lectura pública para las colecciones que se muestran en el sitio.
+    // La escritura se gestiona desde el panel de administración.
     match /properties/{propertyId} {
+      allow read: if true;
+      allow write: if false; // Se cambiará cuando se implemente autenticación de admin
+    }
+
+    match /developments/{developmentId} {
       allow read: if true;
       allow write: if false;
     }
 
-    match /developments/{devId} {
-      allow read: if true;
-      allow write: if false;
-    }
-    
     match /agents/{agentId} {
       allow read: if true;
       allow write: if false;
     }
 
     match /testimonials/{testimonialId} {
-        allow read: if true;
-        allow write: if false;
-    }
-
-    // The site configuration needs to be readable by everyone.
-    match /siteConfig/{configId} {
       allow read: if true;
       allow write: if false;
     }
 
-    // Public users (not signed-in) can submit the contact form, which creates a lead.
-    // No one should be able to read, update, or delete leads from the client.
+    // El documento de configuración es de lectura pública.
+    match /siteConfig/main {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Permite que cualquier usuario cree un lead (formulario de contacto).
+    // Nadie puede leer, actualizar o borrar los leads desde el cliente.
     match /leads/{leadId} {
       allow create: if true;
       allow read, update, delete: if false;
+    }
+
+    // Regla de seguridad por defecto: denegar todas las demás operaciones.
+    match /{path=**} {
+      allow read, write: if false;
     }
   }
 }
