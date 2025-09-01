@@ -35,3 +35,19 @@ export function firebaseTimestampToString(timestamp: any): string {
         return '';
     }
 }
+
+/**
+ * Converts a File object to a Data URI string.
+ * @param file The File object to convert.
+ * @returns A promise that resolves with the Data URI string.
+ */
+export function fileToDataUri(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      resolve(reader.result as string);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}

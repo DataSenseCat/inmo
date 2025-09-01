@@ -7,8 +7,11 @@ import { db, storage } from '@/lib/firebase';
 import type { Agent } from '@/models/agent';
 import { firebaseTimestampToString } from './utils';
 
-// This function now runs on the client
-export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'createdAt' | 'updatedAt'>, photoFile?: File): Promise<{ id: string }> {
+// This function now runs on the SERVER
+export async function createAgent(
+  data: Omit<Agent, 'id' | 'photoUrl' | 'createdAt' | 'updatedAt'>,
+  photoDataUri?: string
+): Promise<{ id: string }> {
   try {
     const agentPayload = {
       name: data.name,
@@ -16,7 +19,7 @@ export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'created
       phone: data.phone,
       active: data.active,
       bio: data.bio || '',
-      photoUrl: '',
+      photoUrl: '', // Initialize with empty string
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     };
@@ -24,23 +27,36 @@ export async function createAgent(data: Omit<Agent, 'id' | 'photoUrl' | 'created
     const docRef = await addDoc(collection(db, 'agents'), agentPayload);
     const agentId = docRef.id;
 
-    if (photoFile) {
-        const imageRef = ref(storage, `agents/${agentId}/${photoFile.name}`);
-        await uploadBytes(imageRef, photoFile);
+    if (photoDataUri) {
+        // Convert Data URI to buffer
+        const buffer = Buffer.from(photoDataUri.split(',')[1], 'base64');
+        const mimeType = photoDataUri.split(';')[0].split(':')[1];
+        const fileExtension = mimeType.split('/')[1];
+        const fileName = `profile.${fileExtension}`;
+
+        const imageRef = ref(storage, `agents/${agentId}/${fileName}`);
+
+        // Upload buffer to Firebase Storage
+        await uploadBytes(imageRef, buffer, { contentType: mimeType });
         const photoUrl = await getDownloadURL(imageRef);
+
+        // Update the agent document with the new photo URL
         await updateDoc(doc(db, 'agents', agentId), { photoUrl: photoUrl });
     }
 
     return { id: agentId };
-
   } catch (error) {
     console.error("Error creating agent: ", error);
     throw new Error("Failed to create agent.");
   }
 }
 
-// This function now runs on the client
-export async function updateAgent(id: string, data: Partial<Omit<Agent, 'id'>>, photoFile?: File): Promise<void> {
+// This function now runs on the SERVER
+export async function updateAgent(
+  id: string,
+  data: Partial<Omit<Agent, 'id'>>,
+  photoDataUri?: string
+): Promise<void> {
   try {
     const docRef = doc(db, 'agents', id);
     const updatePayload: any = {
@@ -49,11 +65,12 @@ export async function updateAgent(id: string, data: Partial<Omit<Agent, 'id'>>, 
       updatedAt: Timestamp.now(),
     };
 
-    if (photoFile) {
+    if (photoDataUri) {
       const currentDoc = await getDoc(docRef);
       if (!currentDoc.exists()) throw new Error("Agent not found.");
       const currentData = currentDoc.data();
 
+      // Delete the old image if it exists
       if (currentData.photoUrl && currentData.photoUrl.startsWith('https://firebasestorage.googleapis.com')) {
         try {
           await deleteObject(ref(storage, currentData.photoUrl));
@@ -62,8 +79,14 @@ export async function updateAgent(id: string, data: Partial<Omit<Agent, 'id'>>, 
         }
       }
 
-      const imageRef = ref(storage, `agents/${id}/${photoFile.name}`);
-      await uploadBytes(imageRef, photoFile);
+      // Convert Data URI to buffer and upload
+      const buffer = Buffer.from(photoDataUri.split(',')[1], 'base64');
+      const mimeType = photoDataUri.split(';')[0].split(':')[1];
+      const fileExtension = mimeType.split('/')[1];
+      const fileName = `profile.${fileExtension}`;
+      const imageRef = ref(storage, `agents/${id}/${fileName}`);
+      
+      await uploadBytes(imageRef, buffer, { contentType: mimeType });
       updatePayload.photoUrl = await getDownloadURL(imageRef);
     }
     
@@ -115,7 +138,7 @@ export async function getAgentById(id: string): Promise<Agent | null> {
   }
 }
 
-// This function now runs on the client
+// This function now runs on the SERVER
 export async function deleteAgent(id: string): Promise<void> {
   try {
     const docRef = doc(db, 'agents', id);
