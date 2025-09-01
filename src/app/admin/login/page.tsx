@@ -53,20 +53,19 @@ export default function AdminLoginPage() {
   async function onSubmit(data: LoginFormValues) {
     setError(null);
     try {
-      let authenticated = false;
       if (isFirstRun) {
         await createFirstAdmin(data);
         toast({
           title: "Administrador Creado",
-          description: "Tu cuenta de administrador ha sido creada exitosamente. Ahora puedes iniciar sesión.",
+          description: "Tu cuenta de administrador ha sido creada. Ahora puedes iniciar sesión con esas credenciales.",
         });
-        // Re-check to update UI
-        const first = await isFirstAdmin();
-        setIsFirstRun(first);
-        authenticated = true; 
-      } else {
-        authenticated = await authenticateAdmin(data);
+        // After creating, set isFirstRun to false so the next attempt is a login
+        setIsFirstRun(false); 
+        // We don't log in automatically to ensure the user knows the credentials they just created.
+        return; 
       }
+
+      const authenticated = await authenticateAdmin(data);
 
       if (authenticated) {
         sessionStorage.setItem('isAdminAuthenticated', 'true');
