@@ -15,27 +15,35 @@ export async function getSiteConfig(): Promise<SiteConfig | null> {
 
         if (docSnap.exists()) {
             const data = docSnap.data();
-            return {
+            const configData = {
                 ...data,
+                // Ensure nested objects exist to prevent runtime errors
+                socials: data.socials || { facebook: '', instagram: '', twitter: '' },
+                services: data.services || [],
+                certifications: data.certifications || [],
                 updatedAt: firebaseTimestampToString(data.updatedAt)
-            } as SiteConfig;
+            };
+            return configData as SiteConfig;
         } else {
-            console.warn("No config document found! Creating a default one.");
-            const defaultConfig: SiteConfig = {
+            console.warn(`Config document 'siteConfig/${CONFIG_DOC_ID}' not found. This is normal on first run. A default will be created if needed.`);
+            // Return a default structure but indicate it's not from DB
+             const defaultConfig: SiteConfig = {
                 contactPhone: '',
                 contactEmail: '',
+                leadNotificationEmail: '',
                 address: '',
                 officeHours: '',
                 socials: { facebook: '', instagram: '', twitter: '' },
                 services: [],
                 certifications: [],
-                logoUrl: '/logo.png' // Default logo
+                logoUrl: '/logo.png'
             };
-            await setDoc(docRef, defaultConfig);
+            // Do not write to DB here, let the config form handle creation.
             return defaultConfig;
         }
     } catch (error) {
-        console.error("Error getting site config, returning null: ", error);
+        console.error("CRITICAL: Error getting site config. This might be due to Firestore permissions or the database not being created.", error);
+        // Return null to indicate a critical failure in fetching config.
         return null;
     }
 }
