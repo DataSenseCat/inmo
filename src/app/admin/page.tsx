@@ -51,32 +51,22 @@ function AdminDashboardComponent() {
   const activeTab = searchParams.get('tab') || 'properties';
 
   async function loadData() {
-      try {
-          setLoading(true);
-          const [props, devs, leadData, agentData, configData, testimonialData] = await Promise.all([
-            getProperties(), 
-            getDevelopments(),
-            getLeads(),
-            getAllAgents(),
-            getSiteConfig(),
-            getTestimonials(),
-          ]);
-          setProperties(props);
-          setDevelopments(devs);
-          setLeads(leadData);
-          setAgents(agentData);
-          setSiteConfig(configData);
-          setTestimonials(testimonialData);
-      } catch (error) {
-          console.error("Failed to load data:", error);
-          toast({
-              variant: "destructive",
-              title: "Error al cargar datos",
-              description: "No se pudieron cargar los datos desde la base de datos.",
-          });
-      } finally {
-          setLoading(false);
-      }
+      setLoading(true);
+      const [props, devs, leadData, agentData, configData, testimonialData] = await Promise.all([
+        getProperties(), 
+        getDevelopments(),
+        getLeads(),
+        getAllAgents(),
+        getSiteConfig(),
+        getTestimonials(),
+      ]);
+      setProperties(props);
+      setDevelopments(devs);
+      setLeads(leadData);
+      setAgents(agentData);
+      setSiteConfig(configData);
+      setTestimonials(testimonialData);
+      setLoading(false);
   }
   
   useEffect(() => {

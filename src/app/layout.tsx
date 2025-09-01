@@ -1,12 +1,11 @@
 
 'use client';
-import { useEffect, useState } from 'react';
+
 import './globals.css';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { Toaster } from "@/components/ui/toaster";
-import { getSiteConfig } from '@/lib/config';
-import type { SiteConfig } from '@/models/site-config';
+import { useEffect } from 'react';
 
 
 export default function RootLayout({
@@ -14,21 +13,13 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [siteConfig, setSiteConfig] = useState<SiteConfig | null>(null);
-
+  
   useEffect(() => {
-    // Set a default title on mount
     document.title = 'Guerrero Inmobiliaria';
-    
-    async function fetchConfig() {
-        const config = await getSiteConfig();
-        setSiteConfig(config);
-    }
-    fetchConfig();
   }, []);
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -36,9 +27,9 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <div className="flex flex-col min-h-screen">
-          <Header config={siteConfig} />
+          <Header />
           <main className="flex-grow">{children}</main>
-          <Footer config={siteConfig} />
+          <Footer />
         </div>
         <Toaster />
       </body>

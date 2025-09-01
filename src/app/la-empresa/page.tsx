@@ -72,20 +72,15 @@ export default function AboutUsPage() {
     useEffect(() => {
         async function loadData() {
             setLoading(true);
-            try {
-                const [agentData, configData, testimonialData] = await Promise.all([
-                    getAgents(),
-                    getSiteConfig(),
-                    getTestimonials(true)
-                ]);
-                setAgents(agentData);
-                setConfig(configData);
-                setTestimonials(testimonialData);
-            } catch (error) {
-                console.error("Failed to load about us page data", error);
-            } finally {
-                setLoading(false);
-            }
+            const [agentData, configData, testimonialData] = await Promise.all([
+                getAgents(),
+                getSiteConfig(),
+                getTestimonials(true)
+            ]);
+            setAgents(agentData);
+            setConfig(configData);
+            setTestimonials(testimonialData);
+            setLoading(false);
         }
         loadData();
     }, []);

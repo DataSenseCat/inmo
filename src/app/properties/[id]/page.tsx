@@ -69,18 +69,13 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
   useEffect(() => {
     async function loadProperty() {
         setLoading(true);
-        try {
-            const propData = await getPropertyById(params.id);
-            if (!propData || !propData.active) {
-                notFound();
-            }
-            setProperty(propData);
-        } catch(error) {
-            console.error("Failed to load property", error);
+        const propData = await getPropertyById(params.id);
+        if (!propData || !propData.active) {
             notFound();
-        } finally {
-            setLoading(false);
+            return;
         }
+        setProperty(propData);
+        setLoading(false);
     }
     loadProperty();
   }, [params.id]);

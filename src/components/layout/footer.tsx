@@ -1,13 +1,23 @@
 
+'use client';
+
 import Link from 'next/link';
 import { Facebook, Instagram, Twitter } from 'lucide-react';
 import type { SiteConfig } from '@/models/site-config';
+import { useEffect, useState } from 'react';
+import { getSiteConfig } from '@/lib/config';
 
-interface FooterProps {
-  config: SiteConfig | null;
-}
+export function Footer() {
+  const [config, setConfig] = useState<SiteConfig | null>(null);
 
-export function Footer({ config }: FooterProps) {
+  useEffect(() => {
+    async function fetchConfig() {
+      const configData = await getSiteConfig();
+      setConfig(configData);
+    }
+    fetchConfig();
+  }, []);
+
   return (
     <footer className="bg-[#0f172a] text-white">
         <div className="container mx-auto py-12 px-4 md:px-6">
@@ -38,8 +48,8 @@ export function Footer({ config }: FooterProps) {
                 <div>
                     <h4 className="font-semibold mb-3 font-headline">Servicios</h4>
                     <ul className="space-y-2 text-sm">
-                        <li><Link href="/properties?operation=sale" className="hover:underline text-gray-400 hover:text-white">Venta de Propiedades</Link></li>
-                        <li><Link href="/properties?operation=rent" className="hover:underline text-gray-400 hover:text-white">Alquiler de Propiedades</Link></li>
+                        <li><Link href="/properties?operation=Venta" className="hover:underline text-gray-400 hover:text-white">Venta de Propiedades</Link></li>
+                        <li><Link href="/properties?operation=Alquiler" className="hover:underline text-gray-400 hover:text-white">Alquiler de Propiedades</Link></li>
                         <li><Link href="/tasaciones" className="hover:underline text-gray-400 hover:text-white">Tasaciones Gratuitas</Link></li>
                         <li><Link href="/emprendimientos" className="hover:underline text-gray-400 hover:text-white">Desarrollos Inmobiliarios</Link></li>
                         <li><Link href="/la-empresa" className="hover:underline text-gray-400 hover:text-white">Asesoramiento Legal</Link></li>
@@ -49,13 +59,13 @@ export function Footer({ config }: FooterProps) {
                 <div>
                     <h4 className="font-semibold mb-3 font-headline">Contacto</h4>
                     <address className="not-italic text-sm space-y-2 text-gray-400">
-                        <p>{config?.address || 'Dirección no configurada'}</p>
-                        <p><a href={`tel:${config?.contactPhone}`} className="hover:underline hover:text-white">{config?.contactPhone || 'Teléfono no configurado'}</a></p>
-                        <p><a href={`mailto:${config?.contactEmail}`} className="hover:underline hover:text-white">{config?.contactEmail || 'Email no configurado'}</a></p>
+                        <p>{config?.address || 'Cargando...'}</p>
+                        <p><a href={`tel:${config?.contactPhone}`} className="hover:underline hover:text-white">{config?.contactPhone || 'Cargando...'}</a></p>
+                        <p><a href={`mailto:${config?.contactEmail}`} className="hover:underline hover:text-white">{config?.contactEmail || 'Cargando...'}</a></p>
                     </address>
                     <div className='mt-2 text-sm text-gray-400'>
                         <h5 className='font-semibold text-white'>Horarios</h5>
-                        <p>{config?.officeHours || 'Horarios no configurados'}</p>
+                        <p>{config?.officeHours || 'Cargando...'}</p>
                     </div>
                 </div>
             </div>

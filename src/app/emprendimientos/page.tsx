@@ -33,18 +33,10 @@ export default function EmprendimientosPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadData() {
-        setLoading(true);
-        try {
-            const devData = await getDevelopments();
-            setDevelopments(devData);
-        } catch (error) {
-            console.error("Failed to load developments", error);
-        } finally {
-            setLoading(false);
-        }
-    }
-    loadData();
+    getDevelopments().then(devData => {
+        setDevelopments(devData);
+        setLoading(false);
+    });
   }, []);
 
   const filteredDevelopments = (status: 'planning' | 'construction' | 'finished' | null) => {

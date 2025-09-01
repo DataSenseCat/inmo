@@ -6,20 +6,22 @@ import { getStorage, type FirebaseStorage } from "firebase/storage";
 const clientCredentials = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
     authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    projectId: "catamarca-estates",
     storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
     messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-let app: FirebaseApp;
-if (getApps().length === 0) {
-    app = initializeApp(clientCredentials);
-} else {
-    app = getApp();
+// Singleton pattern to ensure Firebase is initialized only once
+function getFirebaseApp(): FirebaseApp {
+    if (getApps().length > 0) {
+        return getApp();
+    }
+    return initializeApp(clientCredentials);
 }
 
-const db: Firestore = getFirestore(app);
+const app: FirebaseApp = getFirebaseApp();
+const db: Firestore = getFirestore(app, 'datainmob');
 const storage: FirebaseStorage = getStorage(app);
 
 export { app, db, storage };

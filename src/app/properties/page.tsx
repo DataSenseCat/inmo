@@ -15,13 +15,10 @@ function PropertiesList() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadProperties() {
-      setLoading(true);
-      const props = await getProperties();
+    getProperties().then(props => {
       setAllProperties(props.filter(p => p.active)); // Solo mostrar propiedades activas
       setLoading(false);
-    }
-    loadProperties();
+    });
   }, []);
 
   const filteredProperties = useMemo(() => {
