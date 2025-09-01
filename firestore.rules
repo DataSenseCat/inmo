@@ -1,53 +1,48 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Regla por defecto: Denegar todo al principio
-    match /{path=**} {
+
+    // Regla por defecto: Bloquea todo
+    match /{document=**} {
       allow read, write: if false;
     }
 
-    // Permite lectura pública para estas colecciones
-    match /properties/{docId} {
-      allow read: if true;
-    }
-    match /developments/{docId} {
-      allow read: if true;
-    }
-    match /agents/{docId} {
-      allow read: if true;
-    }
-    match /testimonials/{docId} {
-      allow read: if true;
-    }
+    // Reglas específicas para colecciones
+
+    // Permite la lectura pública para configuraciones, propiedades, etc.
+    // Y bloquea la escritura.
     match /siteConfig/{docId} {
       allow read: if true;
+      allow write: if false;
     }
 
-    // Permite que cualquiera cree un lead. Solo el admin (a través de la app) puede leerlos.
-    // La lectura no se restringe aquí porque el panel de admin ya tiene su propio login.
+    match /properties/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /developments/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /agents/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /testimonials/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Permite que cualquiera cree un lead (formulario de contacto)
+    // y que cualquiera los pueda leer (para el panel de admin).
+    // Actualizar y eliminar sigue bloqueado.
     match /leads/{leadId} {
-      allow create: if true;
-      allow read, list: if true;
-      allow update, delete: if false; // Nadie puede modificar o borrar leads desde el cliente.
-    }
-
-    // Permite escrituras solo si el usuario está "autenticado" (para el panel de admin)
-    // Se permite cualquier escritura porque la seguridad se maneja en la app (login del admin)
-    match /properties/{docId} {
-      allow write: if true;
-    }
-    match /developments/{docId} {
-      allow write: if true;
-    }
-    match /agents/{docId} {
-      allow write: if true;
-    }
-    match /testimonials/{docId} {
-      allow write: if true;
-    }
-    match /siteConfig/{docId} {
-      allow write: if true;
+      allow create, read, list: if true;
+      allow update, delete: if false;
     }
   }
 }
