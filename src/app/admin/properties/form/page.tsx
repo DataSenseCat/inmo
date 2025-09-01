@@ -111,10 +111,10 @@ function PropertyForm() {
       operation: 'Venta',
       featured: false,
       active: true,
-      bedrooms: 0,
-      bathrooms: 0,
-      area: 0,
-      totalM2: 0,
+      bedrooms: '',
+      bathrooms: '',
+      area: '',
+      totalM2: '',
       features: {
         cochera: false,
         piscina: false,
@@ -122,8 +122,8 @@ function PropertyForm() {
         quincho: false,
         parrillero: false,
       },
-      priceUSD: 0,
-      priceARS: 0,
+      priceUSD: '',
+      priceARS: '',
       agentId: '',
     },
   });
@@ -195,6 +195,12 @@ function PropertyForm() {
 
         const propertyPayload = {
             ...data,
+            bedrooms: Number(data.bedrooms) || 0,
+            bathrooms: Number(data.bathrooms) || 0,
+            area: Number(data.area) || 0,
+            totalM2: Number(data.totalM2) || 0,
+            priceUSD: Number(data.priceUSD) || 0,
+            priceARS: Number(data.priceARS) || 0,
             contact: {
                 name: selectedAgent.name,
                 phone: selectedAgent.phone,
@@ -219,6 +225,7 @@ function PropertyForm() {
     } catch (error) {
         console.error('Failed to save property:', error);
         toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo guardar la propiedad.' });
+    } finally {
         setIsSubmitting(false);
     }
   }
