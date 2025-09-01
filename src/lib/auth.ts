@@ -5,20 +5,19 @@ import type { Admin } from '@/models/admin';
 
 /**
  * Autentica al administrador comparando las credenciales proporcionadas
- * con las variables de entorno seguras.
- * Este método es simple, directo y evita la complejidad de la base de datos para el login.
+ * con los valores incrustados directamente en el código.
+ * 
+ * IMPORTANTE: Esta es una solución de emergencia para garantizar el acceso.
+ * Las credenciales están hardcodeadas aquí.
  */
 export async function authenticateAdmin({ email, password }: Omit<Admin, 'id'>): Promise<boolean> {
-  const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-  const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
-
-  if (!adminEmail || !adminPassword) {
-    console.error("Las variables de entorno del administrador (EMAIL/PASSWORD) no están configuradas.");
-    return false;
-  }
+  
+  // Credenciales incrustadas directamente
+  const adminEmail = "rlolin1972@gmail.com";
+  const adminPassword = "RoccoLolo2021?";
 
   if (email === adminEmail && password === adminPassword) {
-    console.log("Autenticación exitosa.");
+    console.log("Autenticación exitosa (credenciales hardcodeadas).");
     return true;
   } else {
     console.log("Fallo de autenticación: las credenciales no coinciden.");
