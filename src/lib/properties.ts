@@ -27,8 +27,35 @@ export async function createProperty(data: PropertyCreationPayload, imageDataUri
     }
     
     try {
+        // Sanitize and structure the payload to prevent Firestore errors
         const propertyPayload = {
-            ...data,
+            title: data.title,
+            description: data.description || '',
+            priceUSD: Number(data.priceUSD) || 0,
+            priceARS: Number(data.priceARS) || 0,
+            type: data.type,
+            operation: data.operation,
+            location: data.location,
+            address: data.address || '',
+            bedrooms: Number(data.bedrooms) || 0,
+            bathrooms: Number(data.bathrooms) || 0,
+            area: Number(data.area) || 0,
+            totalM2: Number(data.totalM2) || 0,
+            featured: data.featured || false,
+            active: data.active === undefined ? true : data.active,
+            agentId: data.agentId,
+            contact: {
+                name: data.contact.name,
+                phone: data.contact.phone,
+                email: data.contact.email,
+            },
+            features: {
+                cochera: data.features?.cochera || false,
+                piscina: data.features?.piscina || false,
+                dptoServicio: data.features?.dptoServicio || false,
+                quincho: data.features?.quincho || false,
+                parrillero: data.features?.parrillero || false,
+            },
             images: [], // Start with empty images array
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
@@ -47,7 +74,6 @@ export async function createProperty(data: PropertyCreationPayload, imageDataUri
             imageUrls.push({ url });
         }
         
-        // Update the document with the final image URLs
         await updateDoc(doc(db, 'properties', propId), { images: imageUrls, updatedAt: Timestamp.now() });
 
         return { id: propId };
@@ -117,7 +143,6 @@ export async function getProperties(): Promise<Property[]> {
         updatedAt: firebaseTimestampToString(data.updatedAt),
       } as Property;
     });
-    // Filter for active properties in the client-side code
     return allProperties;
   } catch (error) {
     console.error("Error getting properties (the app will proceed with an empty list): ", error);
@@ -128,7 +153,7 @@ export async function getProperties(): Promise<Property[]> {
 export async function getFeaturedProperties(): Promise<Property[]> {
     try {
         const propertiesCol = collection(db, 'properties');
-        const q = query(propertiesCol, where('featured', '==', true), limit(10));
+        const q = query(propertiesCol, where('featured', '==', true), where('active', '==', true), limit(4));
         const snapshot = await getDocs(q);
         
         const featured = snapshot.docs.map(doc => {
@@ -139,9 +164,9 @@ export async function getFeaturedProperties(): Promise<Property[]> {
             createdAt: firebaseTimestampToString(data.createdAt),
             updatedAt: firebaseTimestampToString(data.updatedAt),
           } as Property;
-        }).filter(p => p.active);
+        });
 
-        return featured.slice(0, 4);
+        return featured;
 
     } catch (error) {
         console.error("Error getting featured properties (the app will proceed with an empty list): ", error);
@@ -198,5 +223,3 @@ export async function deleteProperty(id: string): Promise<void> {
         throw new Error("Failed to delete property.");
     }
 }
-
-    
