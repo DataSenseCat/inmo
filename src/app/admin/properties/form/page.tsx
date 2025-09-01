@@ -134,17 +134,17 @@ function PropertyForm() {
             const agentList = await getAgents();
             setAgents(agentList.filter(a => a.active));
 
-            if (isEditing) {
+            if (isEditing && propertyId) {
               const data = await getPropertyById(propertyId);
               if (data) {
                 const values = {
                     ...data,
-                    bedrooms: data.bedrooms || '',
-                    bathrooms: data.bathrooms || '',
-                    area: data.area || '',
-                    totalM2: data.totalM2 || '',
-                    priceUSD: data.priceUSD || '',
-                    priceARS: data.priceARS || '',
+                    bedrooms: data.bedrooms ?? '',
+                    bathrooms: data.bathrooms ?? '',
+                    area: data.area ?? '',
+                    totalM2: data.totalM2 ?? '',
+                    priceUSD: data.priceUSD ?? '',
+                    priceARS: data.priceARS ?? '',
                 }
                 form.reset(values);
                 if(data.images){
@@ -193,22 +193,32 @@ function PropertyForm() {
             return;
         }
 
+        // CORRECT PAYLOAD CONSTRUCTION
         const propertyPayload = {
-            ...data,
+            title: data.title,
+            description: data.description || '',
+            priceUSD: Number(data.priceUSD) || 0,
+            priceARS: Number(data.priceARS) || 0,
+            type: data.type,
+            operation: data.operation,
+            location: data.location,
+            address: data.address || '',
             bedrooms: Number(data.bedrooms) || 0,
             bathrooms: Number(data.bathrooms) || 0,
             area: Number(data.area) || 0,
             totalM2: Number(data.totalM2) || 0,
-            priceUSD: Number(data.priceUSD) || 0,
-            priceARS: Number(data.priceARS) || 0,
+            featured: data.featured,
+            active: data.active,
+            agentId: data.agentId,
             contact: {
                 name: selectedAgent.name,
                 phone: selectedAgent.phone,
                 email: selectedAgent.email,
-            }
+            },
+            features: data.features || { cochera: false, piscina: false, dptoServicio: false, quincho: false, parrillero: false },
         };
 
-        if(isEditing) {
+        if(isEditing && propertyId) {
             await updateProperty(propertyId, propertyPayload, imageDataUris.length > 0 ? imageDataUris : undefined);
             toast({ title: 'Propiedad Actualizada', description: 'Los cambios se guardaron correctamente.' });
         } else {
@@ -224,7 +234,7 @@ function PropertyForm() {
         router.refresh();
     } catch (error) {
         console.error('Failed to save property:', error);
-        toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo guardar la propiedad.' });
+        toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo guardar la propiedad. Revise la consola para más detalles.' });
     } finally {
         setIsSubmitting(false);
     }
