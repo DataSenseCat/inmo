@@ -1,4 +1,3 @@
-
 import { SearchForm } from '@/components/search-form';
 import Image from 'next/image';
 
@@ -6,9 +5,9 @@ export function Hero() {
   return (
     <section className="relative w-full h-[60vh] min-h-[500px] flex items-center justify-center">
       <Image
-        src="https://picsum.photos/1600/900"
-        alt="Catamarca city"
-        data-ai-hint="cathedral catamarca argentina"
+        src="https://images.unsplash.com/photo-1628045353515-b74f34691456?q=80&w=2070&auto=format&fit=crop"
+        alt="Cathedral Basílica de Nuestra Señora del Valle, Catamarca"
+        data-ai-hint="cathedral catamarca"
         fill
         className="object-cover -z-10"
         priority
