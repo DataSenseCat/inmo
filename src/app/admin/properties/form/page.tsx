@@ -196,44 +196,42 @@ function PropertyForm() {
       setImageDataUris(dataUris => dataUris.filter((_, i) => i !== index));
   }
 
+  const handleUpdateSubmit = async (data: PropertyFormValues) => {
+     if (!isEditing || !propertyId) return;
 
-  const handleFormSubmit = async (formData: FormData) => {
-     if (isEditing && propertyId) {
-        // Handle update logic separately as it doesn't use useActionState yet
-        setIsSubmittingManual(true);
-        const data = form.getValues();
-        const selectedAgent = agents.find(agent => agent.id === data.agentId);
-        if (!selectedAgent) {
-             toast({ variant: 'destructive', title: 'Error', description: 'Agente no válido.' });
-             setIsSubmittingManual(false);
-             return;
-        }
-        
-        const propertyPayload = {
-            ...data,
-            contact: { name: selectedAgent.name, phone: selectedAgent.phone, email: selectedAgent.email },
-        };
-        const response = await updateProperty(propertyId, propertyPayload, imageDataUris.length > 0 ? imageDataUris : undefined);
-         if (response.success) {
-            toast({ title: 'Propiedad Actualizada', description: response.message });
-            router.push('/admin?tab=properties');
-            router.refresh();
-        } else {
-            toast({ variant: 'destructive', title: 'Error al actualizar', description: response.message });
-        }
-        setIsSubmittingManual(false);
-    } else {
-        // Handle create logic with useActionState
-        const data = form.getValues();
-        const selectedAgent = agents.find(agent => agent.id === data.agentId);
-        if (!selectedAgent) return;
-
-        formData.append('contact', JSON.stringify({ name: selectedAgent.name, phone: selectedAgent.phone, email: selectedAgent.email }));
-        formData.append('features', JSON.stringify(data.features));
-        imageDataUris.forEach(uri => formData.append('imageDataUris', uri));
-        
-        formAction(formData);
+    setIsSubmittingManual(true);
+    const selectedAgent = agents.find(agent => agent.id === data.agentId);
+    if (!selectedAgent) {
+         toast({ variant: 'destructive', title: 'Error', description: 'Agente no válido.' });
+         setIsSubmittingManual(false);
+         return;
     }
+    
+    const propertyPayload = {
+        ...data,
+        contact: { name: selectedAgent.name, phone: selectedAgent.phone, email: selectedAgent.email },
+    };
+    const response = await updateProperty(propertyId, propertyPayload, imageDataUris.length > 0 ? imageDataUris : undefined);
+     if (response.success) {
+        toast({ title: 'Propiedad Actualizada', description: response.message });
+        router.push('/admin?tab=properties');
+        router.refresh();
+    } else {
+        toast({ variant: 'destructive', title: 'Error al actualizar', description: response.message });
+    }
+    setIsSubmittingManual(false);
+  }
+
+  const handleCreateSubmit = (formData: FormData) => {
+    const data = form.getValues();
+    const selectedAgent = agents.find(agent => agent.id === data.agentId);
+    if (!selectedAgent) return;
+
+    formData.append('contact', JSON.stringify({ name: selectedAgent.name, phone: selectedAgent.phone, email: selectedAgent.email }));
+    formData.append('features', JSON.stringify(data.features));
+    imageDataUris.forEach(uri => formData.append('imageDataUris', uri));
+    
+    formAction(formData);
   }
 
   if (loading) {
@@ -275,8 +273,8 @@ function PropertyForm() {
       <Form {...form}>
         <form 
             ref={formRef} 
-            action={handleFormSubmit}
-            onSubmit={isEditing ? form.handleSubmit(() => handleFormSubmit(new FormData(formRef.current!))) : undefined}
+            action={isEditing ? undefined : handleCreateSubmit}
+            onSubmit={isEditing ? form.handleSubmit(handleUpdateSubmit) : undefined}
             className="space-y-8"
         >
           <Tabs defaultValue="basic-info" className="w-full">
@@ -556,5 +554,3 @@ export default function PropertyFormPage() {
         </Suspense>
     )
 }
-
-    
