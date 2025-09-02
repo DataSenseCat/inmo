@@ -221,11 +221,15 @@ function PropertyForm() {
     }
     setIsSubmittingManual(false);
   }
-
-  const handleCreateSubmit = (formData: FormData) => {
+  
+  const clientFormAction = (formData: FormData) => {
     const data = form.getValues();
     const selectedAgent = agents.find(agent => agent.id === data.agentId);
-    if (!selectedAgent) return;
+    if (!selectedAgent) {
+        // This should be handled by form validation, but as a safeguard.
+        toast({ variant: 'destructive', title: 'Error', description: 'Debe seleccionar un agente válido.' });
+        return; 
+    }
 
     formData.append('contact', JSON.stringify({ name: selectedAgent.name, phone: selectedAgent.phone, email: selectedAgent.email }));
     formData.append('features', JSON.stringify(data.features));
@@ -233,6 +237,7 @@ function PropertyForm() {
     
     formAction(formData);
   }
+
 
   if (loading) {
       return (
@@ -273,7 +278,7 @@ function PropertyForm() {
       <Form {...form}>
         <form 
             ref={formRef} 
-            action={isEditing ? undefined : handleCreateSubmit}
+            action={isEditing ? undefined : clientFormAction}
             onSubmit={isEditing ? form.handleSubmit(handleUpdateSubmit) : undefined}
             className="space-y-8"
         >
@@ -554,3 +559,5 @@ export default function PropertyFormPage() {
         </Suspense>
     )
 }
+
+    
