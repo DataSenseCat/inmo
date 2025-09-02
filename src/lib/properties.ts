@@ -22,10 +22,11 @@ import { firebaseTimestampToString } from './utils';
 
 type PropertyCreationPayload = Omit<Property, 'id' | 'images' | 'createdAt' | 'updatedAt'>;
 
-type ActionResponse<T = {}> = {
+export type ActionResponse = {
     success: boolean;
-    message?: string;
-} & T;
+    message: string;
+    id?: string;
+};
 
 
 async function uploadPropertyImages(propId: string, imageDataUris: string[]): Promise<{ url: string }[]> {
@@ -38,40 +39,37 @@ async function uploadPropertyImages(propId: string, imageDataUris: string[]): Pr
     return imageUrls;
 }
 
-export async function createProperty(data: PropertyCreationPayload, imageDataUris: string[]): Promise<ActionResponse<{ id?: string }>> {
+// NOTE: The signature is changed to be compatible with useActionState
+export async function createProperty(
+    prevState: ActionResponse, 
+    formData: FormData
+): Promise<ActionResponse> {
+    const imageDataUris = formData.getAll('imageDataUris') as string[];
     if (!imageDataUris || imageDataUris.length === 0) {
         return { success: false, message: "Debés subir al menos una imagen." };
     }
+
+    const rawData = Object.fromEntries(formData.entries());
     
     try {
         const propertyPayload = {
-            title: data.title || '',
-            description: data.description || '',
-            priceUSD: Number(data.priceUSD) || 0,
-            priceARS: Number(data.priceARS) || 0,
-            type: data.type || 'Casa',
-            operation: data.operation || 'Venta',
-            location: data.location || '',
-            address: data.address || '',
-            bedrooms: Number(data.bedrooms) || 0,
-            bathrooms: Number(data.bathrooms) || 0,
-            area: Number(data.area) || 0,
-            totalM2: Number(data.totalM2) || 0,
-            featured: data.featured || false,
-            active: data.active === undefined ? true : data.active,
-            agentId: data.agentId || '',
-            contact: {
-                name: data.contact?.name || '',
-                phone: data.contact?.phone || '',
-                email: data.contact?.email || '',
-            },
-            features: {
-                cochera: data.features?.cochera || false,
-                piscina: data.features?.piscina || false,
-                dptoServicio: data.features?.dptoServicio || false,
-                quincho: data.features?.quincho || false,
-                parrillero: data.features?.parrillero || false,
-            },
+            title: rawData.title as string || '',
+            description: rawData.description as string || '',
+            priceUSD: Number(rawData.priceUSD) || 0,
+            priceARS: Number(rawData.priceARS) || 0,
+            type: rawData.type as Property['type'] || 'Casa',
+            operation: rawData.operation as Property['operation'] || 'Venta',
+            location: rawData.location as string || '',
+            address: rawData.address as string || '',
+            bedrooms: Number(rawData.bedrooms) || 0,
+            bathrooms: Number(rawData.bathrooms) || 0,
+            area: Number(rawData.area) || 0,
+            totalM2: Number(rawData.totalM2) || 0,
+            featured: rawData.featured === 'true',
+            active: rawData.active === 'true',
+            agentId: rawData.agentId as string || '',
+            contact: JSON.parse(rawData.contact as string),
+            features: JSON.parse(rawData.features as string),
             images: [],
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
@@ -84,7 +82,7 @@ export async function createProperty(data: PropertyCreationPayload, imageDataUri
         
         await updateDoc(doc(db, 'properties', propId), { images: imageUrls, updatedAt: Timestamp.now() });
 
-        return { success: true, id: propId };
+        return { success: true, id: propId, message: 'Propiedad creada con éxito.' };
     } catch (error) {
         console.error("Error creating property: ", error);
         return { success: false, message: "No se pudo crear la propiedad. Por favor, intente de nuevo." };
@@ -123,7 +121,7 @@ export async function updateProperty(id: string, data: Partial<PropertyCreationP
         }
 
         await updateDoc(docRef, updatePayload);
-        return { success: true };
+        return { success: true, message: 'Propiedad actualizada con éxito.' };
     } catch (error) {
         console.error("Error updating property: ", error);
         return { success: false, message: "No se pudo actualizar la propiedad. Por favor, intente de nuevo." };
