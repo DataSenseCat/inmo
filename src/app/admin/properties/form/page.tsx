@@ -186,62 +186,64 @@ function PropertyForm() {
 
   async function onSubmit(data: PropertyFormValues) {
     setIsSubmitting(true);
-    try {
-        const selectedAgent = agents.find(agent => agent.id === data.agentId);
-        if (!selectedAgent) {
-            toast({ 
-                variant: 'destructive', 
-                title: 'Agente no válido', 
-                description: 'Por favor, seleccione un agente de la lista para poder guardar la propiedad.' 
-            });
-            setIsSubmitting(false);
-            return;
-        }
 
-        // CORRECT PAYLOAD CONSTRUCTION
-        const propertyPayload = {
-            title: data.title,
-            description: data.description || '',
-            priceUSD: Number(data.priceUSD) || 0,
-            priceARS: Number(data.priceARS) || 0,
-            type: data.type,
-            operation: data.operation,
-            location: data.location,
-            address: data.address || '',
-            bedrooms: Number(data.bedrooms) || 0,
-            bathrooms: Number(data.bathrooms) || 0,
-            area: Number(data.area) || 0,
-            totalM2: Number(data.totalM2) || 0,
-            featured: data.featured,
-            active: data.active,
-            agentId: data.agentId,
-            contact: {
-                name: selectedAgent.name,
-                phone: selectedAgent.phone,
-                email: selectedAgent.email,
-            },
-            features: data.features || { cochera: false, piscina: false, dptoServicio: false, quincho: false, parrillero: false },
-        };
+    const selectedAgent = agents.find(agent => agent.id === data.agentId);
+    if (!selectedAgent) {
+        toast({ 
+            variant: 'destructive', 
+            title: 'Agente no válido', 
+            description: 'Por favor, seleccione un agente de la lista para poder guardar la propiedad.' 
+        });
+        setIsSubmitting(false);
+        return;
+    }
 
-        if(isEditing && propertyId) {
-            await updateProperty(propertyId, propertyPayload, imageDataUris.length > 0 ? imageDataUris : undefined);
-            toast({ title: 'Propiedad Actualizada', description: 'Los cambios se guardaron correctamente.' });
-        } else {
-            if (imageDataUris.length === 0) {
-              toast({ variant: 'destructive', title: 'Error', description: 'Debes subir al menos una imagen.' });
-              setIsSubmitting(false);
-              return;
-            }
-            await createProperty(propertyPayload, imageDataUris);
-            toast({ title: 'Propiedad Creada', description: 'La nueva propiedad se ha guardado.' });
-        }
+    const propertyPayload = {
+        title: data.title,
+        description: data.description || '',
+        priceUSD: Number(data.priceUSD) || 0,
+        priceARS: Number(data.priceARS) || 0,
+        type: data.type,
+        operation: data.operation,
+        location: data.location,
+        address: data.address || '',
+        bedrooms: Number(data.bedrooms) || 0,
+        bathrooms: Number(data.bathrooms) || 0,
+        area: Number(data.area) || 0,
+        totalM2: Number(data.totalM2) || 0,
+        featured: data.featured,
+        active: data.active,
+        agentId: data.agentId,
+        contact: {
+            name: selectedAgent.name,
+            phone: selectedAgent.phone,
+            email: selectedAgent.email,
+        },
+        features: data.features || { cochera: false, piscina: false, dptoServicio: false, quincho: false, parrillero: false },
+    };
+
+    let response;
+    if(isEditing && propertyId) {
+        response = await updateProperty(propertyId, propertyPayload, imageDataUris.length > 0 ? imageDataUris : undefined);
+    } else {
+        response = await createProperty(propertyPayload, imageDataUris);
+    }
+
+    setIsSubmitting(false);
+
+    if (response.success) {
+        toast({ 
+            title: isEditing ? 'Propiedad Actualizada' : 'Propiedad Creada', 
+            description: 'Los cambios se guardaron correctamente.' 
+        });
         router.push('/admin?tab=properties');
         router.refresh();
-    } catch (error) {
-        console.error('Failed to save property:', error);
-        toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo guardar la propiedad. Revise la consola para más detalles.' });
-    } finally {
-        setIsSubmitting(false);
+    } else {
+        toast({ 
+            variant: 'destructive', 
+            title: 'Error al guardar', 
+            description: response.message || 'No se pudo guardar la propiedad.' 
+        });
     }
   }
 
