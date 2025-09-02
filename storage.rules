@@ -1,10 +1,14 @@
-
 rules_version = '2';
 
+// Caution: These rules are insecure and are not recommended for production applications.
+// They are intended for quick prototyping and development.
+// Before deploying, be sure to secure your rules.
+// See https://firebase.google.com/docs/storage/security for more information.
 service firebase.storage {
   match /b/{bucket}/o {
     match /{allPaths=**} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if request.auth != null;
     }
   }
 }
