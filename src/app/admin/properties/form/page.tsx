@@ -96,6 +96,7 @@ function PropertyForm() {
   const isEditing = !!propertyId;
 
   const [loading, setLoading] = useState(true);
+  const [isSubmittingManual, setIsSubmittingManual] = useState(false);
   const [imageDataUris, setImageDataUris] = useState<string[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -171,8 +172,8 @@ function PropertyForm() {
    }, [isEditing, propertyId, form, router, toast]);
 
    useEffect(() => {
-        if (state.success) {
-            toast({ title: isEditing ? 'Propiedad Actualizada' : 'Propiedad Creada', description: state.message });
+        if (state.success && !isEditing) {
+            toast({ title: 'Propiedad Creada', description: state.message });
             router.push('/admin?tab=properties');
             router.refresh();
         }
@@ -196,10 +197,17 @@ function PropertyForm() {
   }
 
 
-  async function onSubmit(data: PropertyFormValues) {
-    if (isEditing && propertyId) {
+  const handleFormSubmit = async (formData: FormData) => {
+     if (isEditing && propertyId) {
+        // Handle update logic separately as it doesn't use useActionState yet
+        setIsSubmittingManual(true);
+        const data = form.getValues();
         const selectedAgent = agents.find(agent => agent.id === data.agentId);
-        if (!selectedAgent) return;
+        if (!selectedAgent) {
+             toast({ variant: 'destructive', title: 'Error', description: 'Agente no válido.' });
+             setIsSubmittingManual(false);
+             return;
+        }
         
         const propertyPayload = {
             ...data,
@@ -213,9 +221,10 @@ function PropertyForm() {
         } else {
             toast({ variant: 'destructive', title: 'Error al actualizar', description: response.message });
         }
-
+        setIsSubmittingManual(false);
     } else {
-        const formData = new FormData(formRef.current!);
+        // Handle create logic with useActionState
+        const data = form.getValues();
         const selectedAgent = agents.find(agent => agent.id === data.agentId);
         if (!selectedAgent) return;
 
@@ -264,7 +273,12 @@ function PropertyForm() {
       </div>
       
       <Form {...form}>
-        <form ref={formRef} onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <form 
+            ref={formRef} 
+            action={handleFormSubmit}
+            onSubmit={isEditing ? form.handleSubmit(() => handleFormSubmit(new FormData(formRef.current!))) : undefined}
+            className="space-y-8"
+        >
           <Tabs defaultValue="basic-info" className="w-full">
             <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
               <TabsTrigger value="basic-info"><Info className="mr-2 h-4 w-4" /> Información Básica</TabsTrigger>
@@ -509,7 +523,7 @@ function PropertyForm() {
           </Tabs>
 
             {state && !state.success && state.message && (
-                <Alert variant="destructive">
+                <Alert variant="destructive" className="mt-6">
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Error al Guardar</AlertTitle>
                     <AlertDescription>{state.message}</AlertDescription>
@@ -521,8 +535,8 @@ function PropertyForm() {
                     <Button type="button" variant="outline" size="lg" asChild>
                         <Link href="/admin?tab=properties">Cancelar</Link>
                     </Button>
-                    <Button type="submit" size="lg" disabled={isSubmitting}>
-                        {isSubmitting 
+                    <Button type="submit" size="lg" disabled={isSubmitting || isSubmittingManual}>
+                        {(isSubmitting || isSubmittingManual)
                             ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Guardando...</>
                             : (isEditing ? 'Guardar Cambios' : 'Crear Propiedad')}
                     </Button>
@@ -542,3 +556,5 @@ export default function PropertyFormPage() {
         </Suspense>
     )
 }
+
+    
