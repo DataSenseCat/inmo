@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useActionState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -31,7 +31,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import Image from 'next/image';
-import { createProperty, getPropertyById, updateProperty } from '@/lib/properties';
+import { createProperty, getPropertyById, updateProperty, type ActionResponse } from '@/lib/properties';
 import { useToast } from '@/hooks/use-toast';
 import type { Property } from '@/models/property';
 import type { Agent } from '@/models/agent';
@@ -90,15 +90,19 @@ function PropertyForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
+  const formRef = useRef<HTMLFormElement>(null);
   
   const propertyId = searchParams.get('id');
   const isEditing = !!propertyId;
 
   const [loading, setLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageDataUris, setImageDataUris] = useState<string[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
+
+  const initialState: ActionResponse = { success: false, message: '' };
+
+  const [state, formAction, isSubmitting] = useActionState(createProperty, initialState);
   
 
   const form = useForm<PropertyFormValues>({
@@ -166,6 +170,14 @@ function PropertyForm() {
     loadInitialData();
    }, [isEditing, propertyId, form, router, toast]);
 
+   useEffect(() => {
+        if (state.success) {
+            toast({ title: isEditing ? 'Propiedad Actualizada' : 'Propiedad Creada', description: state.message });
+            router.push('/admin?tab=properties');
+            router.refresh();
+        }
+   }, [state, toast, router, isEditing]);
+
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
       if(e.target.files) {
@@ -185,65 +197,33 @@ function PropertyForm() {
 
 
   async function onSubmit(data: PropertyFormValues) {
-    setIsSubmitting(true);
+    if (isEditing && propertyId) {
+        const selectedAgent = agents.find(agent => agent.id === data.agentId);
+        if (!selectedAgent) return;
+        
+        const propertyPayload = {
+            ...data,
+            contact: { name: selectedAgent.name, phone: selectedAgent.phone, email: selectedAgent.email },
+        };
+        const response = await updateProperty(propertyId, propertyPayload, imageDataUris.length > 0 ? imageDataUris : undefined);
+         if (response.success) {
+            toast({ title: 'Propiedad Actualizada', description: response.message });
+            router.push('/admin?tab=properties');
+            router.refresh();
+        } else {
+            toast({ variant: 'destructive', title: 'Error al actualizar', description: response.message });
+        }
 
-    const selectedAgent = agents.find(agent => agent.id === data.agentId);
-    if (!selectedAgent) {
-        toast({ 
-            variant: 'destructive', 
-            title: 'Agente no válido', 
-            description: 'Por favor, seleccione un agente de la lista para poder guardar la propiedad.' 
-        });
-        setIsSubmitting(false);
-        return;
-    }
-
-    const propertyPayload = {
-        title: data.title,
-        description: data.description || '',
-        priceUSD: Number(data.priceUSD) || 0,
-        priceARS: Number(data.priceARS) || 0,
-        type: data.type,
-        operation: data.operation,
-        location: data.location,
-        address: data.address || '',
-        bedrooms: Number(data.bedrooms) || 0,
-        bathrooms: Number(data.bathrooms) || 0,
-        area: Number(data.area) || 0,
-        totalM2: Number(data.totalM2) || 0,
-        featured: data.featured,
-        active: data.active,
-        agentId: data.agentId,
-        contact: {
-            name: selectedAgent.name,
-            phone: selectedAgent.phone,
-            email: selectedAgent.email,
-        },
-        features: data.features || { cochera: false, piscina: false, dptoServicio: false, quincho: false, parrillero: false },
-    };
-
-    let response;
-    if(isEditing && propertyId) {
-        response = await updateProperty(propertyId, propertyPayload, imageDataUris.length > 0 ? imageDataUris : undefined);
     } else {
-        response = await createProperty(propertyPayload, imageDataUris);
-    }
+        const formData = new FormData(formRef.current!);
+        const selectedAgent = agents.find(agent => agent.id === data.agentId);
+        if (!selectedAgent) return;
 
-    setIsSubmitting(false);
-
-    if (response.success) {
-        toast({ 
-            title: isEditing ? 'Propiedad Actualizada' : 'Propiedad Creada', 
-            description: 'Los cambios se guardaron correctamente.' 
-        });
-        router.push('/admin?tab=properties');
-        router.refresh();
-    } else {
-        toast({ 
-            variant: 'destructive', 
-            title: 'Error al guardar', 
-            description: response.message || 'No se pudo guardar la propiedad.' 
-        });
+        formData.append('contact', JSON.stringify({ name: selectedAgent.name, phone: selectedAgent.phone, email: selectedAgent.email }));
+        formData.append('features', JSON.stringify(data.features));
+        imageDataUris.forEach(uri => formData.append('imageDataUris', uri));
+        
+        formAction(formData);
     }
   }
 
@@ -284,7 +264,7 @@ function PropertyForm() {
       </div>
       
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <form ref={formRef} onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <Tabs defaultValue="basic-info" className="w-full">
             <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
               <TabsTrigger value="basic-info"><Info className="mr-2 h-4 w-4" /> Información Básica</TabsTrigger>
@@ -358,7 +338,7 @@ function PropertyForm() {
                     <div className="md:col-span-2 flex items-center space-x-4">
                         <FormField control={form.control} name="featured" render={({ field }) => (
                             <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
-                                <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} name="featured" /></FormControl>
                                 <div className="space-y-1 leading-none">
                                     <FormLabel>Propiedad Destacada</FormLabel>
                                 </div>
@@ -366,7 +346,7 @@ function PropertyForm() {
                         )}/>
                         <FormField control={form.control} name="active" render={({ field }) => (
                             <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
-                                <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} name="active" /></FormControl>
                                 <div className="space-y-1 leading-none">
                                     <FormLabel>Activa</FormLabel>
                                 </div>
@@ -416,7 +396,6 @@ function PropertyForm() {
                 <Card><CardContent className="p-6">
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
                     {featureOptions.map((feature) => {
-                        const Icon = feature.icon;
                         return (
                         <FormField
                             key={feature.id}
@@ -432,7 +411,7 @@ function PropertyForm() {
                                     />
                                 </FormControl>
                                 <FormLabel className="font-normal cursor-pointer flex flex-col items-center gap-2 w-full text-center">
-                                    <Icon className="w-6 h-6"/>
+                                    <feature.icon className="w-6 h-6"/>
                                     {feature.label}
                                 </FormLabel>
                             </FormItem>
@@ -528,6 +507,14 @@ function PropertyForm() {
             </TabsContent>
 
           </Tabs>
+
+            {state && !state.success && state.message && (
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error al Guardar</AlertTitle>
+                    <AlertDescription>{state.message}</AlertDescription>
+                </Alert>
+            )}
 
            <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-sm p-4 border-t z-10">
                 <div className="container mx-auto flex justify-end gap-4">
