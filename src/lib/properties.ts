@@ -20,8 +20,6 @@ import { db, storage, uploadFile } from '@/lib/firebase';
 import type { Property } from '@/models/property';
 import { firebaseTimestampToString } from './utils';
 
-type PropertyCreationPayload = Omit<Property, 'id' | 'images' | 'createdAt' | 'updatedAt'>;
-
 export type ActionResponse = {
     success: boolean;
     message: string;
@@ -39,94 +37,100 @@ async function uploadPropertyImages(propId: string, imageDataUris: string[]): Pr
     return imageUrls;
 }
 
-// NOTE: The signature is changed to be compatible with useActionState
-export async function createProperty(
+const parseFormData = (formData: FormData) => {
+    const rawData = Object.fromEntries(formData.entries());
+    return {
+        id: rawData.id as string | undefined,
+        title: rawData.title as string || '',
+        description: rawData.description as string || '',
+        priceUSD: Number(rawData.priceUSD) || 0,
+        priceARS: Number(rawData.priceARS) || 0,
+        type: rawData.type as Property['type'] || 'Casa',
+        operation: rawData.operation as Property['operation'] || 'Venta',
+        location: rawData.location as string || '',
+        address: rawData.address as string || '',
+        bedrooms: Number(rawData.bedrooms) || 0,
+        bathrooms: Number(rawData.bathrooms) || 0,
+        area: Number(rawData.area) || 0,
+        totalM2: Number(rawData.totalM2) || 0,
+        featured: formData.get('featured') === 'on',
+        active: formData.get('active') === 'on',
+        agentId: rawData.agentId as string || '',
+        contact: JSON.parse(rawData.contact as string),
+        features: JSON.parse(rawData.features as string),
+    };
+};
+
+
+export async function saveProperty(
     prevState: ActionResponse, 
     formData: FormData
 ): Promise<ActionResponse> {
+    const propertyId = formData.get('id') as string | null;
+    const isEditing = !!propertyId;
     const imageDataUris = formData.getAll('imageDataUris') as string[];
-    if (!imageDataUris || imageDataUris.length === 0) {
-        return { success: false, message: "Debés subir al menos una imagen." };
+
+    if (!isEditing && (!imageDataUris || imageDataUris.length === 0)) {
+        return { success: false, message: "Debés subir al menos una imagen para una nueva propiedad." };
     }
 
-    const rawData = Object.fromEntries(formData.entries());
-    
     try {
-        const propertyPayload = {
-            title: rawData.title as string || '',
-            description: rawData.description as string || '',
-            priceUSD: Number(rawData.priceUSD) || 0,
-            priceARS: Number(rawData.priceARS) || 0,
-            type: rawData.type as Property['type'] || 'Casa',
-            operation: rawData.operation as Property['operation'] || 'Venta',
-            location: rawData.location as string || '',
-            address: rawData.address as string || '',
-            bedrooms: Number(rawData.bedrooms) || 0,
-            bathrooms: Number(rawData.bathrooms) || 0,
-            area: Number(rawData.area) || 0,
-            totalM2: Number(rawData.totalM2) || 0,
-            featured: rawData.featured === 'true',
-            active: rawData.active === 'true',
-            agentId: rawData.agentId as string || '',
-            contact: JSON.parse(rawData.contact as string),
-            features: JSON.parse(rawData.features as string),
-            images: [],
-            createdAt: Timestamp.now(),
-            updatedAt: Timestamp.now(),
-        };
+        const data = parseFormData(formData);
         
-        const docRef = await addDoc(collection(db, 'properties'), propertyPayload);
-        const propId = docRef.id;
-
-        const imageUrls = await uploadPropertyImages(propId, imageDataUris);
-        
-        await updateDoc(doc(db, 'properties', propId), { images: imageUrls, updatedAt: Timestamp.now() });
-
-        return { success: true, id: propId, message: 'Propiedad creada con éxito.' };
-    } catch (error) {
-        console.error("Error creating property: ", error);
-        return { success: false, message: "No se pudo crear la propiedad. Por favor, intente de nuevo." };
-    }
-}
-
-export async function updateProperty(id: string, data: Partial<PropertyCreationPayload>, newImageDataUris?: string[]): Promise<ActionResponse> {
-    try {
-        const docRef = doc(db, 'properties', id);
-        
-        const updatePayload: any = {
-            ...data,
-            updatedAt: Timestamp.now(),
-        };
-        
-        if (newImageDataUris && newImageDataUris.length > 0) {
-            const docSnap = await getDoc(docRef);
-            const currentProperty = docSnap.data() as Property | undefined;
-
-            if (currentProperty?.images) {
-                await Promise.all(currentProperty.images.map(async (image) => {
-                    if (image.url && image.url.startsWith('https://firebasestorage.googleapis.com')) {
-                        try {
-                            await deleteObject(ref(storage, image.url));
-                        } catch (storageError: any) {
-                            if (storageError.code !== 'storage/object-not-found') {
-                                console.warn(`Could not delete old image ${image.url}:`, storageError);
-                            }
-                        }
-                    }
-                }));
-            }
-            
-            const newImageUrls = await uploadPropertyImages(id, newImageDataUris);
-            updatePayload.images = newImageUrls;
+        let newImageUrls: { url: string }[] | undefined = undefined;
+        if (imageDataUris.length > 0) {
+            const idForUpload = propertyId || "temp"; // Need an ID for the path
+            newImageUrls = await uploadPropertyImages(idForUpload, imageDataUris);
         }
 
-        await updateDoc(docRef, updatePayload);
-        return { success: true, message: 'Propiedad actualizada con éxito.' };
+        if (isEditing) {
+            // UPDATE
+            const docRef = doc(db, 'properties', propertyId);
+            const updatePayload: any = { ...data, updatedAt: Timestamp.now() };
+            delete updatePayload.id;
+
+            if (newImageUrls) {
+                 const docSnap = await getDoc(docRef);
+                 const currentProperty = docSnap.data() as Property | undefined;
+                 if (currentProperty?.images) {
+                     await Promise.all(currentProperty.images.map(async (image) => {
+                         if (image.url && image.url.startsWith('https://firebasestorage.googleapis.com')) {
+                             try { await deleteObject(ref(storage, image.url)); } catch (e: any) {
+                                 if (e.code !== 'storage/object-not-found') console.warn(`Could not delete old image ${image.url}:`, e);
+                             }
+                         }
+                     }));
+                 }
+                updatePayload.images = newImageUrls;
+            }
+
+            await updateDoc(docRef, updatePayload);
+            return { success: true, message: 'Propiedad actualizada con éxito.' };
+
+        } else {
+            // CREATE
+            const propertyPayload = {
+                ...data,
+                images: [], // Will be updated shortly
+                createdAt: Timestamp.now(),
+                updatedAt: Timestamp.now(),
+            };
+            delete propertyPayload.id;
+            
+            const docRef = await addDoc(collection(db, 'properties'), propertyPayload);
+            const newPropId = docRef.id;
+
+            const finalImageUrls = await uploadPropertyImages(newPropId, imageDataUris);
+            await updateDoc(doc(db, 'properties', newPropId), { images: finalImageUrls, updatedAt: Timestamp.now() });
+
+            return { success: true, id: newPropId, message: 'Propiedad creada con éxito.' };
+        }
     } catch (error) {
-        console.error("Error updating property: ", error);
-        return { success: false, message: "No se pudo actualizar la propiedad. Por favor, intente de nuevo." };
+        console.error("Error saving property: ", error);
+        return { success: false, message: "No se pudo guardar la propiedad. Por favor, intente de nuevo." };
     }
 }
+
 
 export async function getProperties(): Promise<Property[]> {
   try {

@@ -31,11 +31,12 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import Image from 'next/image';
-import { createProperty, getPropertyById, updateProperty, type ActionResponse } from '@/lib/properties';
+import { saveProperty, type ActionResponse } from '@/lib/properties';
 import { useToast } from '@/hooks/use-toast';
 import type { Property } from '@/models/property';
 import type { Agent } from '@/models/agent';
 import { getAgents } from '@/lib/agents';
+import { getPropertyById } from '@/lib/properties';
 import { fileToDataUri } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
@@ -90,20 +91,18 @@ function PropertyForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const formRef = useRef<HTMLFormElement>(null);
   
   const propertyId = searchParams.get('id');
   const isEditing = !!propertyId;
 
   const [loading, setLoading] = useState(true);
-  const [isSubmittingManual, setIsSubmittingManual] = useState(false);
   const [imageDataUris, setImageDataUris] = useState<string[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
 
   const initialState: ActionResponse = { success: false, message: '' };
 
-  const [state, formAction, isSubmitting] = useActionState(createProperty, initialState);
+  const [state, formAction, isSubmitting] = useActionState(saveProperty, initialState);
   
 
   const form = useForm<PropertyFormValues>({
@@ -172,8 +171,8 @@ function PropertyForm() {
    }, [isEditing, propertyId, form, router, toast]);
 
    useEffect(() => {
-        if (state.success && !isEditing) {
-            toast({ title: 'Propiedad Creada', description: state.message });
+        if (state.success) {
+            toast({ title: isEditing ? 'Propiedad Actualizada' : 'Propiedad Creada', description: state.message });
             router.push('/admin?tab=properties');
             router.refresh();
         }
@@ -195,42 +194,18 @@ function PropertyForm() {
       setImagePreviews(previews => previews.filter((_, i) => i !== index));
       setImageDataUris(dataUris => dataUris.filter((_, i) => i !== index));
   }
-
-  const handleUpdateSubmit = async (data: PropertyFormValues) => {
-     if (!isEditing || !propertyId) return;
-
-    setIsSubmittingManual(true);
-    const selectedAgent = agents.find(agent => agent.id === data.agentId);
-    if (!selectedAgent) {
-         toast({ variant: 'destructive', title: 'Error', description: 'Agente no válido.' });
-         setIsSubmittingManual(false);
-         return;
-    }
-    
-    const propertyPayload = {
-        ...data,
-        contact: { name: selectedAgent.name, phone: selectedAgent.phone, email: selectedAgent.email },
-    };
-    const response = await updateProperty(propertyId, propertyPayload, imageDataUris.length > 0 ? imageDataUris : undefined);
-     if (response.success) {
-        toast({ title: 'Propiedad Actualizada', description: response.message });
-        router.push('/admin?tab=properties');
-        router.refresh();
-    } else {
-        toast({ variant: 'destructive', title: 'Error al actualizar', description: response.message });
-    }
-    setIsSubmittingManual(false);
-  }
   
   const clientFormAction = (formData: FormData) => {
     const data = form.getValues();
     const selectedAgent = agents.find(agent => agent.id === data.agentId);
     if (!selectedAgent) {
-        // This should be handled by form validation, but as a safeguard.
         toast({ variant: 'destructive', title: 'Error', description: 'Debe seleccionar un agente válido.' });
         return; 
     }
 
+    if (propertyId) {
+        formData.append('id', propertyId);
+    }
     formData.append('contact', JSON.stringify({ name: selectedAgent.name, phone: selectedAgent.phone, email: selectedAgent.email }));
     formData.append('features', JSON.stringify(data.features));
     imageDataUris.forEach(uri => formData.append('imageDataUris', uri));
@@ -277,9 +252,7 @@ function PropertyForm() {
       
       <Form {...form}>
         <form 
-            ref={formRef} 
-            action={isEditing ? undefined : clientFormAction}
-            onSubmit={isEditing ? form.handleSubmit(handleUpdateSubmit) : undefined}
+            action={clientFormAction}
             className="space-y-8"
         >
           <Tabs defaultValue="basic-info" className="w-full">
@@ -538,8 +511,8 @@ function PropertyForm() {
                     <Button type="button" variant="outline" size="lg" asChild>
                         <Link href="/admin?tab=properties">Cancelar</Link>
                     </Button>
-                    <Button type="submit" size="lg" disabled={isSubmitting || isSubmittingManual}>
-                        {(isSubmitting || isSubmittingManual)
+                    <Button type="submit" size="lg" disabled={isSubmitting}>
+                        {isSubmitting
                             ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Guardando...</>
                             : (isEditing ? 'Guardar Cambios' : 'Crear Propiedad')}
                     </Button>
@@ -559,5 +532,3 @@ export default function PropertyFormPage() {
         </Suspense>
     )
 }
-
-    
