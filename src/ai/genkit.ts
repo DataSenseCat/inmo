@@ -1,7 +1,16 @@
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
+import {getFirestore} from 'firebase-admin/firestore';
+import {initializeApp, getApps} from 'firebase-admin/app';
+
+if (!getApps().length) {
+  initializeApp({
+    projectId: 'catamarca-estates',
+  });
+}
+const firestore = getFirestore('datainmob');
 
 export const ai = genkit({
-  plugins: [googleAI()],
+  plugins: [googleAI({firestore})],
   model: 'googleai/gemini-2.5-flash',
 });
