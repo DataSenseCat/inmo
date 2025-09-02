@@ -1,3 +1,4 @@
+
 'use server';
 
 import {
@@ -21,6 +22,12 @@ import { firebaseTimestampToString } from './utils';
 
 type PropertyCreationPayload = Omit<Property, 'id' | 'images' | 'createdAt' | 'updatedAt'>;
 
+type ActionResponse<T = {}> = {
+    success: boolean;
+    message?: string;
+} & T;
+
+
 async function uploadPropertyImages(propId: string, imageDataUris: string[]): Promise<{ url: string }[]> {
     const imageUrls = await Promise.all(imageDataUris.map(async (dataUri, index) => {
         const fileExtension = dataUri.substring(dataUri.indexOf('/') + 1, dataUri.indexOf(';'));
@@ -31,9 +38,9 @@ async function uploadPropertyImages(propId: string, imageDataUris: string[]): Pr
     return imageUrls;
 }
 
-export async function createProperty(data: PropertyCreationPayload, imageDataUris: string[]): Promise<{ id: string }> {
+export async function createProperty(data: PropertyCreationPayload, imageDataUris: string[]): Promise<ActionResponse<{ id?: string }>> {
     if (!imageDataUris || imageDataUris.length === 0) {
-        throw new Error("At least one image is required to create a property.");
+        return { success: false, message: "Debés subir al menos una imagen." };
     }
     
     try {
@@ -77,14 +84,14 @@ export async function createProperty(data: PropertyCreationPayload, imageDataUri
         
         await updateDoc(doc(db, 'properties', propId), { images: imageUrls, updatedAt: Timestamp.now() });
 
-        return { id: propId };
+        return { success: true, id: propId };
     } catch (error) {
         console.error("Error creating property: ", error);
-        throw new Error("Failed to create property.");
+        return { success: false, message: "No se pudo crear la propiedad. Por favor, intente de nuevo." };
     }
 }
 
-export async function updateProperty(id: string, data: Partial<PropertyCreationPayload>, newImageDataUris?: string[]): Promise<void> {
+export async function updateProperty(id: string, data: Partial<PropertyCreationPayload>, newImageDataUris?: string[]): Promise<ActionResponse> {
     try {
         const docRef = doc(db, 'properties', id);
         
@@ -116,9 +123,10 @@ export async function updateProperty(id: string, data: Partial<PropertyCreationP
         }
 
         await updateDoc(docRef, updatePayload);
+        return { success: true };
     } catch (error) {
         console.error("Error updating property: ", error);
-        throw new Error("Failed to update property.");
+        return { success: false, message: "No se pudo actualizar la propiedad. Por favor, intente de nuevo." };
     }
 }
 
