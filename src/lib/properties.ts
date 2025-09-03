@@ -16,9 +16,9 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
-import { db, storage, uploadFile } from '@/lib/firebase';
+import { adminDb, adminStorage } from '@/lib/firebase-admin'; // Use server-side instance
 import type { Property } from '@/models/property';
-import { firebaseTimestampToString } from './utils';
+import { firebaseTimestampToString, dataUriToBuffer } from './utils';
 
 export type ActionResponse = {
     success: boolean;
@@ -26,13 +26,22 @@ export type ActionResponse = {
     id?: string;
 };
 
-
 async function uploadPropertyImages(propId: string, imageDataUris: string[]): Promise<{ url: string }[]> {
+    const bucket = adminStorage.bucket();
     const imageUrls = await Promise.all(imageDataUris.map(async (dataUri, index) => {
-        const fileExtension = dataUri.substring(dataUri.indexOf('/') + 1, dataUri.indexOf(';'));
+        const { buffer, mimeType } = dataUriToBuffer(dataUri);
+        const fileExtension = mimeType.split('/')[1];
         const imagePath = `properties/${propId}/${Date.now()}_${index}.${fileExtension}`;
-        const url = await uploadFile(dataUri, imagePath);
-        return { url };
+        const file = bucket.file(imagePath);
+
+        await file.save(buffer, {
+            metadata: {
+                contentType: mimeType,
+            },
+        });
+        
+        // Return the public URL
+        return { url: `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(imagePath)}?alt=media` };
     }));
     return imageUrls;
 }
@@ -61,7 +70,6 @@ const parseFormData = (formData: FormData) => {
     };
 };
 
-
 export async function saveProperty(
     prevState: ActionResponse, 
     formData: FormData
@@ -77,31 +85,28 @@ export async function saveProperty(
     try {
         const data = parseFormData(formData);
         
-        let newImageUrls: { url: string }[] | undefined = undefined;
-        if (imageDataUris.length > 0) {
-            const idForUpload = propertyId || "temp"; // Need an ID for the path
-            newImageUrls = await uploadPropertyImages(idForUpload, imageDataUris);
-        }
-
         if (isEditing) {
             // UPDATE
-            const docRef = doc(db, 'properties', propertyId);
+            const docRef = doc(adminDb, 'properties', propertyId);
             const updatePayload: any = { ...data, updatedAt: Timestamp.now() };
             delete updatePayload.id;
 
-            if (newImageUrls) {
+            if (imageDataUris.length > 0) {
                  const docSnap = await getDoc(docRef);
                  const currentProperty = docSnap.data() as Property | undefined;
                  if (currentProperty?.images) {
                      await Promise.all(currentProperty.images.map(async (image) => {
                          if (image.url && image.url.startsWith('https://firebasestorage.googleapis.com')) {
-                             try { await deleteObject(ref(storage, image.url)); } catch (e: any) {
-                                 if (e.code !== 'storage/object-not-found') console.warn(`Could not delete old image ${image.url}:`, e);
+                             try { 
+                                const fileRef = ref(adminStorage, image.url);
+                                await deleteObject(fileRef);
+                             } catch (e: any) {
+                                 if (e.code !== 'storage/object-not-found') console.warn(`Could not delete old image ${image.url}:`, e.code);
                              }
                          }
                      }));
                  }
-                updatePayload.images = newImageUrls;
+                updatePayload.images = await uploadPropertyImages(propertyId, imageDataUris);
             }
 
             await updateDoc(docRef, updatePayload);
@@ -111,30 +116,30 @@ export async function saveProperty(
             // CREATE
             const propertyPayload = {
                 ...data,
-                images: [], // Will be updated shortly
+                images: [], // Start with empty, will be updated
                 createdAt: Timestamp.now(),
                 updatedAt: Timestamp.now(),
             };
             delete propertyPayload.id;
             
-            const docRef = await addDoc(collection(db, 'properties'), propertyPayload);
+            const docRef = await addDoc(collection(adminDb, 'properties'), propertyPayload);
             const newPropId = docRef.id;
 
             const finalImageUrls = await uploadPropertyImages(newPropId, imageDataUris);
-            await updateDoc(doc(db, 'properties', newPropId), { images: finalImageUrls, updatedAt: Timestamp.now() });
+            await updateDoc(doc(adminDb, 'properties', newPropId), { images: finalImageUrls, updatedAt: Timestamp.now() });
 
             return { success: true, id: newPropId, message: 'Propiedad creada con éxito.' };
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error saving property: ", error);
-        return { success: false, message: "No se pudo guardar la propiedad. Por favor, intente de nuevo." };
+        return { success: false, message: `No se pudo guardar la propiedad. Error: ${error.message}` };
     }
 }
 
 
 export async function getProperties(): Promise<Property[]> {
   try {
-    const propertiesCol = collection(db, 'properties');
+    const propertiesCol = collection(adminDb, 'properties');
     const q = query(propertiesCol, orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
     const allProperties = snapshot.docs.map(doc => {
@@ -155,7 +160,7 @@ export async function getProperties(): Promise<Property[]> {
 
 export async function getFeaturedProperties(): Promise<Property[]> {
     try {
-        const propertiesCol = collection(db, 'properties');
+        const propertiesCol = collection(adminDb, 'properties');
         const q = query(propertiesCol, where('featured', '==', true), where('active', '==', true), limit(4));
         const snapshot = await getDocs(q);
         
@@ -179,7 +184,7 @@ export async function getFeaturedProperties(): Promise<Property[]> {
 
 export async function getPropertyById(id: string): Promise<Property | null> {
     try {
-        const docRef = doc(db, 'properties', id);
+        const docRef = doc(adminDb, 'properties', id);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
@@ -201,7 +206,7 @@ export async function getPropertyById(id: string): Promise<Property | null> {
 
 export async function deleteProperty(id: string): Promise<void> {
     try {
-        const docRef = doc(db, 'properties', id);
+        const docRef = doc(adminDb, 'properties', id);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             const property = docSnap.data() as Property;
@@ -209,7 +214,7 @@ export async function deleteProperty(id: string): Promise<void> {
                  await Promise.all(property.images.map(async (image) => {
                     if (image.url && image.url.startsWith('https://firebasestorage.googleapis.com')) {
                         try {
-                            const imageRef = ref(storage, image.url);
+                            const imageRef = ref(adminStorage, image.url);
                             await deleteObject(imageRef);
                         } catch (storageError: any) {
                              if (storageError.code !== 'storage/object-not-found') {

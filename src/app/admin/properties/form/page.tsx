@@ -101,10 +101,10 @@ function PropertyForm() {
   const [agents, setAgents] = useState<Agent[]>([]);
 
   const initialState: ActionResponse = { success: false, message: '' };
+  const formRef = useRef<HTMLFormElement>(null);
 
   const [state, formAction, isSubmitting] = useActionState(saveProperty, initialState);
   
-
   const form = useForm<PropertyFormValues>({
     resolver: zodResolver(propertyFormSchema),
     defaultValues: {
@@ -202,8 +202,8 @@ function PropertyForm() {
         toast({ variant: 'destructive', title: 'Error', description: 'Debe seleccionar un agente válido.' });
         return; 
     }
-
-    if (propertyId) {
+    
+    if (isEditing && propertyId) {
         formData.append('id', propertyId);
     }
     formData.append('contact', JSON.stringify({ name: selectedAgent.name, phone: selectedAgent.phone, email: selectedAgent.email }));
@@ -252,6 +252,7 @@ function PropertyForm() {
       
       <Form {...form}>
         <form 
+            ref={formRef}
             action={clientFormAction}
             className="space-y-8"
         >
@@ -511,7 +512,7 @@ function PropertyForm() {
                     <Button type="button" variant="outline" size="lg" asChild>
                         <Link href="/admin?tab=properties">Cancelar</Link>
                     </Button>
-                    <Button type="submit" size="lg" disabled={isSubmitting}>
+                    <Button type="submit" form={formRef.current ? formRef.current.id : undefined} size="lg" disabled={isSubmitting}>
                         {isSubmitting
                             ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Guardando...</>
                             : (isEditing ? 'Guardar Cambios' : 'Crear Propiedad')}
