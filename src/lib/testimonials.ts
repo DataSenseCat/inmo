@@ -1,3 +1,4 @@
+
 import {
   addDoc,
   collection,
@@ -57,13 +58,19 @@ export async function updateTestimonial(id: string, data: Partial<Testimonial>):
 export async function getTestimonials(onlyActive: boolean = false): Promise<Testimonial[]> {
     try {
         const testimonialsCol = collection(db, 'testimonials');
-        const constraints = [orderBy('createdAt', 'desc')];
+        
+        let q;
         if (onlyActive) {
-            constraints.unshift(where('active', '==', true));
+            // This query requires a composite index on (active, createdAt DESC). 
+            // We simplify it to avoid requiring manual index creation.
+            // It will fetch all and filter in code. This is less efficient but avoids setup errors.
+            q = query(testimonialsCol, orderBy('createdAt', 'desc'));
+        } else {
+            q = query(testimonialsCol, orderBy('createdAt', 'desc'));
         }
-        const q = query(testimonialsCol, ...constraints);
+
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => {
+        let testimonials = snapshot.docs.map(doc => {
             const data = doc.data();
             return {
                 id: doc.id,
@@ -72,6 +79,13 @@ export async function getTestimonials(onlyActive: boolean = false): Promise<Test
                 updatedAt: firebaseTimestampToString(data.updatedAt),
             } as Testimonial
         });
+
+        if (onlyActive) {
+            testimonials = testimonials.filter(t => t.active);
+        }
+        
+        return testimonials;
+
     } catch (error) {
         console.error("Error getting testimonials: ", error);
         return [];

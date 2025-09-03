@@ -21,7 +21,12 @@ async function uploadAgentPhoto(agentId: string, photoDataUri: string): Promise<
     });
     
     // Return the public URL
-    return `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(imagePath)}?alt=media`;
+    const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(imagePath)}?alt=media`;
+    
+    // Make the file publicly readable
+    await file.makePublic();
+
+    return publicUrl;
 }
 
 
