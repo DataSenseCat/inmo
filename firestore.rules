@@ -1,48 +1,13 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Regla por defecto: Bloquea todo
+    // Permite el acceso de lectura y escritura a todos los documentos
+    // para cualquier usuario que haya iniciado sesión (autenticado).
+    // Esto es útil para un panel de administración donde el acceso ya está controlado.
     match /{document=**} {
-      allow read, write: if false;
-    }
-
-    // Reglas específicas para colecciones
-
-    // Permite la lectura pública para configuraciones, propiedades, etc.
-    // Y bloquea la escritura.
-    match /siteConfig/{docId} {
-      allow read: if true;
-      allow write: if false;
-    }
-
-    match /properties/{docId} {
-      allow read: if true;
-      allow write: if false;
-    }
-
-    match /developments/{docId} {
-      allow read: if true;
-      allow write: if false;
-    }
-
-    match /agents/{docId} {
-      allow read: if true;
-      allow write: if false;
-    }
-
-    match /testimonials/{docId} {
-      allow read: if true;
-      allow write: if false;
-    }
-
-    // Permite que cualquiera cree un lead (formulario de contacto)
-    // y que cualquiera los pueda leer (para el panel de admin).
-    // Actualizar y eliminar sigue bloqueado.
-    match /leads/{leadId} {
-      allow create, read, list: if true;
-      allow update, delete: if false;
+      allow read, write: if request.auth != null;
     }
   }
 }
