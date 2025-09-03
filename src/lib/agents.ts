@@ -20,12 +20,13 @@ async function uploadAgentPhoto(agentId: string, photoDataUri: string): Promise<
         },
     });
     
+    // Make the file publicly readable.
+    // REQUIRES the service account to have the "Storage Object Admin" role in IAM.
+    await file.makePublic();
+
     // Return the public URL
     const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(imagePath)}?alt=media`;
     
-    // Make the file publicly readable
-    await file.makePublic();
-
     return publicUrl;
 }
 
@@ -82,15 +83,14 @@ export async function updateAgent(
           const currentData = currentDoc.data();
           if (currentData && currentData.photoUrl && currentData.photoUrl.startsWith('https://firebasestorage.googleapis.com')) {
             try {
-              const fileRef = adminStorage.bucket().file(
-                decodeURIComponent(
-                  currentData.photoUrl.split('/o/')[1].split('?')[0]
-                )
-              );
+              const fileUrl = decodeURIComponent(currentData.photoUrl);
+              const filePath = fileUrl.split('/o/')[1].split('?')[0];
+              const fileRef = adminStorage.bucket().file(filePath);
               await fileRef.delete();
             } catch (e: any) {
-               if (e.code !== 404) { // 404 means not found, which is fine
-                 console.warn("Failed to delete old image, continuing update.", e);
+               // If the object does not exist, that's fine. We can continue.
+               if (e.code !== 404) {
+                 console.warn("Could not delete old agent photo, but continuing with update.", e);
                }
             }
           }
