@@ -1,7 +1,8 @@
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
-import { adminDb } from '@/lib/firebase-admin';
 
+// This is the CLIENT-side instance of Genkit. It should not contain plugins
+// that have server-side dependencies like firebase-admin.
 export const ai = genkit({
-  plugins: [googleAI({ firestore: adminDb })],
+  plugins: [googleAI()],
 });

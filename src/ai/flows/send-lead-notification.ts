@@ -8,7 +8,7 @@
  * - SendLeadNotificationInput - The input type for the function.
  */
 
-import { ai } from '@/ai/genkit';
+import { ai } from '@/ai/init'; // Use the server-side instance
 import { z } from 'genkit';
 import type { Lead } from '@/models/lead';
 
