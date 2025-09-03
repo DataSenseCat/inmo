@@ -20,7 +20,7 @@ function getFirebaseApp(): FirebaseApp {
 }
 
 const app: FirebaseApp = getFirebaseApp();
-const db: Firestore = getFirestore(app, process.env.NEXT_PUBLIC_FIRESTORE_DATABASE_ID);
+const db: Firestore = getFirestore(app);
 const storage: FirebaseStorage = getStorage(app);
 
 export async function uploadFile(dataUri: string, path: string): Promise<string> {
@@ -35,4 +35,3 @@ export async function uploadFile(dataUri: string, path: string): Promise<string>
 
 
 export { app, db, storage };
-
