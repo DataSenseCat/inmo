@@ -6,6 +6,12 @@ import { adminDb, adminStorage } from '@/lib/firebase-admin';
 import type { Agent } from '@/models/agent';
 import { firebaseTimestampToString, dataUriToBuffer } from './utils';
 
+export type AgentActionResponse = {
+    success: boolean;
+    message: string;
+    id?: string;
+};
+
 // This is a server-only function
 async function uploadAgentPhoto(agentId: string, photoDataUri: string): Promise<string> {
     const bucket = adminStorage.bucket();
@@ -30,82 +36,85 @@ async function uploadAgentPhoto(agentId: string, photoDataUri: string): Promise<
     return publicUrl;
 }
 
-
-export async function createAgent(
-  data: Omit<Agent, 'id' | 'photoUrl' | 'createdAt' | 'updatedAt'>,
-  photoDataUri?: string
-): Promise<{ id: string }> {
-  try {
-    const agentPayload = {
-      name: data.name,
-      email: data.email,
-      phone: data.phone,
-      active: data.active,
-      bio: data.bio || '',
-      photoUrl: '',
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
+const parseAgentFormData = (formData: FormData) => {
+    return {
+        id: formData.get('id') as string | undefined,
+        name: formData.get('name') as string,
+        email: formData.get('email') as string,
+        phone: formData.get('phone') as string,
+        bio: formData.get('bio') as string || '',
+        active: formData.get('active') === 'on',
+        photoDataUri: formData.get('photoDataUri') as string | undefined,
     };
+};
 
-    const docRef = await addDoc(collection(adminDb, 'agents'), agentPayload);
-    const agentId = docRef.id;
+export async function saveAgent(
+    prevState: AgentActionResponse, 
+    formData: FormData
+): Promise<AgentActionResponse> {
+    const agentId = formData.get('id') as string | null;
+    const isEditing = !!agentId;
+    const { photoDataUri, ...data } = parseAgentFormData(formData);
 
-    if (photoDataUri) {
-        const photoUrl = await uploadAgentPhoto(agentId, photoDataUri);
-        await updateDoc(doc(adminDb, 'agents', agentId), { photoUrl: photoUrl, updatedAt: Timestamp.now() });
-    }
+    try {
+        if (isEditing) {
+            // UPDATE
+            const docRef = doc(adminDb, 'agents', agentId);
+            const updatePayload: any = { 
+                ...data, 
+                updatedAt: Timestamp.now() 
+            };
+            delete updatePayload.id;
 
-    return { id: agentId };
-  } catch (error) {
-    console.error("Error creating agent: ", error);
-    throw new Error("Failed to create agent.");
-  }
-}
-
-export async function updateAgent(
-  id: string,
-  data: Partial<Omit<Agent, 'id'>>,
-  photoDataUri?: string
-): Promise<void> {
-  try {
-    const docRef = doc(adminDb, 'agents', id);
-    const updatePayload: any = {
-      ...data,
-      bio: data.bio || '',
-      updatedAt: Timestamp.now(),
-    };
-    
-    delete updatePayload.id;
-
-    if (photoDataUri) {
-      const currentDoc = await getDoc(docRef);
-      if (currentDoc.exists()) {
-          const currentData = currentDoc.data();
-          if (currentData && currentData.photoUrl && currentData.photoUrl.startsWith('https://firebasestorage.googleapis.com')) {
-            try {
-              const fileUrl = decodeURIComponent(currentData.photoUrl);
-              const filePath = fileUrl.split('/o/')[1].split('?')[0];
-              const fileRef = adminStorage.bucket().file(filePath);
-              await fileRef.delete();
-            } catch (e: any) {
-               // If the object does not exist, that's fine. We can continue.
-               if (e.code !== 404) {
-                 console.warn("Could not delete old agent photo, but continuing with update.", e);
-               }
+            if (photoDataUri) {
+                const currentDoc = await getDoc(docRef);
+                if (currentDoc.exists()) {
+                    const currentData = currentDoc.data();
+                    if (currentData && currentData.photoUrl && currentData.photoUrl.startsWith('https://firebasestorage.googleapis.com')) {
+                        try {
+                            const fileUrl = decodeURIComponent(currentData.photoUrl);
+                            const filePath = fileUrl.split('/o/')[1].split('?')[0];
+                            await adminStorage.bucket().file(filePath).delete();
+                        } catch (e: any) {
+                           if (e.code !== 404) console.warn("Could not delete old agent photo, but continuing with update.", e);
+                        }
+                    }
+                }
+                updatePayload.photoUrl = await uploadAgentPhoto(agentId, photoDataUri);
             }
-          }
-      } else {
-         throw new Error("Agent not found.");
-      }
-      updatePayload.photoUrl = await uploadAgentPhoto(id, photoDataUri);
+
+            await updateDoc(docRef, updatePayload);
+            return { success: true, message: 'Agente actualizado con éxito.' };
+
+        } else {
+            // CREATE
+            const agentPayload = {
+                name: data.name,
+                email: data.email,
+                phone: data.phone,
+                active: data.active,
+                bio: data.bio || '',
+                photoUrl: '',
+                createdAt: Timestamp.now(),
+                updatedAt: Timestamp.now(),
+            };
+
+            const docRef = await addDoc(collection(adminDb, 'agents'), agentPayload);
+            const newAgentId = docRef.id;
+
+            if (photoDataUri) {
+                const photoUrl = await uploadAgentPhoto(newAgentId, photoDataUri);
+                await updateDoc(doc(adminDb, 'agents', newAgentId), { photoUrl: photoUrl });
+            }
+            
+            return { success: true, id: newAgentId, message: 'Agente creado con éxito.' };
+        }
+    } catch (error: any) {
+        console.error("Error saving agent: ", error);
+        return { success: false, message: `No se pudo guardar el agente. Error: ${error.message}` };
     }
-    
-    await updateDoc(docRef, updatePayload);
-  } catch (error) {
-    console.error("Error updating agent: ", error);
-    throw new Error("Failed to update agent.");
-  }
 }
+
 
 export async function getAgents(): Promise<Agent[]> {
   try {
@@ -175,12 +184,8 @@ export async function deleteAgent(id: string): Promise<void> {
       const agent = docSnap.data();
       if (agent.photoUrl && agent.photoUrl.startsWith('https://firebasestorage.googleapis.com')) {
         try {
-            const fileRef = adminStorage.bucket().file(
-              decodeURIComponent(
-                agent.photoUrl.split('/o/')[1].split('?')[0]
-              )
-            );
-            await fileRef.delete();
+            const filePath = decodeURIComponent(agent.photoUrl.split('/o/')[1].split('?')[0]);
+            await adminStorage.bucket().file(filePath).delete();
         } catch (storageError: any) {
             if (storageError.code !== 404) { // 404 means not found, which is fine
               console.warn(`Failed to delete image for agent ${id}:`, storageError);
@@ -195,3 +200,4 @@ export async function deleteAgent(id: string): Promise<void> {
     throw new Error("Failed to delete agent.");
   }
 }
+

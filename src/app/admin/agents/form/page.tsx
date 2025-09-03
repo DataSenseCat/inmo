@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useActionState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, User, Mail, Phone, Image as ImageIcon, Upload, Trash2, Loader2, FileText } from 'lucide-react';
+import { ArrowLeft, User, Mail, Phone, Upload, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -24,10 +24,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import type { Agent } from '@/models/agent';
-import { createAgent, getAgentById, updateAgent } from '@/lib/agents';
+import { getAgentById, saveAgent, type AgentActionResponse } from '@/lib/agents';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { fileToDataUri } from '@/lib/utils';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
 const agentFormSchema = z.object({
@@ -49,9 +50,12 @@ function AgentForm() {
   const isEditing = !!agentId;
 
   const [loading, setLoading] = useState(isEditing);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [photoDataUri, setPhotoDataUri] = useState<string | undefined>(undefined);
+  
+  const formRef = useRef<HTMLFormElement>(null);
+  const initialState: AgentActionResponse = { success: false, message: '' };
+  const [state, formAction, isSubmitting] = useActionState(saveAgent, initialState);
   
   const form = useForm<AgentFormValues>({
     resolver: zodResolver(agentFormSchema),
@@ -83,8 +87,19 @@ function AgentForm() {
           }
         })
         .finally(() => setLoading(false));
+    } else {
+        setLoading(false);
     }
    }, [isEditing, agentId, form, router, toast]);
+
+    useEffect(() => {
+        if (state.success) {
+            toast({ title: isEditing ? 'Agente Actualizado' : 'Agente Creado', description: state.message });
+            router.push('/admin?tab=agents');
+            router.refresh();
+        }
+   }, [state, toast, router, isEditing]);
+
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
       if(e.target.files && e.target.files[0]) {
@@ -99,28 +114,18 @@ function AgentForm() {
       setPhotoDataUri(undefined);
       setImagePreview(null);
   }
-
-  async function onSubmit(data: AgentFormValues) {
-    setIsSubmitting(true);
-    try {
-        if(isEditing) {
-            await updateAgent(agentId, data, photoDataUri);
-            toast({ title: 'Agente Actualizado', description: 'Los cambios se guardaron correctamente.' });
-        } else {
-            await createAgent(data, photoDataUri);
-            toast({ title: 'Agente Creado', description: 'El nuevo agente se ha guardado.' });
-        }
-        router.push('/admin?tab=agents');
-        router.refresh();
-    } catch (error) {
-        console.error('Failed to save agent:', error);
-        toast({ variant: 'destructive', title: 'Error al guardar', description: 'No se pudo guardar el agente.' });
-    } finally {
-        setIsSubmitting(false);
+  
+  const handleFormAction = (formData: FormData) => {
+    if (isEditing) {
+        formData.append('id', agentId);
     }
+    if (photoDataUri) {
+        formData.append('photoDataUri', photoDataUri);
+    }
+    formAction(formData);
   }
 
-  if (loading && isEditing) {
+  if (loading) {
       return (
           <div className="flex justify-center items-center h-[calc(100vh-200px)]">
               <Loader2 className="h-10 w-10 animate-spin" />
@@ -142,7 +147,11 @@ function AgentForm() {
       </div>
       
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <form 
+            ref={formRef}
+            action={handleFormAction}
+            className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+        >
             <div className="lg:col-span-2 space-y-8">
                 <Card>
                     <CardHeader><CardTitle>Información del Agente</CardTitle></CardHeader>
@@ -178,7 +187,7 @@ function AgentForm() {
                         )}/>
                         <FormField control={form.control} name="active" render={({ field }) => (
                             <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
-                                <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} name={field.name} /></FormControl>
                                 <div className="space-y-1 leading-none">
                                     <FormLabel>Agente Activo</FormLabel>
                                     <FormDescription>Desmarcar si el agente ya no está activo en la inmobiliaria.</FormDescription>
@@ -218,6 +227,16 @@ function AgentForm() {
                     </CardContent>
                 </Card>
             </div>
+            
+            {state && !state.success && state.message && (
+                <div className="lg:col-span-3">
+                    <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle>Error al Guardar</AlertTitle>
+                        <AlertDescription>{state.message}</AlertDescription>
+                    </Alert>
+                </div>
+            )}
 
             <div className="lg:col-span-3 fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-sm p-4 border-t z-10">
                 <div className="container mx-auto flex justify-end gap-4">
