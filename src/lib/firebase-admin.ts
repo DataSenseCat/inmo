@@ -25,4 +25,3 @@ adminDb = getFirestore(adminApp);
 adminStorage = getStorage(adminApp);
 
 export { adminApp, adminDb, adminStorage };
-
