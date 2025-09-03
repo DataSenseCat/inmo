@@ -8,7 +8,7 @@ if (!getApps().length) {
     projectId: 'catamarca-estates',
   });
 }
-const firestore = getFirestore('datainmob');
+const firestore = getFirestore(process.env.FIRESTORE_DATABASE_ID);
 
 export const ai = genkit({
   plugins: [googleAI({firestore})],
