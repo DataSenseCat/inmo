@@ -9,7 +9,7 @@
  * - AIVirtualTourOutput - The return type for the generateVirtualTour function.
  */
 
-import {ai} from '@/ai/init'; // Use the server-side instance
+import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const AIVirtualTourInputSchema = z.object({
