@@ -1,16 +1,7 @@
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
-import {getFirestore} from 'firebase-admin/firestore';
-import {initializeApp, getApps, getApp} from 'firebase-admin/app';
-
-if (!getApps().length) {
-  initializeApp({
-    projectId: process.env.FIREBASE_PROJECT_ID,
-  });
-}
-const firestore = getFirestore(getApp());
+import { adminDb } from '@/lib/firebase-admin';
 
 export const ai = genkit({
-  plugins: [googleAI({firestore})],
-  model: 'googleai/gemini-2.5-flash',
+  plugins: [googleAI({ firestore: adminDb })],
 });
