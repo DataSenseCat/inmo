@@ -5,7 +5,7 @@ import {initializeApp, getApps, getApp} from 'firebase-admin/app';
 
 if (!getApps().length) {
   initializeApp({
-    projectId: 'catamarca-estates',
+    projectId: process.env.FIREBASE_PROJECT_ID,
   });
 }
 const firestore = getFirestore(getApp());

@@ -14,8 +14,8 @@ let adminStorage: Storage;
 
 if (!getApps().length) {
     adminApp = initializeApp({
-        projectId: "catamarca-estates",
-        storageBucket: "catamarca-estates.appspot.com",
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
     });
 } else {
     adminApp = getApp();
