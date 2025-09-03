@@ -28,7 +28,12 @@ async function uploadAgentPhoto(agentId: string, photoDataUri: string): Promise<
     
     // Make the file publicly readable.
     // REQUIRES the service account to have the "Storage Object Admin" role in IAM.
-    await file.makePublic();
+    try {
+      await file.makePublic();
+    } catch(e: any) {
+        console.error("Failed to make agent photo public. This usually means the service account needs 'Storage Object Admin' role.", e.message);
+        // Continue, but the URL might not be accessible.
+    }
 
     // Return the public URL
     const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(imagePath)}?alt=media`;
@@ -38,7 +43,6 @@ async function uploadAgentPhoto(agentId: string, photoDataUri: string): Promise<
 
 const parseAgentFormData = (formData: FormData) => {
     return {
-        id: formData.get('id') as string | undefined,
         name: formData.get('name') as string,
         email: formData.get('email') as string,
         phone: formData.get('phone') as string,
@@ -61,10 +65,13 @@ export async function saveAgent(
             // UPDATE
             const docRef = doc(adminDb, 'agents', agentId);
             const updatePayload: any = { 
-                ...data, 
+                name: data.name,
+                email: data.email,
+                phone: data.phone,
+                bio: data.bio,
+                active: data.active,
                 updatedAt: Timestamp.now() 
             };
-            delete updatePayload.id;
 
             if (photoDataUri) {
                 const currentDoc = await getDoc(docRef);
@@ -93,7 +100,7 @@ export async function saveAgent(
                 email: data.email,
                 phone: data.phone,
                 active: data.active,
-                bio: data.bio || '',
+                bio: data.bio,
                 photoUrl: '',
                 createdAt: Timestamp.now(),
                 updatedAt: Timestamp.now(),
@@ -200,4 +207,3 @@ export async function deleteAgent(id: string): Promise<void> {
     throw new Error("Failed to delete agent.");
   }
 }
-
