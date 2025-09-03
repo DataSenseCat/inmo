@@ -3,8 +3,6 @@ import { getFirestore, type Firestore } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL, type FirebaseStorage } from "firebase/storage";
 import { dataUriToBuffer } from "./utils";
 
-// These are now the only variables needed from .env for the client-side config.
-// The rest (projectId, storageBucket) can be inferred by Firebase from this config.
 const clientCredentials = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
     authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
