@@ -13,7 +13,8 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
-import { db, storage, uploadFile } from '@/lib/firebase';
+import { adminDb, adminStorage } from '@/lib/firebase-admin';
+import { uploadFile } from '@/lib/firebase';
 import type { Development } from '@/models/development';
 import { firebaseTimestampToString } from './utils';
 
@@ -53,12 +54,12 @@ export async function createDevelopment(data: Omit<Development, 'id' | 'image' |
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
         }
-        const docRef = await addDoc(collection(db, 'developments'), developmentPayload);
+        const docRef = await addDoc(collection(adminDb, 'developments'), developmentPayload);
         const devId = docRef.id;
 
         const imageUrl = await uploadDevelopmentImage(devId, imageDataUri);
         
-        await updateDoc(doc(db, 'developments', devId), { image: imageUrl, updatedAt: Timestamp.now() });
+        await updateDoc(doc(adminDb, 'developments', devId), { image: imageUrl, updatedAt: Timestamp.now() });
 
         return { id: devId };
 
@@ -70,7 +71,7 @@ export async function createDevelopment(data: Omit<Development, 'id' | 'image' |
 
 export async function updateDevelopment(id: string, data: Partial<Development>, newImageDataUri?: string): Promise<void> {
     try {
-        const docRef = doc(db, 'developments', id);
+        const docRef = doc(adminDb, 'developments', id);
         const updatePayload: any = {
             ...prepareDevelopmentDataForSave(data),
             updatedAt: Timestamp.now(),
@@ -83,7 +84,7 @@ export async function updateDevelopment(id: string, data: Partial<Development>, 
 
             if (currentData.image && currentData.image.startsWith('https://firebasestorage.googleapis.com')) {
                 try {
-                    await deleteObject(ref(storage, currentData.image));
+                    await deleteObject(ref(adminStorage, currentData.image));
                 } catch(e: any) {
                     if (e.code !== 'storage/object-not-found') {
                         console.warn("Failed to delete old image, continuing update.", e);
@@ -105,7 +106,7 @@ export async function updateDevelopment(id: string, data: Partial<Development>, 
 
 export async function getDevelopments(): Promise<Development[]> {
   try {
-    const developmentsCol = collection(db, 'developments');
+    const developmentsCol = collection(adminDb, 'developments');
     const q = query(developmentsCol, orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => {
@@ -125,7 +126,7 @@ export async function getDevelopments(): Promise<Development[]> {
 
 export async function getDevelopmentById(id: string): Promise<Development | null> {
     try {
-        const docRef = doc(db, 'developments', id);
+        const docRef = doc(adminDb, 'developments', id);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
@@ -147,14 +148,14 @@ export async function getDevelopmentById(id: string): Promise<Development | null
 
 export async function deleteDevelopment(id: string): Promise<void> {
     try {
-        const docRef = doc(db, 'developments', id);
+        const docRef = doc(adminDb, 'developments', id);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
             const development = docSnap.data();
             if (development.image && development.image.startsWith('https://firebasestorage.googleapis.com')) {
                 try {
-                    const imageRef = ref(storage, development.image);
+                    const imageRef = ref(adminStorage, development.image);
                     await deleteObject(imageRef);
                 } catch (storageError: any) {
                     if (storageError.code !== 'storage/object-not-found') {

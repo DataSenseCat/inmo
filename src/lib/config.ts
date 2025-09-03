@@ -1,6 +1,6 @@
 
 import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { adminDb } from '@/lib/firebase-admin';
 import type { SiteConfig } from '@/models/site-config';
 import { firebaseTimestampToString } from './utils';
 
@@ -8,7 +8,7 @@ const CONFIG_DOC_ID = 'main';
 
 export async function getSiteConfig(): Promise<SiteConfig | null> {
     try {
-        const docRef = doc(db, 'siteConfig', CONFIG_DOC_ID);
+        const docRef = doc(adminDb, 'siteConfig', CONFIG_DOC_ID);
         const docSnap = await getDoc(docRef);
 
         const defaultConfig: SiteConfig = {
@@ -66,7 +66,7 @@ export async function getSiteConfig(): Promise<SiteConfig | null> {
 
 export async function updateSiteConfig(data: Partial<Omit<SiteConfig, 'logoUrl' | 'id'>>): Promise<void> {
     try {
-        const docRef = doc(db, 'siteConfig', CONFIG_DOC_ID);
+        const docRef = doc(adminDb, 'siteConfig', CONFIG_DOC_ID);
         
         const configToSave = {
             contactPhone: data.contactPhone || '',

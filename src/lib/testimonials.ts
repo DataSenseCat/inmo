@@ -1,4 +1,6 @@
 
+'use server';
+    
 import {
   addDoc,
   collection,
@@ -12,7 +14,7 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { adminDb } from '@/lib/firebase-admin';
 import type { Testimonial } from '@/models/testimonial';
 import { firebaseTimestampToString } from './utils';
 
@@ -32,7 +34,7 @@ export async function createTestimonial(data: Omit<Testimonial, 'id' | 'createdA
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
         };
-        const docRef = await addDoc(collection(db, 'testimonials'), testimonialPayload);
+        const docRef = await addDoc(collection(adminDb, 'testimonials'), testimonialPayload);
         return { id: docRef.id };
     } catch (error) {
         console.error("Error creating testimonial: ", error);
@@ -42,7 +44,7 @@ export async function createTestimonial(data: Omit<Testimonial, 'id' | 'createdA
 
 export async function updateTestimonial(id: string, data: Partial<Testimonial>): Promise<void> {
     try {
-        const docRef = doc(db, 'testimonials', id);
+        const docRef = doc(adminDb, 'testimonials', id);
         const testimonialPayload: any = {
             ...prepareTestimonialData(data),
             updatedAt: Timestamp.now(),
@@ -57,14 +59,11 @@ export async function updateTestimonial(id: string, data: Partial<Testimonial>):
 
 export async function getTestimonials(onlyActive: boolean = false): Promise<Testimonial[]> {
     try {
-        const testimonialsCol = collection(db, 'testimonials');
+        const testimonialsCol = collection(adminDb, 'testimonials');
         
         let q;
         if (onlyActive) {
-            // This query requires a composite index on (active, createdAt DESC). 
-            // We simplify it to avoid requiring manual index creation.
-            // It will fetch all and filter in code. This is less efficient but avoids setup errors.
-            q = query(testimonialsCol, orderBy('createdAt', 'desc'));
+            q = query(testimonialsCol, where('active', '==', true), orderBy('createdAt', 'desc'));
         } else {
             q = query(testimonialsCol, orderBy('createdAt', 'desc'));
         }
@@ -79,10 +78,6 @@ export async function getTestimonials(onlyActive: boolean = false): Promise<Test
                 updatedAt: firebaseTimestampToString(data.updatedAt),
             } as Testimonial
         });
-
-        if (onlyActive) {
-            testimonials = testimonials.filter(t => t.active);
-        }
         
         return testimonials;
 
@@ -94,7 +89,7 @@ export async function getTestimonials(onlyActive: boolean = false): Promise<Test
 
 export async function getTestimonialById(id: string): Promise<Testimonial | null> {
     try {
-        const docRef = doc(db, 'testimonials', id);
+        const docRef = doc(adminDb, 'testimonials', id);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             const data = docSnap.data();
@@ -114,7 +109,7 @@ export async function getTestimonialById(id: string): Promise<Testimonial | null
 
 export async function deleteTestimonial(id: string): Promise<void> {
     try {
-        const docRef = doc(db, 'testimonials', id);
+        const docRef = doc(adminDb, 'testimonials', id);
         await deleteDoc(docRef);
     } catch (error) {
         console.error("Error deleting testimonial: ", error);

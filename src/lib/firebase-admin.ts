@@ -21,7 +21,7 @@ if (!getApps().length) {
     adminApp = getApp();
 }
 
-adminDb = getFirestore(adminApp, process.env.FIRESTORE_DATABASE_ID);
+adminDb = getFirestore(adminApp);
 adminStorage = getStorage(adminApp);
 
 export { adminApp, adminDb, adminStorage };

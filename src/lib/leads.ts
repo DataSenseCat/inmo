@@ -1,3 +1,6 @@
+
+'use server';
+
 import {
   addDoc,
   collection,
@@ -6,7 +9,7 @@ import {
   orderBy,
   Timestamp,
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { adminDb } from '@/lib/firebase-admin';
 import type { Lead } from '@/models/lead';
 import { getSiteConfig } from './config';
 import { sendLeadNotification } from '@/ai/flows/send-lead-notification';
@@ -18,11 +21,8 @@ export async function createLead(data: Omit<Lead, 'id' | 'createdAt'>) {
             ...data,
             createdAt: Timestamp.now(),
         }
-        await addDoc(collection(db, 'leads'), leadData);
+        await addDoc(collection(adminDb, 'leads'), leadData);
 
-        // After saving, attempt to send a notification.
-        // This runs on the server, but the createLead function is called from the client.
-        // This might require a separate server action if it causes issues.
         try {
             const config = await getSiteConfig();
             if (config?.leadNotificationEmail) {
@@ -43,7 +43,7 @@ export async function createLead(data: Omit<Lead, 'id' | 'createdAt'>) {
 
 export async function getLeads(): Promise<Lead[]> {
   try {
-    const leadsCol = collection(db, 'leads');
+    const leadsCol = collection(adminDb, 'leads');
     const q = query(leadsCol, orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => {
