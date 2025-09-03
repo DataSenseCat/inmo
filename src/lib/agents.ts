@@ -61,10 +61,13 @@ export async function saveAgent(
             // UPDATE
             const docRef = doc(adminDb, 'agents', agentId);
             const updatePayload: any = { 
-                ...data, 
+                name: data.name,
+                email: data.email,
+                phone: data.phone,
+                bio: data.bio || '',
+                active: data.active,
                 updatedAt: Timestamp.now() 
             };
-            delete updatePayload.id;
 
             if (photoDataUri) {
                 const currentDoc = await getDoc(docRef);
@@ -200,4 +203,3 @@ export async function deleteAgent(id: string): Promise<void> {
     throw new Error("Failed to delete agent.");
   }
 }
-
