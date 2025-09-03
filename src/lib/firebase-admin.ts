@@ -15,13 +15,13 @@ let adminStorage: Storage;
 if (!getApps().length) {
     adminApp = initializeApp({
         projectId: "catamarca-estates",
-        storageBucket: "catamarca-estates.appspot.com",
+        storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
     });
 } else {
     adminApp = getApp();
 }
 
-adminDb = getFirestore(adminApp, process.env.FIRESTORE_DATABASE_ID);
+adminDb = getFirestore(adminApp);
 adminStorage = getStorage(adminApp);
 
 export { adminApp, adminDb, adminStorage };

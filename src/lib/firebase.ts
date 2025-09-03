@@ -3,11 +3,13 @@ import { getFirestore, type Firestore } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL, type FirebaseStorage } from "firebase/storage";
 import { dataUriToBuffer } from "./utils";
 
+// These are now the only variables needed from .env for the client-side config.
+// The rest (projectId, storageBucket) can be inferred by Firebase from this config.
 const clientCredentials = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
     authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
     projectId: "catamarca-estates",
-    storageBucket: "catamarca-estates.appspot.com",
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
     messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
@@ -20,7 +22,7 @@ function getFirebaseApp(): FirebaseApp {
 }
 
 const app: FirebaseApp = getFirebaseApp();
-const db: Firestore = getFirestore(app, process.env.FIRESTORE_DATABASE_ID);
+const db: Firestore = getFirestore(app);
 const storage: FirebaseStorage = getStorage(app);
 
 export async function uploadFile(dataUri: string, path: string): Promise<string> {
