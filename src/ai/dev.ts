@@ -1,5 +1,6 @@
 import { config } from 'dotenv';
 config();
 
-import '@/ai/flows/ai-virtual-tour.ts';
-import '@/ai/flows/send-lead-notification.ts';
+// Este archivo se utiliza para el desarrollo local con 'genkit dev'.
+// No se debe importar directamente en el código de la aplicación Next.js
+// para evitar que las dependencias del servidor se incluyan en el cliente.
