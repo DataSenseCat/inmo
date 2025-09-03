@@ -7,7 +7,7 @@ const clientCredentials = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
     authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
     projectId: "catamarca-estates",
-    storageBucket: "catamarca-estates.appspot.com",
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
     messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
@@ -35,3 +35,4 @@ export async function uploadFile(dataUri: string, path: string): Promise<string>
 
 
 export { app, db, storage };
+
